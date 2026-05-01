@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Globe } from 'lucide-react';
-import loginLogo from '../../../../Logocolor.svg';
+import loginLogo from '../../../../LogoColor.svg';
 import './LoginPage.css';
 
 export default function LoginPage() {
