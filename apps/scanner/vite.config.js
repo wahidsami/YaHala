@@ -5,5 +5,8 @@ export default defineConfig({
     plugins: [react()],
     server: {
         port: 5176
+    },
+    preview: {
+        allowedHosts: ['yscanner.testproject.cloud']
     }
 });
