@@ -1,0 +1,56 @@
+.widget-palette {
+    background: var(--bg-primary);
+    border-inline-end: 1px solid var(--border-color);
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.widget-palette h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.palette-category {
+    margin-bottom: 1.5rem;
+}
+
+.palette-category h4 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.palette-widgets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.palette-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+    cursor: grab;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.palette-widget:hover {
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.palette-widget.dragging {
+    opacity: 0.5;
+}
+
+.palette-widget svg {
+    color: var(--color-primary);
+}

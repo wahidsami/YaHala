@@ -1,0 +1,154 @@
+.addons-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.addons-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.addon-stat-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 248, 251, 0.98));
+    border: 1px solid var(--border-color, #d7deea);
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.addon-stat-card.tone-primary {
+    border-color: rgba(148, 111, 167, 0.25);
+}
+
+.addon-stat-card.tone-success {
+    border-color: rgba(22, 163, 74, 0.2);
+}
+
+.addon-stat-card.tone-warning {
+    border-color: rgba(249, 115, 22, 0.22);
+}
+
+.addon-stat-card.tone-accent {
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.addon-stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-color, #0f172a);
+}
+
+.addon-stat-title {
+    color: var(--muted-text, #64748b);
+    font-size: 0.95rem;
+}
+
+.addons-tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.addons-tabs button {
+    border: 1px solid var(--border-color, #d7deea);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--text-color, #0f172a);
+    border-radius: 16px;
+    min-height: 54px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.addons-tabs button.active {
+    border-color: rgba(148, 111, 167, 0.45);
+    color: #946fa7;
+    box-shadow: 0 8px 24px rgba(148, 111, 167, 0.12);
+    transform: translateY(-1px);
+}
+
+.addon-tab-panel {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--border-color, #d7deea);
+    border-radius: 24px;
+    padding: 1.25rem;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+}
+
+.placeholder-panel {
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: center;
+    color: var(--muted-text, #64748b);
+}
+
+.poll-name-cell,
+.table-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.poll-name-cell span {
+    color: var(--muted-text, #64748b);
+    font-size: 0.9rem;
+}
+
+.select-column {
+    width: 48px;
+    text-align: center;
+}
+
+.status-badge.status-draft {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-badge.status-published {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.status-badge.status-ended {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.status-badge.status-archived {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+@media (max-width: 1200px) {
+    .addons-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .addons-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .addons-stats-grid,
+    .addons-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .addon-stat-value {
+        font-size: 1.7rem;
+    }
+}

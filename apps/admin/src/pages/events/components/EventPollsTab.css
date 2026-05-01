@@ -1,0 +1,93 @@
+.event-polls-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.event-polls-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.event-poll-stat {
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid var(--border-color, #d7deea);
+    border-radius: 18px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.event-poll-stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    color: #946fa7;
+    background: rgba(148, 111, 167, 0.08);
+}
+
+.event-poll-stat.tone-success .event-poll-stat-icon {
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.1);
+}
+
+.event-poll-stat.tone-warning .event-poll-stat-icon {
+    color: #d97706;
+    background: rgba(217, 119, 6, 0.1);
+}
+
+.event-poll-stat.tone-accent .event-poll-stat-icon {
+    color: #2563eb;
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.event-poll-stat-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.event-poll-stat-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+}
+
+.event-poll-stat-title {
+    color: var(--muted-text, #64748b);
+}
+
+.status-badge.status-draft {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-badge.status-published {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.status-badge.status-ended {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.status-badge.status-archived {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+@media (max-width: 1200px) {
+    .event-polls-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .event-polls-stats {
+        grid-template-columns: 1fr;
+    }
+}

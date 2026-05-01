@@ -1,0 +1,236 @@
+.event-list-page {
+    padding: 0.5rem;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.event-name {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.event-name svg {
+    margin-top: 0.25rem;
+    color: var(--color-primary);
+}
+
+.event-name .name-ar {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.type-wedding {
+    background: #fce7f3;
+    color: #be185d;
+}
+
+.type-corporate {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.type-social {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.status-draft {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.status-completed {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.status-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Use shared styles from ClientListPage */
+.filters-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    flex: 1;
+    max-width: 300px;
+}
+
+.search-box input {
+    border: none;
+    outline: none;
+    background: none;
+    width: 100%;
+}
+
+.filters-bar select {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+}
+
+.table-container {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.875rem 1rem;
+    text-align: start;
+}
+
+.data-table th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.data-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--bg-secondary);
+}
+
+.loading-cell,
+.empty-cell {
+    text-align: center !important;
+    padding: 2rem !important;
+    color: var(--text-secondary);
+}
+
+.row-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    padding: 0.375rem;
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.action-btn.warn {
+    color: #d97706;
+}
+
+.action-btn.warn:hover {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.action-btn.warn.active-state {
+    color: #16a34a;
+}
+
+.action-btn.warn.active-state:hover {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.action-btn.danger {
+    color: #dc2626;
+}
+
+.action-btn.danger:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 1rem;
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+}

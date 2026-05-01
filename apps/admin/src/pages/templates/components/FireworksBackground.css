@@ -1,0 +1,17 @@
+.fireworks-background-root {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    isolation: isolate;
+    background:
+        radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.12), transparent 35%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 1));
+}
+
+.fireworks-background-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}

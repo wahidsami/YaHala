@@ -1,0 +1,114 @@
+.side-navigation {
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-sidebar);
+    color: var(--text-inverse);
+    width: var(--sidebar-width);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    transition: width 0.22s ease;
+    overflow: hidden;
+}
+
+.side-navigation.is-collapsed {
+    width: var(--sidebar-collapsed);
+}
+
+.nav-brand {
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    gap: 0.25rem;
+    min-height: 92px;
+}
+
+.side-navigation.is-collapsed .nav-brand {
+    align-items: center;
+    padding: 1rem 0.5rem;
+}
+
+.brand-logo {
+    height: 40px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    margin-bottom: 0.25rem;
+}
+
+.brand-role {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+.side-navigation.is-collapsed .brand-role,
+.side-navigation.is-collapsed .nav-item span {
+    display: none;
+}
+
+.collapse-toggle {
+    position: absolute;
+    inset-inline-end: 0.5rem;
+    inset-block-start: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+}
+
+.collapse-toggle:hover {
+    color: var(--text-inverse);
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.side-navigation.is-collapsed .collapse-toggle {
+    inset-inline-end: 50%;
+    transform: translateX(50%);
+}
+
+.nav-list {
+    list-style: none;
+    padding: 1rem 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    border-inline-start: 3px solid transparent;
+}
+
+.side-navigation.is-collapsed .nav-item {
+    justify-content: center;
+    padding-inline: 0.5rem;
+    gap: 0;
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-inverse);
+}
+
+.nav-item.active {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: var(--color-primary);
+    border-inline-start-color: var(--color-primary);
+}
+
+.nav-item span {
+    font-weight: 500;
+}

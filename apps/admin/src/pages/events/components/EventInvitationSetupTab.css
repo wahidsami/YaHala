@@ -1,0 +1,297 @@
+.invitation-setup-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.invitation-setup-loading {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.invitation-setup-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: 1.15rem;
+    background: linear-gradient(135deg, rgba(148, 111, 167, 0.08), rgba(255, 157, 0, 0.08));
+    border: 1px solid rgba(148, 111, 167, 0.12);
+}
+
+.invitation-setup-summary-copy {
+    min-width: 0;
+}
+
+.invitation-setup-summary-eyebrow {
+    margin: 0 0 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #946fa7;
+}
+
+.invitation-setup-summary-copy h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.invitation-setup-summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    justify-content: flex-end;
+}
+
+.invitation-setup-checklist {
+    background: var(--bg-primary);
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    border-radius: 1.25rem;
+    padding: 1.1rem 1.15rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.setup-checklist-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.setup-checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 111, 167, 0.14);
+    background: rgba(248, 250, 252, 0.95);
+}
+
+.setup-checklist-item span {
+    flex: 1;
+    min-width: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.setup-checklist-item strong {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.setup-checklist-item.is-ready {
+    border-color: rgba(22, 163, 74, 0.22);
+    background: rgba(236, 253, 245, 0.95);
+    color: #166534;
+}
+
+.setup-checklist-item.is-pending {
+    color: var(--text-secondary);
+}
+
+.invitation-setup-grid {
+    display: grid;
+    grid-template-columns: minmax(340px, 1fr) minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: 0.1rem;
+    align-items: start;
+}
+
+.setup-card {
+    background: var(--bg-primary);
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+}
+
+.setup-card--wide {
+    min-width: 0;
+}
+
+.setup-card:first-child {
+    position: sticky;
+    top: 0.25rem;
+}
+
+.selected-template-note {
+    margin-top: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 0.95rem;
+    border-radius: 999px;
+    background: rgba(148, 111, 167, 0.08);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.setup-empty-state {
+    min-height: 220px;
+    border-radius: 18px;
+    border: 1px dashed rgba(148, 111, 167, 0.18);
+    background: rgba(248, 250, 252, 0.9);
+    display: grid;
+    place-items: center;
+    gap: 0.65rem;
+    padding: 1.5rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.addon-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.85rem;
+}
+
+.addon-selection-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.85rem;
+    align-items: center;
+    padding: 0.95rem 1rem;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 111, 167, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.addon-selection-card input {
+    width: 18px;
+    height: 18px;
+}
+
+.addon-selection-card.selected {
+    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    box-shadow: 0 12px 26px rgba(148, 111, 167, 0.08);
+}
+
+.addon-selection-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.addon-selection-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    width: fit-content;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(148, 111, 167, 0.12);
+    color: #6b4f7b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.addon-selection-copy strong {
+    font-size: 0.98rem;
+    color: var(--text-primary);
+}
+
+.addon-selection-copy span,
+.addon-selection-copy small {
+    color: var(--text-secondary);
+}
+
+.addon-selection-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 0.1rem;
+}
+
+.addon-selection-meta span {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.selected-tabs-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.summary-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.summary-chip-action {
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.summary-chip-action:hover {
+    transform: translateY(-1px);
+    border-color: rgba(148, 111, 167, 0.22);
+    box-shadow: 0 8px 18px rgba(148, 111, 167, 0.1);
+}
+
+.summary-chip-action:focus-visible {
+    outline: 2px solid rgba(148, 111, 167, 0.45);
+    outline-offset: 2px;
+}
+
+.summary-chip-soft {
+    background: rgba(148, 111, 167, 0.08);
+    color: var(--text-primary);
+}
+
+.setup-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+    .invitation-setup-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .setup-card:first-child {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .invitation-setup-summary {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .invitation-setup-summary-chips {
+        justify-content: flex-start;
+    }
+
+    .addon-selection-card {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .addon-selection-meta {
+        grid-column: 2;
+        align-items: start;
+    }
+
+    .setup-checklist-list {
+        grid-template-columns: 1fr;
+    }
+}

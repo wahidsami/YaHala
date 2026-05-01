@@ -1,0 +1,148 @@
+.memory-book-page {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.header-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.page-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.page-header p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.settings-section {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.settings-section h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.settings-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-option input {
+    accent-color: var(--color-primary);
+}
+
+.actions-section {
+    margin-bottom: 1.5rem;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.result-section {
+    margin-top: 1rem;
+}
+
+.result-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: var(--border-radius);
+}
+
+.result-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.generated-at {
+    font-size: 0.75rem;
+    color: #15803d;
+}
+
+.result-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.action-btn:hover {
+    background: var(--bg-tertiary);
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}

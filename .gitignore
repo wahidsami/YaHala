@@ -1,0 +1,17 @@
+node_modules/
+dist/
+**/node_modules/
+**/dist/
+**/.vite/
+**/.scanner-dev.*
+**/*-dev.log
+**/*-dev.err.log
+**/*.log
+*.log
+.env
+**/.env
+!.env.example
+**/.env.example
+apps/api/storage/
+coverage/
+.DS_Store

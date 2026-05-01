@@ -1,0 +1,335 @@
+.builder-canvas {
+    background: var(--bg-tertiary);
+    padding: 2rem;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100%;
+}
+
+.canvas-wrapper {
+    flex-shrink: 0;
+    padding: 20px;
+    /* Space for shadows */
+}
+
+.canvas-device {
+    /* Dimensions handled in JS */
+    position: relative;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    /* Hide anything outside canvas */
+}
+
+.background-effects-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.background-effect {
+    position: absolute;
+    inset: 0;
+    opacity: var(--effect-opacity, 0.2);
+}
+
+.background-effect-grain {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+    background-size: calc(16px + (100 - var(--effect-amount, 40)) * 0.2px) calc(16px + (100 - var(--effect-amount, 40)) * 0.2px);
+    mix-blend-mode: soft-light;
+    animation: effect-drift var(--effect-speed, 30s) linear infinite;
+}
+
+.background-effect-dots {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+    background-size: calc(18px + (100 - var(--effect-amount, 40)) * 0.45px) calc(18px + (100 - var(--effect-amount, 40)) * 0.45px);
+    mix-blend-mode: overlay;
+    animation: effect-pan var(--effect-speed, 30s) linear infinite;
+}
+
+.background-effect-glow {
+    background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), transparent 40%),
+        radial-gradient(circle at 70% 70%, color-mix(in srgb, var(--effect-color, #ffffff) 45%, transparent), transparent 45%);
+    filter: blur(calc(18px + (100 - var(--effect-amount, 40)) * 0.08px));
+    mix-blend-mode: screen;
+    animation: effect-pulse var(--effect-speed, 30s) ease-in-out infinite;
+}
+
+.background-effect-waves {
+    background-image:
+        linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.18) 45%, transparent 60%),
+        linear-gradient(300deg, transparent 30%, color-mix(in srgb, var(--effect-color, #ffffff) 28%, transparent) 45%, transparent 60%);
+    background-size: 200% 200%;
+    mix-blend-mode: screen;
+    animation: effect-sweep var(--effect-speed, 30s) ease-in-out infinite;
+}
+
+.background-effect-fireworks {
+    background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.95) 0 2px, transparent 3px),
+        radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--effect-color, #f97316) 70%, white) 0 4px, transparent 5px),
+        radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.85) 0 2px, transparent 3px),
+        radial-gradient(circle at 62% 40%, color-mix(in srgb, var(--effect-color, #f97316) 70%, white) 0 4px, transparent 5px),
+        radial-gradient(circle at 45% 68%, rgba(255, 255, 255, 0.92) 0 2px, transparent 3px),
+        radial-gradient(circle at 48% 72%, color-mix(in srgb, var(--effect-color, #f97316) 60%, white) 0 4px, transparent 5px);
+    mix-blend-mode: screen;
+    animation: effect-burst var(--effect-speed, 30s) ease-in-out infinite;
+}
+
+@keyframes effect-drift {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(20px, 20px, 0); }
+}
+
+@keyframes effect-pan {
+    from { background-position: 0 0; }
+    to { background-position: 60px 60px; }
+}
+
+@keyframes effect-pulse {
+    0%, 100% { transform: scale(1); opacity: var(--effect-opacity, 0.2); }
+    50% { transform: scale(1.08); opacity: calc(var(--effect-opacity, 0.2) + 0.1); }
+}
+
+@keyframes effect-sweep {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes effect-burst {
+    0%, 100% { transform: scale(1); opacity: var(--effect-opacity, 0.2); }
+    35% { transform: scale(1.08); opacity: calc(var(--effect-opacity, 0.2) + 0.12); }
+    60% { transform: scale(0.98); opacity: calc(var(--effect-opacity, 0.2) + 0.06); }
+}
+
+@keyframes effect-twinkle {
+    0%, 100% { opacity: var(--effect-opacity, 0.2); transform: scale(1); }
+    50% { opacity: calc(var(--effect-opacity, 0.2) + 0.1); transform: scale(1.02); }
+}
+
+/* Grid Overlay */
+.grid-overlay {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.absolute-layout.drag-over {
+    box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.absolute-empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0, 0, 0, 0.3);
+    font-size: 1.5rem;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+/* Widgets */
+.absolute-widget {
+    position: absolute;
+    cursor: move;
+    border: 1px solid transparent;
+    transition: box-shadow 0.2s;
+    /* Styles applied from prop */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Clip content inside widget box */
+}
+
+.absolute-widget:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Canvas Resize Handle */
+.canvas-resize-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.05), transparent);
+    cursor: ns-resize;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 200;
+    /* Ensure on top of widgets */
+}
+
+.canvas-device:hover .canvas-resize-handle,
+.canvas-resize-handle.active {
+    opacity: 1;
+}
+
+.handle-knob {
+    width: 40px;
+    height: 4px;
+    background: var(--text-muted);
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.handle-label {
+    position: absolute;
+    bottom: -24px;
+    background: var(--text-secondary);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.canvas-resize-handle:hover .handle-label,
+.canvas-resize-handle:active .handle-label {
+    opacity: 1;
+}
+
+.absolute-widget.selected {
+    border: 1px solid var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.widget-inner-content {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.img-container {
+    width: 100%;
+    height: 100%;
+}
+
+.placeholder {
+    width: 100%;
+    height: 100%;
+    background: #f1f5f9;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+}
+
+.placeholder-generic {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.03);
+    color: #64748b;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+}
+
+.response-widget {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0.25rem 0.5rem;
+}
+
+.response-btn {
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    padding: 0.8rem 1rem;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 12px 24px rgba(34, 197, 94, 0.18);
+}
+
+/* Handles */
+.resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--color-primary);
+    border: 2px solid white;
+    border-radius: 50%;
+    z-index: 101;
+}
+
+.resize-handle.se {
+    bottom: -5px;
+    right: -5px;
+    cursor: se-resize;
+}
+
+.delete-btn-abs {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    background: white;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-danger);
+    cursor: pointer;
+    z-index: 102;
+}
+
+.delete-btn-abs:hover {
+    background: #fee2e2;
+}
+
+.dimensions-label {
+    position: absolute;
+    top: -24px;
+    left: 0;
+    background: var(--color-primary);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.absolute-widget.selected .dimensions-label,
+.absolute-widget:hover .dimensions-label {
+    opacity: 1;
+}
+
+.coords {
+    margin-left: 4px;
+    opacity: 0.7;
+}

@@ -1,0 +1,60 @@
+.app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--header-height) 1fr;
+    grid-template-areas:
+        "sidebar header"
+        "sidebar content";
+    min-height: 100vh;
+}
+
+.app-shell.sidebar-collapsed {
+    grid-template-columns: var(--sidebar-collapsed) 1fr;
+}
+
+html[dir="rtl"] .app-shell {
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-areas:
+        "sidebar header"
+        "sidebar content";
+}
+
+html[dir="rtl"] .app-shell.sidebar-collapsed {
+    grid-template-columns: var(--sidebar-collapsed) 1fr;
+}
+
+.content-area {
+    grid-area: content;
+    padding: 1.5rem;
+    overflow-y: auto;
+    background-color: var(--bg-secondary);
+}
+
+html[dir="rtl"] .content-area {
+    padding-inline-start: 1.5rem;
+    padding-inline-end: 1.5rem;
+}
+
+/* Loading Screen */
+.loading-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: var(--bg-secondary);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -1,0 +1,53 @@
+.top-header {
+    grid-area: header;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    height: var(--header-height);
+}
+
+.header-title h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.header-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.logout-btn:hover {
+    color: var(--color-danger);
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-secondary);
+}
+
+.user-name {
+    font-weight: 500;
+}

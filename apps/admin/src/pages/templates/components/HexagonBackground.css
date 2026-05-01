@@ -1,0 +1,43 @@
+.hexagon-background-root {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    background: transparent;
+}
+
+.hexagon-background-grid {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.hexagon-background-row {
+    display: inline-flex;
+}
+
+.hexagon-background-cell {
+    position: relative;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    background: #ffffff;
+}
+
+.hexagon-background-cell::before,
+.hexagon-background-cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.hexagon-background-cell::before {
+    background: #ffffff;
+    opacity: 1;
+    transition: background-color 0.3s ease;
+}
+
+.hexagon-background-cell::after {
+    inset: var(--hexagon-margin, 3px);
+    background: rgba(255, 255, 255, 0.95);
+}

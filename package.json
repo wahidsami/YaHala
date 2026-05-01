@@ -1,0 +1,22 @@
+{
+  "name": "rawaj",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "dev:scanner": "npm run dev --workspace=apps/scanner",
+    "worker:delivery": "npm run worker:delivery --workspace=apps/api",
+    "dev:raw": "concurrently \"npm run dev:api\" \"npm run dev:admin\" \"npm run dev:scanner\"",
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-dev.ps1",
+    "migrate": "npm run migrate --workspace=apps/api",
+    "seed": "npm run seed --workspace=apps/api"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

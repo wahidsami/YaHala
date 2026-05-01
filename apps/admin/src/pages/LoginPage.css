@@ -1,0 +1,109 @@
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at top right, rgba(255, 157, 0, 0.16), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(148, 111, 167, 0.22), transparent 34%),
+        linear-gradient(135deg, #241934 0%, #171126 52%, #0d1320 100%);
+    padding: 1rem;
+}
+
+.login-card {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    border-top: 4px solid var(--color-primary);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-logo-img {
+    height: 64px;
+    width: auto;
+    margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+    color: var(--text-secondary);
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.form-group input {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.login-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: var(--color-danger);
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.login-button {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 0.875rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.login-button:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+}
+
+.login-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.language-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    color: var(--text-secondary);
+    border-radius: var(--border-radius);
+    transition: background-color 0.2s;
+}
+
+.language-toggle:hover {
+    background-color: var(--bg-tertiary);
+}
