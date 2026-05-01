@@ -9,5 +9,8 @@ export default defineConfig({
         fs: {
             allow: [fileURLToPath(new URL('../..', import.meta.url))]
         }
+    },
+    preview: {
+        allowedHosts: ['yadmin.testproject.cloud', 'yinvite.testproject.cloud']
     }
 });
