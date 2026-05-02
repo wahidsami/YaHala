@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Camera, CheckCircle2, ChevronRight, LogOut, ScanLine, ShieldCheck, Smartphone, UserCircle2 } from 'lucide-react';
+import jsQR from 'jsqr';
 import api, { SCANNER_STORAGE_KEY } from './services/api';
 
 function toDate(value) {
@@ -80,6 +81,7 @@ function CameraScanner({ enabled, onScan, onStatus }) {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
     const detectorRef = useRef(null);
+    const fallbackCanvasRef = useRef(null);
     const lastScanRef = useRef(0);
     const onScanRef = useRef(onScan);
     const onStatusRef = useRef(onStatus);
@@ -96,6 +98,47 @@ function CameraScanner({ enabled, onScan, onStatus }) {
         let cancelled = false;
         let rafId = null;
 
+        function emitScan(value) {
+            const now = Date.now();
+            if (now - lastScanRef.current > 1400) {
+                lastScanRef.current = now;
+                onScanRef.current(value);
+            }
+        }
+
+        async function detectWithJsQr(videoElement) {
+            const width = videoElement.videoWidth;
+            const height = videoElement.videoHeight;
+
+            if (!width || !height) {
+                return null;
+            }
+
+            if (!fallbackCanvasRef.current) {
+                fallbackCanvasRef.current = document.createElement('canvas');
+            }
+
+            const canvas = fallbackCanvasRef.current;
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+
+            if (!context) {
+                return null;
+            }
+
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+            }
+
+            context.drawImage(videoElement, 0, 0, width, height);
+            const imageData = context.getImageData(0, 0, width, height);
+            const code = jsQR(imageData.data, width, height, {
+                inversionAttempts: 'dontInvert'
+            });
+
+            return code?.data || null;
+        }
+
         async function startCamera() {
             if (!enabled) {
                 return;
@@ -103,11 +146,6 @@ function CameraScanner({ enabled, onScan, onStatus }) {
 
             if (!navigator.mediaDevices?.getUserMedia) {
                 onStatusRef.current('Camera access is not available in this browser.');
-                return;
-            }
-
-            if (!('BarcodeDetector' in window)) {
-                onStatusRef.current('This browser does not support live QR detection. Use manual entry.');
                 return;
             }
 
@@ -125,28 +163,37 @@ function CameraScanner({ enabled, onScan, onStatus }) {
                 }
 
                 streamRef.current = stream;
-                detectorRef.current = new window.BarcodeDetector({ formats: ['qr_code'] });
+                detectorRef.current = 'BarcodeDetector' in window
+                    ? new window.BarcodeDetector({ formats: ['qr_code'] })
+                    : null;
 
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                     await videoRef.current.play().catch(() => {});
                 }
 
-                onStatusRef.current('Camera ready. Point it at the QR code.');
+                onStatusRef.current(
+                    detectorRef.current
+                        ? 'Camera ready. Point it at the QR code.'
+                        : 'Camera ready. Using fallback QR scanning for this browser.'
+                );
 
                 const scanFrame = async () => {
-                    if (cancelled || !videoRef.current || !detectorRef.current) {
+                    if (cancelled || !videoRef.current) {
                         return;
                     }
 
                     try {
                         if (videoRef.current.readyState >= 2) {
-                            const codes = await detectorRef.current.detect(videoRef.current);
-                            if (codes.length > 0) {
-                                const now = Date.now();
-                                if (now - lastScanRef.current > 1400) {
-                                    lastScanRef.current = now;
-                                    onScanRef.current(codes[0].rawValue);
+                            if (detectorRef.current) {
+                                const codes = await detectorRef.current.detect(videoRef.current);
+                                if (codes.length > 0) {
+                                    emitScan(codes[0].rawValue);
+                                }
+                            } else {
+                                const value = await detectWithJsQr(videoRef.current);
+                                if (value) {
+                                    emitScan(value);
                                 }
                             }
                         }
@@ -159,7 +206,7 @@ function CameraScanner({ enabled, onScan, onStatus }) {
 
                 rafId = window.requestAnimationFrame(scanFrame);
             } catch {
-                onStatus('We could not access the camera. Check permissions and try again.');
+                onStatusRef.current('We could not access the camera. Check permissions and try again.');
             }
         }
 
