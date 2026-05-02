@@ -100,7 +100,7 @@ function buildQrImageUrl(token) {
     }
 
     const invitationUrl = `${window.location.origin}/invite/${token}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(invitationUrl)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=384x384&margin=24&data=${encodeURIComponent(invitationUrl)}`;
 }
 
 function getWidgetFrameStyle(widget, index = 0) {

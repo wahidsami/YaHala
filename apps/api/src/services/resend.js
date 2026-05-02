@@ -48,7 +48,7 @@ function buildQrImageUrl(publicLink) {
         return '';
     }
 
-    return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(publicLink)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=384x384&margin=24&data=${encodeURIComponent(publicLink)}`;
 }
 
 export function getPublicInvitationBaseUrl() {
@@ -92,7 +92,7 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
                     ${qrImageUrl ? `
                         <div style="margin:0 0 22px;padding:18px;border:1px solid #e2e8f0;border-radius:18px;background:#ffffff;text-align:center">
                             <p style="margin:0 0 12px;color:#0f172a;font-weight:700">${escapeHtml(isArabic ? 'امسح رمز QR لفتح الدعوة' : 'Scan the QR code to open your invitation')}</p>
-                            <img src="${escapeAttribute(qrImageUrl)}" alt="${escapeAttribute(isArabic ? 'رمز QR للدعوة' : 'Invitation QR Code')}" width="220" height="220" style="display:block;margin:0 auto 12px;border:0;max-width:220px;width:220px;height:220px" />
+                            <img src="${escapeAttribute(qrImageUrl)}" alt="${escapeAttribute(isArabic ? 'رمز QR للدعوة' : 'Invitation QR Code')}" width="240" height="240" style="display:block;margin:0 auto 12px;border:0;max-width:240px;width:240px;height:240px" />
                             <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.7;word-break:break-all">${escapeHtml(publicLink)}</p>
                         </div>
                     ` : ''}

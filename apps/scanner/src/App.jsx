@@ -159,6 +159,35 @@ function CameraScanner({ enabled, onScan, onStatus }) {
             }
         }
 
+        async function optimizeVideoTrack(track) {
+            if (!track?.getCapabilities || !track?.applyConstraints) {
+                return;
+            }
+
+            try {
+                const capabilities = track.getCapabilities();
+                const advancedConstraints = [];
+
+                if (capabilities.focusMode?.includes?.('continuous')) {
+                    advancedConstraints.push({ focusMode: 'continuous' });
+                }
+
+                if (capabilities.exposureMode?.includes?.('continuous')) {
+                    advancedConstraints.push({ exposureMode: 'continuous' });
+                }
+
+                if (capabilities.whiteBalanceMode?.includes?.('continuous')) {
+                    advancedConstraints.push({ whiteBalanceMode: 'continuous' });
+                }
+
+                if (advancedConstraints.length) {
+                    await track.applyConstraints({ advanced: advancedConstraints });
+                }
+            } catch {
+                // Some mobile browsers expose partial capabilities. Ignore unsupported tweaks.
+            }
+        }
+
         async function startCamera() {
             if (!enabled) {
                 return;
@@ -172,7 +201,10 @@ function CameraScanner({ enabled, onScan, onStatus }) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        facingMode: { ideal: 'environment' }
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        aspectRatio: { ideal: 1.7777777778 }
                     },
                     audio: false
                 });
@@ -184,6 +216,7 @@ function CameraScanner({ enabled, onScan, onStatus }) {
 
                 streamRef.current = stream;
                 detectorRef.current = await createNativeDetector();
+                await optimizeVideoTrack(stream.getVideoTracks()[0]);
 
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -342,7 +375,7 @@ function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEven
                         <input
                             value={manualToken}
                             onChange={(e) => setManualToken(e.target.value)}
-                            placeholder="Paste invitation token"
+                            placeholder="Paste invitation link or token"
                             autoComplete="off"
                         />
                         <button className="primary-btn" type="submit">
