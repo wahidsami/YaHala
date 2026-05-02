@@ -83,6 +83,7 @@ function CameraScanner({ enabled, onScan, onStatus }) {
     const detectorRef = useRef(null);
     const fallbackCanvasRef = useRef(null);
     const lastScanRef = useRef(0);
+    const lastDecodeAttemptRef = useRef(0);
     const onScanRef = useRef(onScan);
     const onStatusRef = useRef(onStatus);
 
@@ -133,10 +134,29 @@ function CameraScanner({ enabled, onScan, onStatus }) {
             context.drawImage(videoElement, 0, 0, width, height);
             const imageData = context.getImageData(0, 0, width, height);
             const code = jsQR(imageData.data, width, height, {
-                inversionAttempts: 'dontInvert'
+                inversionAttempts: 'attemptBoth'
             });
 
             return code?.data || null;
+        }
+
+        async function createNativeDetector() {
+            if (!('BarcodeDetector' in window)) {
+                return null;
+            }
+
+            try {
+                if (typeof window.BarcodeDetector.getSupportedFormats === 'function') {
+                    const formats = await window.BarcodeDetector.getSupportedFormats();
+                    if (!formats.includes('qr_code')) {
+                        return null;
+                    }
+                }
+
+                return new window.BarcodeDetector({ formats: ['qr_code'] });
+            } catch {
+                return null;
+            }
         }
 
         async function startCamera() {
@@ -163,9 +183,7 @@ function CameraScanner({ enabled, onScan, onStatus }) {
                 }
 
                 streamRef.current = stream;
-                detectorRef.current = 'BarcodeDetector' in window
-                    ? new window.BarcodeDetector({ formats: ['qr_code'] })
-                    : null;
+                detectorRef.current = await createNativeDetector();
 
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -185,6 +203,14 @@ function CameraScanner({ enabled, onScan, onStatus }) {
 
                     try {
                         if (videoRef.current.readyState >= 2) {
+                            const now = Date.now();
+                            if (now - lastDecodeAttemptRef.current < 180) {
+                                rafId = window.requestAnimationFrame(scanFrame);
+                                return;
+                            }
+
+                            lastDecodeAttemptRef.current = now;
+
                             if (detectorRef.current) {
                                 const codes = await detectorRef.current.detect(videoRef.current);
                                 if (codes.length > 0) {
