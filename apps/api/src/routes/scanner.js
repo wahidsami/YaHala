@@ -130,7 +130,7 @@ router.post('/auth/login', async (req, res, next) => {
             `
             SELECT id, name, name_ar, email
             FROM clients
-            WHERE id = $1 OR LOWER(email) = LOWER($1)
+            WHERE CAST(id AS TEXT) = $1 OR LOWER(email) = LOWER($1)
             LIMIT 1
             `,
             [clientIdentifier]
