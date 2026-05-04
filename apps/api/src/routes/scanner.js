@@ -4,10 +4,12 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import pool from '../db/connection.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { enqueueEmailDeliveries } from '../services/delivery.js';
 
 const router = Router();
 
 const SCANNER_JWT_SECRET = process.env.SCANNER_JWT_SECRET || process.env.JWT_ACCESS_SECRET;
+const SCAN_MODES = new Set(['camera', 'manual']);
 
 function safeJson(value, fallback = {}) {
     if (value === undefined || value === null || value === '') return fallback;
@@ -33,6 +35,115 @@ function normalizeDigits(value) {
     return normalizeText(value)
         .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632))
         .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776));
+}
+
+function cleanupSpokenSegment(value) {
+    return normalizeDigits(value)
+        .replace(/\b(my name is|this is|name is|i am|i'm|email is|mobile number is|phone number is|position is|organization is|company is)\b/gi, '')
+        .replace(/^(اسمي|أنا|هذا|الايميل|البريد الإلكتروني|رقم الجوال|رقم الهاتف|المنصب|الشركة|المؤسسة|الجهة)\s+/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function normalizeSpokenEmail(value) {
+    return cleanupSpokenSegment(value)
+        .replace(/\(at\)|\[at\]/gi, '@')
+        .replace(/\b(at)\b/gi, '@')
+        .replace(/\b(dot)\b/gi, '.')
+        .replace(/\s+/g, '')
+        .toLowerCase();
+}
+
+function normalizeSpokenPhone(value) {
+    const digits = normalizeDigits(value).replace(/[^\d+]/g, '');
+
+    if (/^\+9665\d{8}$/.test(digits)) {
+        return `0${digits.slice(4)}`;
+    }
+
+    if (/^05\d{8}$/.test(digits)) {
+        return digits;
+    }
+
+    return '';
+}
+
+function parseVisitorTranscript(transcript) {
+    const source = normalizeDigits(transcript || '');
+    if (!source.trim()) {
+        return {
+            name: '',
+            position: '',
+            organization: '',
+            email: '',
+            mobileNumber: ''
+        };
+    }
+
+    const normalizedSource = source.replace(/[،؛]/g, ',');
+    const emailMatch = normalizedSource.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    const mobileMatch = normalizedSource.match(/(?:\+966[\s-]*5(?:[\s-]*\d){8}|0[\s-]*5(?:[\s-]*\d){8})/);
+    const spokenEmailMatch = normalizedSource.match(/(?:email|الايميل|البريد الإلكتروني)\s*(?::|=)?\s*([^\n,;]+)/i);
+    const spokenMobileMatch = normalizedSource.match(/(?:mobile|phone|رقم الجوال|رقم الهاتف)\s*(?::|=)?\s*([^\n,;]+)/i);
+
+    const email = (emailMatch?.[0] || normalizeSpokenEmail(spokenEmailMatch?.[1] || '') || '').toLowerCase();
+    const mobileNumber = normalizeSpokenPhone(mobileMatch?.[0] || spokenMobileMatch?.[1] || '');
+
+    const stripped = normalizedSource
+        .replace(emailMatch?.[0] || '', ' ')
+        .replace(mobileMatch?.[0] || '', ' ');
+
+    const segments = stripped
+        .split(/[\n,;]+/)
+        .map((segment) => cleanupSpokenSegment(segment))
+        .filter(Boolean);
+
+    return {
+        name: segments[0] || '',
+        position: segments[1] || '',
+        organization: segments[2] || '',
+        email,
+        mobileNumber
+    };
+}
+
+async function transcribeAudioWithProvider({ audioBase64, mimeType = 'audio/m4a', language = 'en' }) {
+    const provider = normalizeText(process.env.STT_PROVIDER || 'openai').toLowerCase();
+
+    if (provider !== 'openai') {
+        throw new AppError('Unsupported STT provider configuration', 500, 'STT_PROVIDER_UNSUPPORTED');
+    }
+
+    const apiKey = normalizeText(process.env.OPENAI_API_KEY);
+    if (!apiKey) {
+        throw new AppError('Speech-to-text is not configured', 500, 'STT_NOT_CONFIGURED');
+    }
+
+    const model = normalizeText(process.env.OPENAI_STT_MODEL || 'gpt-4o-mini-transcribe');
+    const bytes = Buffer.from(audioBase64, 'base64');
+    const blob = new Blob([bytes], { type: mimeType || 'audio/m4a' });
+    const form = new FormData();
+    form.append('file', blob, `scanner-voice.${mimeType.includes('wav') ? 'wav' : 'm4a'}`);
+    form.append('model', model);
+    if (language) {
+        form.append('language', language.startsWith('ar') ? 'ar' : 'en');
+    }
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${apiKey}`
+        },
+        body: form
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new AppError(`STT provider error: ${errorBody}`, 502, 'STT_PROVIDER_ERROR');
+    }
+
+    const data = await response.json();
+    return normalizeText(data?.text || '');
 }
 
 function validateEmail(value) {
@@ -195,6 +306,14 @@ function getInvitationAttendanceStatus(metadata) {
     return 'not_scanned';
 }
 
+function generateInviteCode() {
+    return `RWJ-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+}
+
+function generatePublicToken() {
+    return crypto.randomBytes(24).toString('hex');
+}
+
 function signScannerToken(scannerUser) {
     return jwt.sign(
         {
@@ -205,6 +324,14 @@ function signScannerToken(scannerUser) {
         SCANNER_JWT_SECRET,
         { expiresIn: process.env.SCANNER_JWT_EXPIRES || '8h' }
     );
+}
+
+function sendScannerSuccess(res, data, meta = {}) {
+    res.json({
+        ok: true,
+        data,
+        ...meta
+    });
 }
 
 async function authenticateScanner(req, res, next) {
@@ -316,7 +443,7 @@ router.post('/auth/login', async (req, res, next) => {
 
         const accessToken = signScannerToken(scannerUser);
 
-        res.json({
+        const responsePayload = {
             accessToken,
             scannerUser: {
                 id: scannerUser.id,
@@ -327,7 +454,9 @@ router.post('/auth/login', async (req, res, next) => {
                 client_name_ar: client.name_ar,
                 client_email: client.email
             }
-        });
+        };
+
+        sendScannerSuccess(res, responsePayload, responsePayload);
     } catch (error) {
         next(error);
     }
@@ -335,19 +464,17 @@ router.post('/auth/login', async (req, res, next) => {
 
 // GET /api/scanner/me
 router.get('/me', authenticateScanner, async (req, res) => {
-    res.json({
-        data: {
-            scannerUser: {
-                id: req.scannerUser.id,
-                client_id: req.scannerUser.client_id,
-                name: req.scannerUser.name,
-                status: req.scannerUser.status
-            },
-            client: {
-                id: req.scannerUser.client_id,
-                name: req.scannerUser.client_name,
-                name_ar: req.scannerUser.client_name_ar
-            }
+    sendScannerSuccess(res, {
+        scannerUser: {
+            id: req.scannerUser.id,
+            client_id: req.scannerUser.client_id,
+            name: req.scannerUser.name,
+            status: req.scannerUser.status
+        },
+        client: {
+            id: req.scannerUser.client_id,
+            name: req.scannerUser.client_name,
+            name_ar: req.scannerUser.client_name_ar
         }
     });
 });
@@ -387,7 +514,173 @@ router.get('/events', authenticateScanner, async (req, res, next) => {
             [req.scannerUser.client_id]
         );
 
-        res.json({ data: rows });
+        sendScannerSuccess(res, rows);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// GET /api/scanner/events/:eventId/stats
+router.get('/events/:eventId/stats', authenticateScanner, async (req, res, next) => {
+    try {
+        const eventId = normalizeText(req.params.eventId);
+
+        if (!eventId) {
+            throw new AppError('Event is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { rows: eventRows } = await pool.query(
+            `
+            SELECT id, name, name_ar, status
+            FROM events
+            WHERE id = $1 AND client_id = $2
+            LIMIT 1
+            `,
+            [eventId, req.scannerUser.client_id]
+        );
+
+        if (!eventRows.length) {
+            throw new AppError('Event not found', 404, 'EVENT_NOT_FOUND');
+        }
+
+        const event = eventRows[0];
+
+        const { rows: invitationStatsRows } = await pool.query(
+            `
+            SELECT
+                COUNT(*)::int AS invited_total,
+                COUNT(*) FILTER (
+                    WHERE COALESCE(r.metadata->>'attendance_status', '') = 'attended'
+                )::int AS attended_from_invitations
+            FROM invitation_projects p
+            JOIN invitation_recipients r ON r.project_id = p.id
+            WHERE p.event_id = $1
+            `,
+            [eventId]
+        );
+
+        const invitationStats = invitationStatsRows[0] || {
+            invited_total: 0,
+            attended_from_invitations: 0
+        };
+
+        const { rows: walkInRows } = await pool.query(
+            `
+            SELECT
+                COUNT(*)::int AS walk_in_total,
+                COUNT(*) FILTER (
+                    WHERE check_in_status = 'checked_in'
+                )::int AS walk_in_checked_in
+            FROM event_walk_ins
+            WHERE event_id = $1
+            `,
+            [eventId]
+        );
+
+        const walkInStats = walkInRows[0] || {
+            walk_in_total: 0,
+            walk_in_checked_in: 0
+        };
+
+        const invitedTotal = invitationStats.invited_total || 0;
+        const invitedAttended = invitationStats.attended_from_invitations || 0;
+        const invitedPending = Math.max(invitedTotal - invitedAttended, 0);
+        const walkInCheckedIn = walkInStats.walk_in_checked_in || 0;
+
+        sendScannerSuccess(res, {
+            event: {
+                id: event.id,
+                name: event.name,
+                name_ar: event.name_ar,
+                status: event.status
+            },
+            stats: {
+                invitedTotal,
+                invitedAttended,
+                invitedPending,
+                walkInTotal: walkInStats.walk_in_total || 0,
+                walkInCheckedIn,
+                checkedInTotal: invitedAttended + walkInCheckedIn
+            },
+            lastUpdatedAt: new Date().toISOString()
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// POST /api/scanner/visitor-intake/voice-transcribe
+router.post('/visitor-intake/voice-transcribe', authenticateScanner, async (req, res, next) => {
+    try {
+        const audioBase64 = normalizeText(req.body?.audioBase64);
+        const mimeType = normalizeText(req.body?.mimeType || 'audio/m4a');
+        const language = normalizeText(req.body?.language || 'en');
+
+        if (!audioBase64) {
+            throw new AppError('Audio payload is required', 400, 'VALIDATION_ERROR');
+        }
+
+        if (audioBase64.length > 25_000_000) {
+            throw new AppError('Audio payload is too large', 413, 'PAYLOAD_TOO_LARGE');
+        }
+
+        const transcript = await transcribeAudioWithProvider({ audioBase64, mimeType, language });
+        if (!transcript) {
+            throw new AppError('No transcript could be extracted', 422, 'EMPTY_TRANSCRIPT');
+        }
+
+        sendScannerSuccess(res, {
+            transcript,
+            language
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// POST /api/scanner/visitor-intake/voice-extract
+router.post('/visitor-intake/voice-extract', authenticateScanner, async (req, res, next) => {
+    try {
+        const transcript = normalizeText(req.body?.transcript);
+        const language = normalizeText(req.body?.language) || 'en';
+
+        if (!transcript) {
+            throw new AppError('Transcript is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const extracted = parseVisitorTranscript(transcript);
+        const confidence = {
+            name: extracted.name ? 0.8 : 0,
+            position: extracted.position ? 0.55 : 0,
+            organization: extracted.organization ? 0.55 : 0,
+            email: extracted.email ? 0.92 : 0,
+            mobileNumber: extracted.mobileNumber ? 0.9 : 0
+        };
+
+        const warnings = [];
+        if (!extracted.name) {
+            warnings.push('name_missing');
+        }
+
+        if (!extracted.email) {
+            warnings.push('email_missing');
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(extracted.email)) {
+            warnings.push('email_invalid');
+        }
+
+        if (!extracted.mobileNumber) {
+            warnings.push('mobile_missing');
+        } else if (!/^05\d{8}$/.test(extracted.mobileNumber)) {
+            warnings.push('mobile_invalid');
+        }
+
+        sendScannerSuccess(res, {
+            transcript,
+            language,
+            extracted,
+            confidence,
+            warnings
+        });
     } catch (error) {
         next(error);
     }
@@ -401,6 +694,7 @@ router.post('/visitor-intake/approve', authenticateScanner, async (req, res, nex
         const action = normalizeText(req.body?.action) || 'add_only';
         const eventId = normalizeText(req.body?.eventId);
         const existingGuestId = normalizeText(req.body?.existingGuestId);
+        const sendInvitation = Boolean(req.body?.sendInvitation);
         const payload = normalizeVisitorPayload(req.body?.fields || req.body);
 
         if (!['add_only', 'add_and_check_in'].includes(action)) {
@@ -596,22 +890,182 @@ router.post('/visitor-intake/approve', authenticateScanner, async (req, res, nex
             );
         }
 
+        let invitation = null;
+        if (sendInvitation) {
+            if (!event?.id) {
+                throw new AppError('Event is required to send an invitation', 400, 'VALIDATION_ERROR');
+            }
+
+            if (!guest.email) {
+                throw new AppError('Guest email is required to send an invitation', 400, 'VALIDATION_ERROR');
+            }
+
+            const { rows: projectRows } = await db.query(
+                `
+                SELECT id, name, name_ar, default_language, status
+                FROM invitation_projects
+                WHERE event_id = $1
+                  AND client_id = $2
+                  AND status IN ('draft', 'active', 'paused')
+                ORDER BY updated_at DESC, created_at DESC
+                LIMIT 1
+                `,
+                [event.id, req.scannerUser.client_id]
+            );
+
+            if (!projectRows.length) {
+                invitation = {
+                    status: 'skipped',
+                    reason: 'no_invitation_project'
+                };
+            } else {
+                const project = projectRows[0];
+                const { rows: existingRecipients } = await db.query(
+                    `
+                    SELECT *
+                    FROM invitation_recipients
+                    WHERE project_id = $1
+                      AND client_guest_id = $2
+                    LIMIT 1
+                    `,
+                    [project.id, guest.id]
+                );
+
+                let recipient = existingRecipients[0] || null;
+                if (recipient) {
+                    await db.query(
+                        `
+                        UPDATE invitation_recipients
+                        SET
+                            display_name = $1,
+                            display_name_ar = $2,
+                            email = $3,
+                            phone = $4,
+                            preferred_language = COALESCE(preferred_language, 'ar'),
+                            preferred_channel = COALESCE(preferred_channel, 'email'),
+                            metadata = COALESCE(metadata, '{}'::jsonb) || $5::jsonb,
+                            updated_at = NOW()
+                        WHERE id = $6
+                        `,
+                        [
+                            guest.name,
+                            guest.name,
+                            guest.email,
+                            guest.mobile_number || null,
+                            JSON.stringify({
+                                source: 'scanner_mobile',
+                                walk_in: true
+                            }),
+                            recipient.id
+                        ]
+                    );
+
+                    const { rows: refreshed } = await db.query('SELECT * FROM invitation_recipients WHERE id = $1', [recipient.id]);
+                    recipient = refreshed[0];
+                } else {
+                    const recipientId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
+                    await db.query(
+                        `
+                        INSERT INTO invitation_recipients (
+                            id,
+                            project_id,
+                            guest_id,
+                            client_guest_id,
+                            invite_code,
+                            public_token,
+                            display_name,
+                            display_name_ar,
+                            email,
+                            phone,
+                            whatsapp_number,
+                            preferred_language,
+                            preferred_channel,
+                            metadata,
+                            overall_status
+                        )
+                        VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, NULL, $10, 'email', $11::jsonb, 'draft')
+                        `,
+                        [
+                            recipientId,
+                            project.id,
+                            guest.id,
+                            generateInviteCode(),
+                            generatePublicToken(),
+                            guest.name,
+                            guest.name,
+                            guest.email,
+                            guest.mobile_number || null,
+                            project.default_language || 'ar',
+                            JSON.stringify({
+                                source: 'scanner_mobile',
+                                walk_in: true
+                            })
+                        ]
+                    );
+
+                    const { rows: created } = await db.query('SELECT * FROM invitation_recipients WHERE id = $1', [recipientId]);
+                    recipient = created[0];
+                }
+
+                const jobs = await enqueueEmailDeliveries({
+                    db,
+                    project,
+                    recipients: [recipient],
+                    createdBy: null
+                });
+
+                await db.query(
+                    `
+                    UPDATE invitation_recipients
+                    SET
+                        overall_status = 'queued',
+                        updated_at = NOW()
+                    WHERE id = $1
+                    `,
+                    [recipient.id]
+                );
+
+                invitation = {
+                    status: 'queued',
+                    projectId: project.id,
+                    recipientId: recipient.id,
+                    deliveryJobId: jobs[0]?.id || null
+                };
+
+                await logScannerActivity(
+                    db,
+                    req,
+                    req.scannerUser,
+                    'walk_in_invitation_queued',
+                    'invitation_recipient',
+                    recipient.id,
+                    {
+                        clientId: req.scannerUser.client_id,
+                        eventId: event.id,
+                        clientGuestId: guest.id,
+                        email: guest.email,
+                        projectId: project.id
+                    }
+                );
+            }
+        }
+
         await db.query('COMMIT');
 
-        res.json({
-            data: {
-                guest: {
-                    id: guest.id,
-                    name: guest.name,
-                    position: guest.position,
-                    organization: guest.organization,
-                    email: guest.email,
-                    mobileNumber: guest.mobile_number,
-                    status: guest.status
-                },
-                resolution,
-                attendance
-            }
+        sendScannerSuccess(res, {
+            guest: {
+                id: guest.id,
+                name: guest.name,
+                position: guest.position,
+                organization: guest.organization,
+                email: guest.email,
+                mobileNumber: guest.mobile_number,
+                status: guest.status
+            },
+            resolution,
+            attendance,
+            invitation
         });
     } catch (error) {
         await db.query('ROLLBACK');
@@ -628,7 +1082,8 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
     try {
         const rawToken = extractInvitationToken(req.body?.token);
         const eventId = normalizeText(req.body?.eventId);
-        const mode = normalizeText(req.body?.mode) || 'camera';
+        const requestedMode = normalizeText(req.body?.mode) || 'camera';
+        const mode = SCAN_MODES.has(requestedMode) ? requestedMode : 'camera';
 
         if (!rawToken) {
             throw new AppError('QR token is required', 400, 'VALIDATION_ERROR');
@@ -730,26 +1185,24 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
 
         await db.query('COMMIT');
 
-        res.json({
-            data: {
-                status: alreadyAttended ? 'duplicate' : 'attended',
-                attendee: {
-                    id: recipient.recipient_id,
-                    name: recipient.display_name,
-                    name_ar: recipient.display_name_ar,
-                    attendance_status: 'checked_in',
-                    attended_at: alreadyAttended ? currentMetadata.attended_at || null : scannedAt
-                },
-                event: {
-                    id: recipient.event_id,
-                    name: recipient.event_name,
-                    name_ar: recipient.event_name_ar
-                },
-                client: {
-                    id: recipient.client_id,
-                    name: recipient.client_name,
-                    name_ar: recipient.client_name_ar
-                }
+        sendScannerSuccess(res, {
+            status: alreadyAttended ? 'duplicate' : 'attended',
+            attendee: {
+                id: recipient.recipient_id,
+                name: recipient.display_name,
+                name_ar: recipient.display_name_ar,
+                attendance_status: 'checked_in',
+                attended_at: alreadyAttended ? currentMetadata.attended_at || null : scannedAt
+            },
+            event: {
+                id: recipient.event_id,
+                name: recipient.event_name,
+                name_ar: recipient.event_name_ar
+            },
+            client: {
+                id: recipient.client_id,
+                name: recipient.client_name,
+                name_ar: recipient.client_name_ar
             }
         });
     } catch (error) {

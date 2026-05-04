@@ -1,0 +1,33 @@
+{
+  "name": "@rawaj/scanner-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo-google-fonts/cairo": "^0.4.1",
+    "@react-navigation/native": "^6.1.18",
+    "@react-navigation/native-stack": "^6.11.0",
+    "axios": "^1.7.9",
+    "expo": "^53.0.0",
+    "expo-av": "~15.0.2",
+    "expo-camera": "~16.0.8",
+    "expo-file-system": "~18.0.12",
+    "expo-font": "~13.1.0",
+    "expo-localization": "~16.1.0",
+    "expo-secure-store": "~14.2.3",
+    "expo-status-bar": "~2.2.3",
+    "i18next": "^23.16.8",
+    "react": "18.3.1",
+    "react-i18next": "^15.1.2",
+    "react-native": "0.76.7",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-svg": "15.8.0"
+  }
+}
