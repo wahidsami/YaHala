@@ -135,6 +135,85 @@ function getCanvasWidgets(coverTemplate) {
     return orderedSections.flatMap((section) => section.widgets || []);
 }
 
+function getPublicRuleContext(project, recipient) {
+    const metadata = recipient?.metadata || {};
+    const rawScanStatus = metadata.attendance_status || metadata.check_in_status;
+    const scanState = rawScanStatus === 'attended' || rawScanStatus === 'checked_in'
+        ? 'checked_in'
+        : 'not_scanned';
+    const now = Date.now();
+    const eventStart = project?.event?.start_datetime ? new Date(project.event.start_datetime).getTime() : null;
+    const eventEnd = project?.event?.end_datetime ? new Date(project.event.end_datetime).getTime() : null;
+    let timeState = 'before_event';
+
+    if (Number.isFinite(eventStart) && Number.isFinite(eventEnd)) {
+        if (now >= eventEnd) {
+            timeState = 'after_event';
+        } else if (now >= eventStart) {
+            timeState = 'during_event';
+        }
+    }
+
+    return {
+        timeState,
+        scanState,
+        eventType: project?.event?.event_type || '',
+        guestGroup: metadata.guestGroup || metadata.guest_group || 'regular'
+    };
+}
+
+function evaluateWidgetCondition(condition, context) {
+    const key = `${condition?.type}.${condition?.operator}`;
+
+    switch (key) {
+        case 'time.before_event_start':
+            return context.timeState === 'before_event';
+        case 'time.during_event':
+            return context.timeState === 'during_event';
+        case 'time.after_event_end':
+            return context.timeState === 'after_event';
+        case 'scan.checked_in':
+            return context.scanState === 'checked_in';
+        case 'scan.not_scanned':
+            return context.scanState === 'not_scanned';
+        case 'event.type_is':
+            return context.eventType === condition.value;
+        case 'guest.group_is':
+            return context.guestGroup === condition.value;
+        default:
+            return false;
+    }
+}
+
+function isWidgetVisible(widget, context) {
+    if (typeof widget?._visible === 'boolean') {
+        return widget._visible;
+    }
+
+    const rules = Array.isArray(widget?.rules) ? widget.rules : [];
+    if (!rules.length) {
+        return true;
+    }
+
+    for (const rule of rules) {
+        const conditions = Array.isArray(rule?.conditions) ? rule.conditions : [];
+        if (!conditions.length) {
+            continue;
+        }
+
+        const results = conditions.map((condition) => evaluateWidgetCondition(condition, context));
+        const matched = rule.conditionLogic === 'or'
+            ? results.some(Boolean)
+            : results.every(Boolean);
+
+        if (matched) {
+            return rule.action !== 'hide';
+        }
+    }
+
+    return true;
+}
+
 export function InvitationWidgetPreview({ widget, language, project, recipient, mode = 'public', hasRsvpPage = false, rsvpCompleted = false, onOpenRsvp }) {
     const content = getWidgetContent(widget, language);
     const isLogoWidget = widget.type === 'logo';
@@ -321,10 +400,12 @@ export default function InvitationCanvasRenderer({
     const coverTemplate = project.cover_template_snapshot || project.cover_template?.design_data;
     const layout = normalizeLayout(coverTemplate?.layout || {});
     const canvasWidgets = getCanvasWidgets(coverTemplate);
+    const publicRuleContext = getPublicRuleContext(project, recipient);
+    const visibleWidgets = canvasWidgets.filter((widget) => isWidgetVisible(widget, publicRuleContext));
     const canvasHeight = Math.max(640, Number(layout.height) || 640);
     const inlineResponseWidget = canvasWidgets.some((widget) => widget.type === 'response');
 
-    if (!canvasWidgets.length) {
+    if (!visibleWidgets.length) {
         return null;
     }
 
@@ -354,7 +435,7 @@ export default function InvitationCanvasRenderer({
                         ))}
                     </div>
 
-                    {canvasWidgets.map((widget, index) => (
+                    {visibleWidgets.map((widget, index) => (
                         <div
                             key={widget.id || `${widget.type}-${index}`}
                             className="public-widget-frame"

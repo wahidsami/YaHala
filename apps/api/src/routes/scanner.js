@@ -184,6 +184,17 @@ function extractInvitationToken(value) {
     return rawValue;
 }
 
+function getInvitationAttendanceStatus(metadata) {
+    const normalized = safeJson(metadata, {});
+    const status = normalizeText(normalized.attendance_status || normalized.check_in_status);
+
+    if (status === 'attended' || status === 'checked_in') {
+        return 'checked_in';
+    }
+
+    return 'not_scanned';
+}
+
 function signScannerToken(scannerUser) {
     return jwt.sign(
         {
@@ -367,7 +378,7 @@ router.get('/events', authenticateScanner, async (req, res, next) => {
                     FROM invitation_projects p
                     JOIN invitation_recipients r ON r.project_id = p.id
                     WHERE p.event_id = e.id
-                      AND COALESCE(r.metadata->>'attendance_status', '') = 'attended'
+                      AND COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') IN ('attended', 'checked_in')
                 ), 0)::int AS attended_count
             FROM events e
             WHERE e.client_id = $1
@@ -666,13 +677,15 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
         }
 
         const currentMetadata = safeJson(recipient.metadata, {});
-        const alreadyAttended = currentMetadata.attendance_status === 'attended';
+        const alreadyAttended = getInvitationAttendanceStatus(currentMetadata) === 'checked_in';
+        const scannedAt = new Date().toISOString();
 
         if (!alreadyAttended) {
             const nextMetadata = {
                 ...currentMetadata,
-                attendance_status: 'attended',
-                attended_at: new Date().toISOString(),
+                attendance_status: 'checked_in',
+                check_in_status: 'checked_in',
+                attended_at: scannedAt,
                 attended_by_scanner_id: req.scannerUser.id,
                 attended_by_scanner_name: req.scannerUser.name,
                 attended_by_client_id: req.scannerUser.client_id,
@@ -724,8 +737,8 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
                     id: recipient.recipient_id,
                     name: recipient.display_name,
                     name_ar: recipient.display_name_ar,
-                    attendance_status: 'attended',
-                    attended_at: alreadyAttended ? currentMetadata.attended_at || null : new Date().toISOString()
+                    attendance_status: 'checked_in',
+                    attended_at: alreadyAttended ? currentMetadata.attended_at || null : scannedAt
                 },
                 event: {
                     id: recipient.event_id,

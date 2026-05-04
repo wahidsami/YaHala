@@ -833,6 +833,19 @@ export default function PublicInvitationPage() {
     });
     const [guestViewport, setGuestViewport] = useState({ width: 0, height: 0 });
     const [error, setError] = useState(null);
+    const invitationReady = Boolean(invitation);
+
+    function applyInvitationPayload(payload, syncLanguage = false) {
+        setInvitation(payload);
+        setPages(payload.pages || []);
+        setRsvpCompleted(payload.recipient?.overall_status === 'responded');
+
+        if (syncLanguage) {
+            const resolvedLanguage = payload.language || payload.project?.default_language || 'ar';
+            setActiveLanguage(resolvedLanguage);
+            setLanguage(resolvedLanguage);
+        }
+    }
 
     useEffect(() => {
         let mounted = true;
@@ -848,14 +861,7 @@ export default function PublicInvitationPage() {
                     return;
                 }
 
-                const payload = response.data.data;
-                setInvitation(payload);
-                setPages(payload.pages || []);
-                setRsvpCompleted(payload.recipient?.overall_status === 'responded');
-
-                const resolvedLanguage = payload.language || payload.project?.default_language || 'ar';
-                setActiveLanguage(resolvedLanguage);
-                setLanguage(resolvedLanguage);
+                applyInvitationPayload(response.data.data, true);
             } catch (err) {
                 if (!mounted) {
                     return;
@@ -874,6 +880,42 @@ export default function PublicInvitationPage() {
             mounted = false;
         };
     }, [setLanguage, token]);
+
+    useEffect(() => {
+        if (!invitationReady) {
+            return undefined;
+        }
+
+        let cancelled = false;
+
+        async function refreshInvitation() {
+            try {
+                const response = await api.get(`/public/invitations/${token}`, { skipAuthRefresh: true });
+                if (!cancelled) {
+                    applyInvitationPayload(response.data.data, false);
+                }
+            } catch {
+                // Best-effort refresh so the open page can reflect check-in changes.
+            }
+        }
+
+        function handleVisibilityChange() {
+            if (document.visibilityState === 'visible') {
+                refreshInvitation();
+            }
+        }
+
+        const intervalId = window.setInterval(refreshInvitation, 10000);
+        window.addEventListener('focus', refreshInvitation);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+            window.removeEventListener('focus', refreshInvitation);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [invitationReady, token]);
 
     useEffect(() => {
         if (!invitation || submittingOpen) {

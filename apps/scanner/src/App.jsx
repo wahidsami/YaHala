@@ -53,6 +53,61 @@ function cleanupSpokenSegment(value) {
         .trim();
 }
 
+function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const TRANSCRIPT_FIELD_ALIASES = {
+    name: ['full name', 'name', 'my name is', 'name is', 'الاسم', 'اسمي'],
+    position: ['job title', 'position', 'title', 'role', 'المنصب', 'الوظيفة'],
+    organization: ['organization', 'company', 'institution', 'working at', 'from company', 'الشركة', 'المؤسسة', 'الجهة'],
+    email: ['email address', 'email', 'الايميل', 'البريد الإلكتروني'],
+    mobileNumber: ['mobile number', 'phone number', 'mobile', 'phone', 'رقم الجوال', 'رقم الهاتف']
+};
+
+const ALL_TRANSCRIPT_LABELS = Object.values(TRANSCRIPT_FIELD_ALIASES)
+    .flat()
+    .sort((left, right) => right.length - left.length)
+    .map((label) => escapeRegExp(label))
+    .join('|');
+
+function extractLabeledTranscriptValue(source, aliases) {
+    const aliasPattern = aliases
+        .slice()
+        .sort((left, right) => right.length - left.length)
+        .map((label) => escapeRegExp(label))
+        .join('|');
+    const pattern = new RegExp(
+        `(?:^|[\\n,;]|\\s)(?:${aliasPattern})\\s*(?::|=|\\bis\\b)?\\s*(.+?)(?=(?:(?:[\\n,;]|\\s)+(?:${ALL_TRANSCRIPT_LABELS})\\s*(?::|=|\\bis\\b)?)|$)`,
+        'i'
+    );
+    const match = source.match(pattern);
+
+    return cleanupSpokenSegment(match?.[1] || '');
+}
+
+function normalizeSpokenEmail(value) {
+    return cleanupSpokenSegment(value)
+        .replace(/\(at\)|\[at\]/gi, '@')
+        .replace(/\b(at)\b/gi, '@')
+        .replace(/\b(dot)\b/gi, '.')
+        .replace(/\s+/g, '');
+}
+
+function normalizeSpokenPhone(value) {
+    const digits = normalizeTranscriptDigits(value).replace(/[^\d+]/g, '');
+
+    if (/^\+9665\d{8}$/.test(digits)) {
+        return digits;
+    }
+
+    if (/^05\d{8}$/.test(digits)) {
+        return digits;
+    }
+
+    return '';
+}
+
 function pickSegment(segments, matcher) {
     const index = segments.findIndex((segment) => matcher(segment));
     if (index === -1) {
@@ -69,33 +124,40 @@ function parseVisitorTranscript(transcript) {
         return createEmptyVisitorForm();
     }
 
-    const emailMatch = source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-    const email = emailMatch?.[0]?.toLowerCase() || '';
+    const normalizedSource = source.replace(/[،؛]/g, ',');
+    const emailMatch = normalizedSource.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    const spokenEmail = extractLabeledTranscriptValue(normalizedSource, TRANSCRIPT_FIELD_ALIASES.email);
+    const email = (emailMatch?.[0] || normalizeSpokenEmail(spokenEmail) || '').toLowerCase();
 
-    const mobileMatch = source.match(/(?:\+9665\d{8}|05\d{8})/);
-    const mobileNumber = mobileMatch?.[0] || '';
+    const mobileMatch = normalizedSource.match(/(?:\+966[\s-]*5(?:[\s-]*\d){8}|0[\s-]*5(?:[\s-]*\d){8})/);
+    const spokenMobile = extractLabeledTranscriptValue(normalizedSource, TRANSCRIPT_FIELD_ALIASES.mobileNumber);
+    const mobileNumber = normalizeSpokenPhone(mobileMatch?.[0] || spokenMobile);
 
-    const stripped = source
+    const stripped = normalizedSource
         .replace(emailMatch?.[0] || '', ' ')
         .replace(mobileMatch?.[0] || '', ' ');
 
     const segments = stripped
-        .split(/[\n,،;؛]+/)
+        .split(/[\n,;]+/)
         .map((segment) => cleanupSpokenSegment(segment))
         .filter(Boolean);
+
+    const labeledName = extractLabeledTranscriptValue(normalizedSource, TRANSCRIPT_FIELD_ALIASES.name);
+    const labeledPosition = extractLabeledTranscriptValue(normalizedSource, TRANSCRIPT_FIELD_ALIASES.position);
+    const labeledOrganization = extractLabeledTranscriptValue(normalizedSource, TRANSCRIPT_FIELD_ALIASES.organization);
 
     const organization = pickSegment(
         segments,
         (segment) => /\b(from|company|organization|org|working at)\b/i.test(segment) || /(شركة|مؤسسة|جهة|من شركة|من مؤسسة)/.test(segment)
-    ) || '';
+    ) || labeledOrganization || '';
 
     const position = pickSegment(
         segments,
         (segment) => /\b(position|title|role|manager|director|engineer|officer|coordinator|specialist|supervisor)\b/i.test(segment) || /(منصب|وظيفة|مدير|مهندس|مسؤول|منسق|أخصائي|مشرف)/.test(segment)
-    ) || segments[1] || '';
+    ) || labeledPosition || segments[1] || '';
 
-    const name = segments[0] || cleanupSpokenSegment(
-        source.split(/[\n,،;؛]+/)[0] || ''
+    const name = labeledName || segments[0] || cleanupSpokenSegment(
+        normalizedSource.split(/[\n,;]+/)[0] || ''
     );
 
     return {
