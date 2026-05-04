@@ -24,6 +24,135 @@ function normalizeText(value) {
     return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeOptionalText(value) {
+    const text = normalizeText(value);
+    return text || null;
+}
+
+function normalizeDigits(value) {
+    return normalizeText(value)
+        .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632))
+        .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776));
+}
+
+function validateEmail(value) {
+    const email = normalizeOptionalText(value);
+    if (!email) {
+        return null;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+        throw new AppError('Email is invalid', 400, 'VALIDATION_ERROR');
+    }
+
+    return email.toLowerCase();
+}
+
+function validateMobileNumber(value) {
+    const mobileNumber = normalizeOptionalText(value);
+    if (!mobileNumber) {
+        return null;
+    }
+
+    const sanitized = normalizeDigits(mobileNumber).replace(/[\s()-]/g, '');
+
+    if (/^05\d{8}$/.test(sanitized)) {
+        return sanitized;
+    }
+
+    if (/^\+9665\d{8}$/.test(sanitized)) {
+        return `0${sanitized.slice(4)}`;
+    }
+
+    throw new AppError('Enter a valid mobile number', 400, 'VALIDATION_ERROR');
+}
+
+function normalizeVisitorPayload(body) {
+    const name = normalizeText(body?.name);
+    if (!name) {
+        throw new AppError('Visitor name is required', 400, 'VALIDATION_ERROR');
+    }
+
+    return {
+        name,
+        position: normalizeOptionalText(body?.position),
+        organization: normalizeOptionalText(body?.organization),
+        email: validateEmail(body?.email),
+        mobileNumber: validateMobileNumber(body?.mobileNumber)
+    };
+}
+
+function getRequestIp(req) {
+    return req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.socket?.remoteAddress || null;
+}
+
+async function logScannerActivity(db, req, scannerUser, action, entityType, entityId, details) {
+    await db.query(
+        `
+        INSERT INTO activity_logs (
+            id,
+            user_id,
+            user_type,
+            action,
+            entity_type,
+            entity_id,
+            details,
+            ip_address
+        )
+        VALUES ($1, $2, 'scanner', $3, $4, $5, $6::jsonb, $7)
+        `,
+        [
+            crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
+            scannerUser.id,
+            action,
+            entityType,
+            entityId,
+            JSON.stringify(details),
+            getRequestIp(req)
+        ]
+    );
+}
+
+async function findDuplicateClientGuest(db, clientId, { email, mobileNumber }, excludeGuestId = null) {
+    const clauses = ['client_id = $1'];
+    const params = [clientId];
+    let paramIndex = 2;
+
+    if (excludeGuestId) {
+        clauses.push(`id <> $${paramIndex}`);
+        params.push(excludeGuestId);
+        paramIndex += 1;
+    }
+
+    const duplicateClauses = [];
+
+    if (email) {
+        duplicateClauses.push(`LOWER(email) = LOWER($${paramIndex})`);
+        params.push(email);
+        paramIndex += 1;
+    }
+
+    if (mobileNumber) {
+        duplicateClauses.push(`mobile_number = $${paramIndex}`);
+        params.push(mobileNumber);
+        paramIndex += 1;
+    }
+
+    if (!duplicateClauses.length) {
+        return null;
+    }
+
+    clauses.push(`(${duplicateClauses.join(' OR ')})`);
+
+    const { rows } = await db.query(
+        `SELECT * FROM client_guests WHERE ${clauses.join(' AND ')} LIMIT 1`,
+        params
+    );
+
+    return rows[0] || null;
+}
+
 function extractInvitationToken(value) {
     const rawValue = normalizeText(value);
 
@@ -253,6 +382,234 @@ router.get('/events', authenticateScanner, async (req, res, next) => {
     }
 });
 
+// POST /api/scanner/visitor-intake/approve
+router.post('/visitor-intake/approve', authenticateScanner, async (req, res, next) => {
+    const db = await pool.connect();
+
+    try {
+        const action = normalizeText(req.body?.action) || 'add_only';
+        const eventId = normalizeText(req.body?.eventId);
+        const existingGuestId = normalizeText(req.body?.existingGuestId);
+        const payload = normalizeVisitorPayload(req.body?.fields || req.body);
+
+        if (!['add_only', 'add_and_check_in'].includes(action)) {
+            throw new AppError('Action is invalid', 400, 'VALIDATION_ERROR');
+        }
+
+        if (action === 'add_and_check_in' && !eventId) {
+            throw new AppError('Event is required for check-in', 400, 'VALIDATION_ERROR');
+        }
+
+        await db.query('BEGIN');
+
+        let event = null;
+        if (eventId) {
+            const { rows: eventRows } = await db.query(
+                `
+                SELECT id, name, name_ar, client_id
+                FROM events
+                WHERE id = $1 AND client_id = $2
+                LIMIT 1
+                `,
+                [eventId, req.scannerUser.client_id]
+            );
+
+            if (!eventRows.length) {
+                throw new AppError('Selected event was not found', 404, 'EVENT_NOT_FOUND');
+            }
+
+            event = eventRows[0];
+        }
+
+        let guest = null;
+        let resolution = 'created';
+
+        if (existingGuestId) {
+            const { rows } = await db.query(
+                `
+                SELECT *
+                FROM client_guests
+                WHERE id = $1 AND client_id = $2
+                LIMIT 1
+                `,
+                [existingGuestId, req.scannerUser.client_id]
+            );
+
+            if (!rows.length) {
+                throw new AppError('Selected guest was not found', 404, 'NOT_FOUND');
+            }
+
+            guest = rows[0];
+
+            const duplicateGuest = await findDuplicateClientGuest(db, req.scannerUser.client_id, payload, guest.id);
+            if (duplicateGuest) {
+                throw new AppError('Another guest already exists with the same email or mobile number', 409, 'DUPLICATE_GUEST');
+            }
+
+            await db.query(
+                `
+                UPDATE client_guests
+                SET
+                    name = $1,
+                    position = $2,
+                    organization = $3,
+                    email = $4,
+                    mobile_number = $5,
+                    updated_at = NOW()
+                WHERE id = $6
+                `,
+                [
+                    payload.name,
+                    payload.position,
+                    payload.organization,
+                    payload.email,
+                    payload.mobileNumber,
+                    guest.id
+                ]
+            );
+
+            const { rows: updatedRows } = await db.query('SELECT * FROM client_guests WHERE id = $1', [guest.id]);
+            guest = updatedRows[0];
+            resolution = 'updated';
+        } else {
+            const duplicateGuest = await findDuplicateClientGuest(db, req.scannerUser.client_id, payload);
+            if (duplicateGuest) {
+                throw new AppError('Guest already exists with the same email or mobile number', 409, 'DUPLICATE_GUEST');
+            }
+
+            const guestId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
+            await db.query(
+                `
+                INSERT INTO client_guests (
+                    id,
+                    client_id,
+                    name,
+                    position,
+                    organization,
+                    email,
+                    mobile_number,
+                    gender,
+                    status
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, 'male', 'active')
+                `,
+                [
+                    guestId,
+                    req.scannerUser.client_id,
+                    payload.name,
+                    payload.position,
+                    payload.organization,
+                    payload.email,
+                    payload.mobileNumber
+                ]
+            );
+
+            const { rows: createdRows } = await db.query('SELECT * FROM client_guests WHERE id = $1', [guestId]);
+            guest = createdRows[0];
+        }
+
+        await logScannerActivity(
+            db,
+            req,
+            req.scannerUser,
+            resolution === 'created' ? 'walk_in_guest_created' : 'walk_in_guest_updated',
+            'client_guest',
+            guest.id,
+            {
+                clientId: req.scannerUser.client_id,
+                eventId: event?.id || null,
+                action,
+                resolution,
+                name: guest.name,
+                email: guest.email,
+                mobileNumber: guest.mobile_number
+            }
+        );
+
+        let attendance = null;
+        if (action === 'add_and_check_in') {
+            const walkInId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
+            const { rows: walkInRows } = await db.query(
+                `
+                INSERT INTO event_walk_ins (
+                    id,
+                    event_id,
+                    client_id,
+                    client_guest_id,
+                    scanner_user_id,
+                    check_in_status
+                )
+                VALUES ($1, $2, $3, $4, $5, 'checked_in')
+                ON CONFLICT (event_id, client_guest_id)
+                DO UPDATE SET
+                    scanner_user_id = EXCLUDED.scanner_user_id,
+                    check_in_status = 'checked_in',
+                    updated_at = NOW()
+                RETURNING *
+                `,
+                [
+                    walkInId,
+                    event.id,
+                    req.scannerUser.client_id,
+                    guest.id,
+                    req.scannerUser.id
+                ]
+            );
+
+            const walkIn = walkInRows[0];
+            attendance = {
+                status: 'checked_in',
+                duplicate: walkIn.created_at !== walkIn.updated_at,
+                eventId: event.id,
+                eventName: event.name,
+                eventNameAr: event.name_ar,
+                checkedInAt: walkIn.checked_in_at
+            };
+
+            await logScannerActivity(
+                db,
+                req,
+                req.scannerUser,
+                attendance.duplicate ? 'walk_in_duplicate_check_in' : 'walk_in_guest_checked_in',
+                'event_walk_in',
+                walkIn.id,
+                {
+                    clientId: req.scannerUser.client_id,
+                    eventId: event.id,
+                    clientGuestId: guest.id,
+                    guestName: guest.name,
+                    duplicate: attendance.duplicate
+                }
+            );
+        }
+
+        await db.query('COMMIT');
+
+        res.json({
+            data: {
+                guest: {
+                    id: guest.id,
+                    name: guest.name,
+                    position: guest.position,
+                    organization: guest.organization,
+                    email: guest.email,
+                    mobileNumber: guest.mobile_number,
+                    status: guest.status
+                },
+                resolution,
+                attendance
+            }
+        });
+    } catch (error) {
+        await db.query('ROLLBACK');
+        next(error);
+    } finally {
+        db.release();
+    }
+});
+
 // POST /api/scanner/scan
 router.post('/scan', authenticateScanner, async (req, res, next) => {
     const db = await pool.connect();
@@ -338,66 +695,24 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
                 [JSON.stringify(nextMetadata), recipient.recipient_id]
             );
 
-            await db.query(
-                `
-                INSERT INTO activity_logs (
-                    id,
-                    user_id,
-                    user_type,
-                    action,
-                    entity_type,
-                    entity_id,
-                    details,
-                    ip_address
-                )
-                VALUES ($1, $2, 'scanner', 'guest_attended', 'invitation_recipient', $3, $4::jsonb, $5)
-                `,
-                [
-                    crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
-                    req.scannerUser.id,
-                    recipient.recipient_id,
-                    JSON.stringify({
-                        token: rawToken,
-                        eventId: recipient.event_id,
-                        eventName: recipient.event_name,
-                        clientId: recipient.client_id,
-                        attended: true,
-                        mode
-                    }),
-                    req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.socket?.remoteAddress || null
-                ]
-            );
+            await logScannerActivity(db, req, req.scannerUser, 'guest_attended', 'invitation_recipient', recipient.recipient_id, {
+                token: rawToken,
+                eventId: recipient.event_id,
+                eventName: recipient.event_name,
+                clientId: recipient.client_id,
+                attended: true,
+                mode
+            });
         } else {
-            await db.query(
-                `
-                INSERT INTO activity_logs (
-                    id,
-                    user_id,
-                    user_type,
-                    action,
-                    entity_type,
-                    entity_id,
-                    details,
-                    ip_address
-                )
-                VALUES ($1, $2, 'scanner', 'duplicate_scan', 'invitation_recipient', $3, $4::jsonb, $5)
-                `,
-                [
-                    crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
-                    req.scannerUser.id,
-                    recipient.recipient_id,
-                    JSON.stringify({
-                        token: rawToken,
-                        eventId: recipient.event_id,
-                        eventName: recipient.event_name,
-                        clientId: recipient.client_id,
-                        attended: true,
-                        duplicate: true,
-                        mode
-                    }),
-                    req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.socket?.remoteAddress || null
-                ]
-            );
+            await logScannerActivity(db, req, req.scannerUser, 'duplicate_scan', 'invitation_recipient', recipient.recipient_id, {
+                token: rawToken,
+                eventId: recipient.event_id,
+                eventName: recipient.event_name,
+                clientId: recipient.client_id,
+                attended: true,
+                duplicate: true,
+                mode
+            });
         }
 
         await db.query('COMMIT');

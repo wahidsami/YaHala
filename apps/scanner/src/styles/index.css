@@ -39,7 +39,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
     font: inherit;
 }
 
@@ -50,7 +51,8 @@ button {
 }
 
 input,
-select {
+select,
+textarea {
     outline: none;
 }
 
@@ -169,7 +171,10 @@ select {
 
 .auth-card input,
 .manual-form input,
-.event-picker select {
+.event-picker select,
+.visitor-form-grid input,
+.intake-language select,
+.intake-block textarea {
     width: 100%;
     padding: 14px 16px;
     border-radius: 16px;
@@ -342,6 +347,86 @@ select {
     gap: 12px;
 }
 
+.visitor-intake-card {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.visitor-intake-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.visitor-intake-head h3 {
+    margin: 6px 0 0;
+    font-size: 1.15rem;
+}
+
+.intake-toggle-btn {
+    flex-shrink: 0;
+}
+
+.visitor-intake-body {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.intake-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.intake-language,
+.intake-block,
+.visitor-form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.intake-language {
+    min-width: 180px;
+}
+
+.speech-note {
+    color: rgba(226, 232, 240, 0.7);
+    font-size: 0.9rem;
+}
+
+.mic-btn,
+.stop-btn {
+    min-width: 152px;
+}
+
+.intake-block textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.visitor-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.visitor-form-grid label:last-child {
+    grid-column: 1 / -1;
+}
+
+.visitor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
 .results-panel {
     display: flex;
     flex-direction: column;
@@ -358,6 +443,11 @@ select {
 .result-card.attended {
     border-color: rgba(34, 197, 94, 0.28);
     background: linear-gradient(180deg, rgba(34, 197, 94, 0.16), rgba(15, 23, 42, 0.74));
+}
+
+.result-card.added {
+    border-color: rgba(250, 204, 21, 0.3);
+    background: linear-gradient(180deg, rgba(250, 204, 21, 0.12), rgba(15, 23, 42, 0.74));
 }
 
 .result-card.duplicate {
@@ -437,6 +527,10 @@ select {
     border-color: rgba(34, 197, 94, 0.26);
 }
 
+.recent-item.added {
+    border-color: rgba(250, 204, 21, 0.26);
+}
+
 .recent-item.duplicate {
     border-color: rgba(56, 189, 248, 0.26);
 }
@@ -473,5 +567,15 @@ select {
 
     .primary-btn {
         width: 100%;
+    }
+
+    .visitor-intake-head,
+    .visitor-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .visitor-form-grid {
+        grid-template-columns: 1fr;
     }
 }

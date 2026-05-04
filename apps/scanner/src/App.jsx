@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Camera, CheckCircle2, ChevronRight, LogOut, ScanLine, ShieldCheck, Smartphone, UserCircle2 } from 'lucide-react';
+import { AlertTriangle, Camera, CheckCircle2, ChevronRight, LogOut, Mic, ScanLine, ShieldCheck, Smartphone, Square, UserCircle2, UserPlus } from 'lucide-react';
 import jsQR from 'jsqr';
 import api, { SCANNER_STORAGE_KEY } from './services/api';
 
@@ -19,6 +19,92 @@ function toDate(value) {
 
 function localizedName(language, en, ar) {
     return language === 'ar' ? (ar || en || '') : (en || ar || '');
+}
+
+function createEmptyVisitorForm() {
+    return {
+        name: '',
+        position: '',
+        organization: '',
+        email: '',
+        mobileNumber: ''
+    };
+}
+
+function getSpeechRecognitionCtor() {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function normalizeTranscriptDigits(value) {
+    return (value || '')
+        .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632))
+        .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776));
+}
+
+function cleanupSpokenSegment(value) {
+    return normalizeTranscriptDigits(value)
+        .replace(/\b(my name is|this is|name is|i am|i'm|email is|mobile number is|phone number is|position is|organization is|company is)\b/gi, '')
+        .replace(/^(اسمي|أنا|هذا|الايميل|البريد الإلكتروني|رقم الجوال|رقم الهاتف|المنصب|الشركة|المؤسسة|الجهة)\s+/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function pickSegment(segments, matcher) {
+    const index = segments.findIndex((segment) => matcher(segment));
+    if (index === -1) {
+        return null;
+    }
+
+    const [segment] = segments.splice(index, 1);
+    return cleanupSpokenSegment(segment);
+}
+
+function parseVisitorTranscript(transcript) {
+    const source = normalizeTranscriptDigits(transcript);
+    if (!source.trim()) {
+        return createEmptyVisitorForm();
+    }
+
+    const emailMatch = source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    const email = emailMatch?.[0]?.toLowerCase() || '';
+
+    const mobileMatch = source.match(/(?:\+9665\d{8}|05\d{8})/);
+    const mobileNumber = mobileMatch?.[0] || '';
+
+    const stripped = source
+        .replace(emailMatch?.[0] || '', ' ')
+        .replace(mobileMatch?.[0] || '', ' ');
+
+    const segments = stripped
+        .split(/[\n,،;؛]+/)
+        .map((segment) => cleanupSpokenSegment(segment))
+        .filter(Boolean);
+
+    const organization = pickSegment(
+        segments,
+        (segment) => /\b(from|company|organization|org|working at)\b/i.test(segment) || /(شركة|مؤسسة|جهة|من شركة|من مؤسسة)/.test(segment)
+    ) || '';
+
+    const position = pickSegment(
+        segments,
+        (segment) => /\b(position|title|role|manager|director|engineer|officer|coordinator|specialist|supervisor)\b/i.test(segment) || /(منصب|وظيفة|مدير|مهندس|مسؤول|منسق|أخصائي|مشرف)/.test(segment)
+    ) || segments[1] || '';
+
+    const name = segments[0] || cleanupSpokenSegment(
+        source.split(/[\n,،;؛]+/)[0] || ''
+    );
+
+    return {
+        name,
+        position: cleanupSpokenSegment(position),
+        organization: cleanupSpokenSegment(organization || segments[2] || ''),
+        email,
+        mobileNumber
+    };
 }
 
 function LoginCard({ onLogin, loading, error }) {
@@ -290,7 +376,211 @@ function CameraScanner({ enabled, onScan, onStatus }) {
     );
 }
 
-function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEventId, onLogout, onScanToken, result, recentScans, loadingEvents }) {
+function VisitorIntakePanel({ eventId, onApprove, busy, onSuccess }) {
+    const recognitionRef = useRef(null);
+    const [open, setOpen] = useState(false);
+    const [language, setLanguage] = useState('en-US');
+    const [speechSupported, setSpeechSupported] = useState(false);
+    const [listening, setListening] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const [form, setForm] = useState(createEmptyVisitorForm());
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        setSpeechSupported(Boolean(getSpeechRecognitionCtor()));
+    }, []);
+
+    useEffect(() => () => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+        }
+    }, []);
+
+    function updateForm(next) {
+        setForm((prev) => ({ ...prev, ...next }));
+    }
+
+    function resetPanel() {
+        setTranscript('');
+        setForm(createEmptyVisitorForm());
+        setError('');
+        setListening(false);
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+        }
+    }
+
+    function handleTranscript(nextTranscript) {
+        setTranscript(nextTranscript);
+        const parsed = parseVisitorTranscript(nextTranscript);
+        setForm((prev) => ({
+            name: parsed.name || prev.name,
+            position: parsed.position || prev.position,
+            organization: parsed.organization || prev.organization,
+            email: parsed.email || prev.email,
+            mobileNumber: parsed.mobileNumber || prev.mobileNumber
+        }));
+    }
+
+    function startListening() {
+        const SpeechRecognitionCtor = getSpeechRecognitionCtor();
+        if (!SpeechRecognitionCtor) {
+            setError('Live speech-to-text is not available in this browser. You can still type the details manually.');
+            return;
+        }
+
+        setError('');
+        const recognition = new SpeechRecognitionCtor();
+        recognition.lang = language;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+            setListening(true);
+        };
+
+        recognition.onresult = (event) => {
+            let nextTranscript = '';
+            for (let index = 0; index < event.results.length; index += 1) {
+                nextTranscript += `${event.results[index][0].transcript} `;
+            }
+            handleTranscript(nextTranscript.trim());
+        };
+
+        recognition.onerror = (event) => {
+            setError(event.error === 'not-allowed'
+                ? 'Microphone access was blocked. Allow it and try again.'
+                : 'Speech capture failed. You can type the details manually.');
+        };
+
+        recognition.onend = () => {
+            setListening(false);
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+    }
+
+    function stopListening() {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+    }
+
+    async function handleApprove(action) {
+        setError('');
+
+        try {
+            await onApprove({
+                eventId,
+                action,
+                fields: form
+            });
+
+            onSuccess?.();
+            resetPanel();
+            setOpen(false);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Unable to save this visitor right now.');
+        }
+    }
+
+    return (
+        <div className="visitor-intake-card">
+            <div className="visitor-intake-head">
+                <div>
+                    <p className="eyebrow">Visitor intake</p>
+                    <h3>Add a walk-in visitor</h3>
+                </div>
+                <button type="button" className="ghost-btn intake-toggle-btn" onClick={() => setOpen((prev) => !prev)}>
+                    <UserPlus size={16} />
+                    <span>{open ? 'Close' : 'Add Visitor'}</span>
+                </button>
+            </div>
+
+            {open && (
+                <div className="visitor-intake-body">
+                    <div className="intake-toolbar">
+                        <label className="intake-language">
+                            <span>Speech language</span>
+                            <select value={language} onChange={(event) => setLanguage(event.target.value)} disabled={listening}>
+                                <option value="en-US">English</option>
+                                <option value="ar-SA">Arabic</option>
+                            </select>
+                        </label>
+
+                        {speechSupported ? (
+                            listening ? (
+                                <button type="button" className="ghost-btn mic-btn stop-btn" onClick={stopListening}>
+                                    <Square size={16} />
+                                    <span>Stop</span>
+                                </button>
+                            ) : (
+                                <button type="button" className="ghost-btn mic-btn" onClick={startListening}>
+                                    <Mic size={16} />
+                                    <span>Start Speaking</span>
+                                </button>
+                            )
+                        ) : (
+                            <div className="speech-note">Speech-to-text is unavailable on this browser. Manual review still works.</div>
+                        )}
+                    </div>
+
+                    <label className="intake-block">
+                        <span>Transcript</span>
+                        <textarea
+                            value={transcript}
+                            onChange={(event) => handleTranscript(event.target.value)}
+                            rows={4}
+                            placeholder="Visitor speaks here, or paste the spoken text for review."
+                        />
+                    </label>
+
+                    <div className="visitor-form-grid">
+                        <label>
+                            <span>Name</span>
+                            <input value={form.name} onChange={(event) => updateForm({ name: event.target.value })} placeholder="Visitor name" />
+                        </label>
+                        <label>
+                            <span>Position</span>
+                            <input value={form.position} onChange={(event) => updateForm({ position: event.target.value })} placeholder="Job title" />
+                        </label>
+                        <label>
+                            <span>Organization</span>
+                            <input value={form.organization} onChange={(event) => updateForm({ organization: event.target.value })} placeholder="Company or organization" />
+                        </label>
+                        <label>
+                            <span>Email</span>
+                            <input value={form.email} onChange={(event) => updateForm({ email: event.target.value })} placeholder="name@example.com" />
+                        </label>
+                        <label>
+                            <span>Mobile number</span>
+                            <input value={form.mobileNumber} onChange={(event) => updateForm({ mobileNumber: event.target.value })} placeholder="0501234567" />
+                        </label>
+                    </div>
+
+                    {error && <div className="form-alert">{error}</div>}
+
+                    <div className="visitor-actions">
+                        <button type="button" className="ghost-btn" onClick={resetPanel} disabled={busy}>
+                            Reset
+                        </button>
+                        <button type="button" className="primary-btn" onClick={() => handleApprove('add_only')} disabled={busy}>
+                            <span>{busy ? 'Saving...' : 'Approve & Add'}</span>
+                        </button>
+                        <button type="button" className="primary-btn" onClick={() => handleApprove('add_and_check_in')} disabled={busy || !eventId}>
+                            <span>{busy ? 'Saving...' : 'Approve & Check In'}</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEventId, onLogout, onScanToken, onApproveVisitor, result, recentScans, loadingEvents, savingVisitor }) {
     const [manualToken, setManualToken] = useState('');
     const [scannerStatus, setScannerStatus] = useState('Preparing camera...');
 
@@ -383,6 +673,13 @@ function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEven
                             <span>Mark attended</span>
                         </button>
                     </form>
+
+                    <VisitorIntakePanel
+                        eventId={activeEvent?.id}
+                        onApprove={onApproveVisitor}
+                        busy={savingVisitor}
+                        onSuccess={() => setScannerStatus('Visitor captured. Review the latest result panel for status.')}
+                    />
                 </div>
 
                 <div className="scanner-panel results-panel">
@@ -440,6 +737,7 @@ export default function App() {
     const [client, setClient] = useState(null);
     const [events, setEvents] = useState([]);
     const [eventsLoading, setEventsLoading] = useState(false);
+    const [savingVisitor, setSavingVisitor] = useState(false);
     const [activeEventId, setActiveEventId] = useState('');
     const [result, setResult] = useState(null);
     const [recentScans, setRecentScans] = useState([]);
@@ -510,6 +808,7 @@ export default function App() {
         setResult(null);
         setRecentScans([]);
         setError(null);
+        setSavingVisitor(false);
     }
 
     async function handleScanToken(token, eventId, mode) {
@@ -554,6 +853,45 @@ export default function App() {
         }
     }
 
+    async function handleApproveVisitor(payload) {
+        setSavingVisitor(true);
+
+        try {
+            const response = await api.post('/scanner/visitor-intake/approve', payload);
+            const nextResult = response.data.data;
+            const activityStatus = nextResult.attendance ? 'attended' : 'added';
+
+            setResult({
+                status: activityStatus,
+                attendee: {
+                    id: nextResult.guest.id,
+                    name: nextResult.guest.name,
+                    name_ar: nextResult.guest.name,
+                    attendance_status: nextResult.attendance ? 'checked_in' : 'guest_listed',
+                    attended_at: nextResult.attendance?.checkedInAt || null
+                },
+                event: {
+                    id: nextResult.attendance?.eventId || payload.eventId,
+                    name: nextResult.attendance?.eventName || 'Added to guest list',
+                    name_ar: nextResult.attendance?.eventNameAr || 'Added to guest list'
+                }
+            });
+
+            setRecentScans((prev) => [
+                {
+                    token: nextResult.guest.id,
+                    label: nextResult.guest.name,
+                    status: activityStatus
+                },
+                ...prev
+            ].slice(0, 6));
+
+            return nextResult;
+        } finally {
+            setSavingVisitor(false);
+        }
+    }
+
     if (bootstrapping) {
         return (
             <div className="loading-screen">
@@ -578,9 +916,11 @@ export default function App() {
             setActiveEventId={setActiveEventId}
             onLogout={handleLogout}
             onScanToken={handleScanToken}
+            onApproveVisitor={handleApproveVisitor}
             result={result}
             recentScans={recentScans}
             loadingEvents={eventsLoading}
+            savingVisitor={savingVisitor}
         />
     );
 }
