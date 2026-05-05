@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useFonts, Cairo_400Regular, Cairo_700Bold } from '@expo-google-fonts/cairo';
 import { I18nextProvider, useTranslation } from 'react-i18next';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import i18n from '../shared/i18n';
 import api from '../shared/api/client';
 import { clearAccessToken, getAccessToken, saveAccessToken } from '../modules/auth/sessionStorage';
@@ -17,8 +15,6 @@ import AboutScreen from '../modules/scanner/AboutScreen';
 import { fetchScannerEvents, fetchScannerProfile } from '../modules/scanner/scannerApi';
 import { appendRuntimeLog } from '../shared/debug/runtimeLogger';
 
-const Tab = createBottomTabNavigator();
-
 function HomeScreen({ scannerUser, client, events, onLogout }) {
     const { t, i18n: i18nCtx } = useTranslation();
     const isArabic = i18nCtx.language === 'ar';
@@ -26,8 +22,54 @@ function HomeScreen({ scannerUser, client, events, onLogout }) {
         fontFamily: fontFamilyForLocale(isArabic)
     }), [isArabic]);
 
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [activeEventId, setActiveEventId] = useState('');
     const [scanResult, setScanResult] = useState(null);
+
+    const tabs = [
+        { key: 'dashboard', label: 'Dashboard' },
+        { key: 'scan', label: 'Scan' },
+        { key: 'account', label: 'Account' },
+        { key: 'about', label: 'About' },
+    ];
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'dashboard':
+                return (
+                    <DashboardScreen
+                        scannerUser={scannerUser}
+                        client={client}
+                        events={events}
+                        activeEventId={activeEventId}
+                        setActiveEventId={setActiveEventId}
+                        onLogout={onLogout}
+                    />
+                );
+            case 'scan':
+                return (
+                    <ScanScreen
+                        scannerUser={scannerUser}
+                        client={client}
+                        events={events}
+                        activeEventId={activeEventId}
+                        onScanResult={setScanResult}
+                    />
+                );
+            case 'account':
+                return (
+                    <AccountScreen
+                        scannerUser={scannerUser}
+                        client={client}
+                        events={events}
+                    />
+                );
+            case 'about':
+                return <AboutScreen />;
+            default:
+                return null;
+        }
+    };
 
     if (!events.length) {
         return (
@@ -44,68 +86,27 @@ function HomeScreen({ scannerUser, client, events, onLogout }) {
     }
 
     return (
-        <NavigationContainer>
-            <Tab.Navigator
-                screenOptions={{
-                    tabBarStyle: { backgroundColor: tokens.colors.surface },
-                    tabBarActiveTintColor: tokens.colors.primary,
-                    tabBarInactiveTintColor: tokens.colors.textSecondary,
-                    headerStyle: { backgroundColor: tokens.colors.primary },
-                    headerTintColor: tokens.colors.onPrimary,
-                }}
-            >
-                <Tab.Screen
-                    name="Dashboard"
-                    options={{ title: 'Dashboard' }}
-                >
-                    {(props) => (
-                        <DashboardScreen
-                            {...props}
-                            scannerUser={scannerUser}
-                            client={client}
-                            events={events}
-                            activeEventId={activeEventId}
-                            setActiveEventId={setActiveEventId}
-                            onLogout={onLogout}
-                        />
-                    )}
-                </Tab.Screen>
-                <Tab.Screen
-                    name="Scan"
-                    options={{ title: 'Scan' }}
-                >
-                    {(props) => (
-                        <ScanScreen
-                            {...props}
-                            scannerUser={scannerUser}
-                            client={client}
-                            events={events}
-                            activeEventId={activeEventId}
-                            onScanResult={setScanResult}
-                        />
-                    )}
-                </Tab.Screen>
-                <Tab.Screen
-                    name="Account"
-                    options={{ title: 'Account' }}
-                >
-                    {(props) => (
-                        <AccountScreen
-                            {...props}
-                            scannerUser={scannerUser}
-                            client={client}
-                            events={events}
-                        />
-                    )}
-                </Tab.Screen>
-                <Tab.Screen
-                    name="About"
-                    options={{ title: 'About' }}
-                >
-                    {(props) => <AboutScreen {...props} />}
-                </Tab.Screen>
-            </Tab.Navigator>
-        </NavigationContainer>
+        <SafeAreaView style={styles.safeFill}>
+            <StatusBar barStyle="dark-content" />
+            <View style={styles.container}>
+                <View style={styles.content}>
+                    {renderTabContent()}
+                </View>
+                <View style={styles.tabBar}>
+                    {tabs.map((tab) => (
+                        <Pressable
+                            key={tab.key}
+                            style={[styles.tabItem, activeTab === tab.key && styles.activeTabItem]}
+                            onPress={() => setActiveTab(tab.key)}
+                        >
+                            <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText, textStyle]}>
+                                {tab.label}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
+        </SafeAreaView>
     );
 }
 
@@ -251,5 +252,35 @@ const styles = StyleSheet.create({
         marginTop: 18,
         color: tokens.colors.accent,
         fontWeight: '700'
-    }
+    },
+    container: {
+        flex: 1,
+    },
+    content: {
+        flex: 1,
+    },
+    tabBar: {
+        flexDirection: 'row',
+        backgroundColor: tokens.colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: tokens.colors.border,
+        paddingBottom: 5, // For safe area
+    },
+    tabItem: {
+        flex: 1,
+        paddingVertical: tokens.spacing.md,
+        alignItems: 'center',
+    },
+    activeTabItem: {
+        borderTopWidth: 2,
+        borderTopColor: tokens.colors.primary,
+    },
+    tabText: {
+        fontSize: tokens.fontSize.sm,
+        color: tokens.colors.textSecondary,
+    },
+    activeTabText: {
+        color: tokens.colors.primary,
+        fontWeight: 'bold',
+    },
 });
