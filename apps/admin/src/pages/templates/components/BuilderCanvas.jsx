@@ -78,12 +78,13 @@ function DraggableResizableWidget({ widget, isSelected, onSelect, onUpdate, onDe
                 // Let's implement 4-corner resizing if requested, but bottom-right is easiest for MVP
                 // User asked for "resize it", usually corner handles.
 
-                if (handle.includes('e')) newW = Math.max(GRID_SIZE * 2, Math.round((startWidth + deltaX) / GRID_SIZE) * GRID_SIZE);
-                if (handle.includes('s')) newH = Math.max(GRID_SIZE * 2, Math.round((startHeight + deltaY) / GRID_SIZE) * GRID_SIZE);
+                const minWidgetSize = widget.type === 'qr_code' ? 100 : GRID_SIZE * 2;
+                if (handle.includes('e')) newW = Math.max(minWidgetSize, Math.round((startWidth + deltaX) / GRID_SIZE) * GRID_SIZE);
+                if (handle.includes('s')) newH = Math.max(minWidgetSize, Math.round((startHeight + deltaY) / GRID_SIZE) * GRID_SIZE);
 
                 // Enforce Aspect Ratio for QR Code and Logo widgets
                 if (widget.type === 'qr_code' || widget.type === 'logo') {
-                    const lockedHeight = Math.max(GRID_SIZE * 2, Math.round(newW / aspectRatio / GRID_SIZE) * GRID_SIZE);
+                    const lockedHeight = Math.max(minWidgetSize, Math.round(newW / aspectRatio / GRID_SIZE) * GRID_SIZE);
                     newH = lockedHeight;
                 }
 
@@ -93,7 +94,7 @@ function DraggableResizableWidget({ widget, isSelected, onSelect, onUpdate, onDe
 
                 // Re-apply aspect ratio if constraint reduced width
                 if (widget.type === 'qr_code' || widget.type === 'logo') {
-                    newH = Math.max(GRID_SIZE * 2, Math.round(newW / aspectRatio / GRID_SIZE) * GRID_SIZE);
+                    newH = Math.max(minWidgetSize, Math.round(newW / aspectRatio / GRID_SIZE) * GRID_SIZE);
                 }
 
                 newGeometry = { ...newGeometry, w: newW, h: newH };

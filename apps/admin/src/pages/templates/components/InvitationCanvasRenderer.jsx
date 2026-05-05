@@ -334,12 +334,14 @@ export function InvitationWidgetPreview({ widget, language, project, recipient, 
             return (
                 <div style={style} className="preview-widget qr-widget">
                     {content.label && <div className="qr-label">{content.label}</div>}
-                    {qrImageUrl ? (
-                        <img src={qrImageUrl} alt="Invitation QR Code" className="qr-image" />
-                    ) : (
-                        <div className="qr-placeholder">QR CODE</div>
-                    )}
-                    <small className="qr-token">{recipient.public_token}</small>
+                    <div className="qr-artwork">
+                        {qrImageUrl ? (
+                            <img src={qrImageUrl} alt="Invitation QR Code" className="qr-image" />
+                        ) : (
+                            <div className="qr-placeholder">QR CODE</div>
+                        )}
+                    </div>
+                    {mode !== 'builder' && recipient.public_token ? <small className="qr-token">{recipient.public_token}</small> : null}
                 </div>
             );
         }

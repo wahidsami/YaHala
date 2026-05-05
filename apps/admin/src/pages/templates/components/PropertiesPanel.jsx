@@ -544,7 +544,7 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
         const aspectRatio = widget.config?.aspectRatio || (currentGeometry.h ? currentGeometry.w / currentGeometry.h : 1);
         const newGeo = { ...currentGeometry, [key]: parsedValue };
 
-        if (widget.type === 'logo' && aspectRatio > 0) {
+        if ((widget.type === 'logo' || widget.type === 'qr_code') && aspectRatio > 0) {
             if (key === 'w') {
                 newGeo.h = Math.max(1, Math.round(parsedValue / aspectRatio));
             } else if (key === 'h') {

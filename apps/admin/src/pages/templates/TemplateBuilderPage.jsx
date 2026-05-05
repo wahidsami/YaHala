@@ -142,6 +142,11 @@ export default function TemplateBuilderPage() {
             // Enforce aspect ratio for QR Code on Drop
             if (newWidget.type === 'qr_code') {
                 newWidget.geometry.h = newWidget.geometry.w;
+                newWidget.config = {
+                    ...(newWidget.config || {}),
+                    aspectRatio: 1,
+                    lockAspectRatio: true
+                };
             }
 
             setDesignData(prev => ({
