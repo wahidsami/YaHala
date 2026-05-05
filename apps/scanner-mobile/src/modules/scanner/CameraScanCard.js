@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
 import { fontFamilyForLocale, tokens } from '../../shared/theme/tokens';
@@ -37,8 +37,9 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
     const [lastRawValue, setLastRawValue] = useState('');
     const [lastScanAt, setLastScanAt] = useState('');
     const [requestState, setRequestState] = useState('idle');
+    const [showDebug, setShowDebug] = useState(false);
+    const [debugTokenInput, setDebugTokenInput] = useState('');
     const lastScanAtRef = useRef(0);
-    const debugEnabled = String(process.env.EXPO_PUBLIC_SCANNER_DEBUG || '').toLowerCase() === 'true';
 
     useEffect(() => {
         if (!enabled) {
@@ -50,21 +51,18 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
         setStatusText('Camera initializing...');
     }, [enabled]);
 
-    function handleBarcodeScanned(result) {
+    function runScanToken({ token, rawValue = '', scannedAt = Date.now(), bypassThrottle = false }) {
         if (!enabled || busy) {
             return;
         }
 
-        const now = Date.now();
-        if (now - lastScanAtRef.current < 1400) {
+        if (!bypassThrottle && scannedAt - lastScanAtRef.current < 1400) {
             return;
         }
 
-        lastScanAtRef.current = now;
-        const rawValue = (result?.data || '').trim();
-        const token = extractTokenFromScan(rawValue);
+        lastScanAtRef.current = scannedAt;
         setLastRawValue(rawValue);
-        setLastScanAt(new Date(now).toISOString());
+        setLastScanAt(new Date(scannedAt).toISOString());
 
         if (!token) {
             setErrorText('QR detected but token is empty');
@@ -89,6 +87,18 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
                 setErrorText(message);
                 setRequestState('failed');
             });
+    }
+
+    function handleBarcodeScanned(result) {
+        const rawValue = (result?.data || '').trim();
+        const token = extractTokenFromScan(rawValue);
+        runScanToken({ token, rawValue, scannedAt: Date.now(), bypassThrottle: false });
+    }
+
+    function handleDebugRunScan() {
+        const rawValue = (debugTokenInput || '').trim();
+        const token = extractTokenFromScan(rawValue);
+        runScanToken({ token, rawValue, scannedAt: Date.now(), bypassThrottle: true });
     }
 
     if (!permission) {
@@ -116,7 +126,12 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
         <View style={styles.card}>
             <View style={styles.headerRow}>
                 <Text style={[styles.title, textStyle]}>Live QR Scan</Text>
-                <Text style={[styles.livePill, textStyle]}>{busy ? 'Busy' : 'Live'}</Text>
+                <View style={styles.headerActions}>
+                    <Pressable style={styles.debugPillBtn} onPress={() => setShowDebug((prev) => !prev)}>
+                        <Text style={[styles.debugPillText, textStyle]}>{showDebug ? 'Hide Debug' : 'Debug'}</Text>
+                    </Pressable>
+                    <Text style={[styles.livePill, textStyle]}>{busy ? 'Busy' : 'Live'}</Text>
+                </View>
             </View>
 
             <View style={styles.cameraWrap}>
@@ -138,7 +153,7 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
             {lastTokenPreview ? <Text style={[styles.note, textStyle]}>Last token: {lastTokenPreview}...</Text> : null}
             {errorText ? <Text style={[styles.error, textStyle]}>{errorText}</Text> : null}
 
-            {debugEnabled ? (
+            {showDebug ? (
                 <View style={styles.debugWrap}>
                     <Text style={[styles.debugTitle, textStyle]}>Scanner Debug</Text>
                     <Text style={[styles.debugLine, textStyle]}>enabled: {String(enabled)}</Text>
@@ -147,6 +162,16 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
                     <Text style={[styles.debugLine, textStyle]}>lastScanAt: {lastScanAt || '-'}</Text>
                     <Text style={[styles.debugLine, textStyle]}>raw: {lastRawValue || '-'}</Text>
                     <Text style={[styles.debugLine, textStyle]}>token: {lastTokenValue || '-'}</Text>
+                    <TextInput
+                        style={[styles.debugInput, textStyle]}
+                        value={debugTokenInput}
+                        onChangeText={setDebugTokenInput}
+                        placeholder="Paste token or invite URL then Run Test Scan"
+                        autoCapitalize="none"
+                    />
+                    <Pressable style={styles.debugRunBtn} onPress={handleDebugRunScan}>
+                        <Text style={[styles.debugRunBtnText, textStyle]}>Run Test Scan</Text>
+                    </Pressable>
                 </View>
             ) : null}
         </View>
@@ -167,6 +192,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center'
     },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
     title: {
         color: tokens.colors.textPrimary,
         fontSize: 16,
@@ -180,6 +210,19 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         paddingHorizontal: 10,
         overflow: 'hidden'
+    },
+    debugPillBtn: {
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: '#D7E6F5',
+        backgroundColor: '#EEF5FB',
+        paddingVertical: 4,
+        paddingHorizontal: 10
+    },
+    debugPillText: {
+        fontSize: 11,
+        color: '#35516A',
+        fontWeight: '700'
     },
     cameraWrap: {
         height: 280,
@@ -216,6 +259,28 @@ const styles = StyleSheet.create({
     debugLine: {
         color: '#35516A',
         fontSize: 11
+    },
+    debugInput: {
+        height: 38,
+        borderWidth: 1,
+        borderColor: '#D7E6F5',
+        borderRadius: 8,
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 10,
+        fontSize: 12,
+        color: tokens.colors.textPrimary
+    },
+    debugRunBtn: {
+        height: 36,
+        borderRadius: 8,
+        backgroundColor: '#1C7C54',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    debugRunBtnText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '700'
     },
     button: {
         alignSelf: 'flex-start',
