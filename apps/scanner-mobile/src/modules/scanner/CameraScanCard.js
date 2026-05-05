@@ -4,12 +4,35 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
 import { fontFamilyForLocale, tokens } from '../../shared/theme/tokens';
 
+function extractTokenFromScan(rawValue) {
+    const raw = (rawValue || '').trim();
+    if (!raw) return '';
+    if (!raw.includes('://')) return raw;
+
+    try {
+        const parsed = new URL(raw);
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        const inviteIndex = parts.findIndex((part) => part === 'invite' || part === 'i');
+        if (inviteIndex >= 0 && parts[inviteIndex + 1]) {
+            return parts[inviteIndex + 1].trim();
+        }
+        const queryToken = parsed.searchParams.get('token') || parsed.searchParams.get('invite');
+        if (queryToken) return queryToken.trim();
+    } catch {
+        return raw;
+    }
+
+    return raw;
+}
+
 export default function CameraScanCard({ enabled, onScanned, busy }) {
     const { i18n } = useTranslation();
     const isArabic = i18n.language === 'ar';
     const textStyle = useMemo(() => ({ fontFamily: fontFamilyForLocale(isArabic) }), [isArabic]);
     const [permission, requestPermission] = useCameraPermissions();
     const [statusText, setStatusText] = useState('Camera ready');
+    const [errorText, setErrorText] = useState('');
+    const [lastTokenPreview, setLastTokenPreview] = useState('');
     const lastScanAtRef = useRef(0);
 
     function handleBarcodeScanned(result) {
@@ -23,16 +46,26 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
         }
 
         lastScanAtRef.current = now;
-        const token = result?.data || '';
+        const token = extractTokenFromScan(result?.data || '');
 
         if (!token) {
+            setErrorText('QR detected but token is empty');
             return;
         }
 
+        setErrorText('');
+        setLastTokenPreview(token.slice(0, 18));
         setStatusText('Scanning QR...');
         onScanned(token)
-            .then(() => setStatusText('Camera ready'))
-            .catch(() => setStatusText('Scan failed, try again'));
+            .then(() => {
+                setStatusText('Scan sent successfully');
+                setTimeout(() => setStatusText('Camera ready'), 900);
+            })
+            .catch((error) => {
+                const message = error?.response?.data?.message || 'Scan failed, try again';
+                setStatusText('Scan failed');
+                setErrorText(message);
+            });
     }
 
     if (!permission) {
@@ -73,6 +106,9 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
             </View>
 
             <Text style={[styles.note, textStyle]}>{statusText}</Text>
+            {!enabled ? <Text style={[styles.note, textStyle]}>Select an event first to activate scanning.</Text> : null}
+            {lastTokenPreview ? <Text style={[styles.note, textStyle]}>Last token: {lastTokenPreview}...</Text> : null}
+            {errorText ? <Text style={[styles.error, textStyle]}>{errorText}</Text> : null}
         </View>
     );
 }
@@ -118,6 +154,10 @@ const styles = StyleSheet.create({
     },
     note: {
         color: tokens.colors.textSecondary,
+        fontSize: 13
+    },
+    error: {
+        color: tokens.colors.danger,
         fontSize: 13
     },
     button: {

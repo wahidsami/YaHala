@@ -10,6 +10,7 @@ import BrandedSplash from '../shared/components/BrandedSplash';
 import { fontFamilyForLocale, tokens } from '../shared/theme/tokens';
 import ScannerHomeScreen from '../modules/scanner/ScannerHomeScreen';
 import { fetchScannerEvents, fetchScannerProfile } from '../modules/scanner/scannerApi';
+import { appendRuntimeLog } from '../shared/debug/runtimeLogger';
 
 function HomeScreen({ scannerUser, client, events, onLogout }) {
     const { t, i18n: i18nCtx } = useTranslation();
@@ -52,31 +53,42 @@ function AppRoot() {
 
     useEffect(() => {
         async function bootstrap() {
-            const accessToken = await getAccessToken();
-            if (!accessToken) {
-                setLoadingSession(false);
-                return;
-            }
-
-            api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-
             try {
+                await appendRuntimeLog('bootstrap:start');
+                const accessToken = await getAccessToken();
+                if (!accessToken) {
+                    await appendRuntimeLog('bootstrap:no_access_token');
+                    setSession(null);
+                    setEvents([]);
+                    return;
+                }
+
+                await appendRuntimeLog('bootstrap:token_found');
+                api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
                 const profile = await fetchScannerProfile();
+                await appendRuntimeLog('bootstrap:profile_loaded');
                 const list = await fetchScannerEvents();
+                await appendRuntimeLog(`bootstrap:events_loaded count=${Array.isArray(list) ? list.length : 0}`);
                 setSession({
                     accessToken,
                     scannerUser: profile.scannerUser,
                     client: profile.client
                 });
                 setEvents(list);
-            } catch {
-                await clearAccessToken();
+            } catch (error) {
+                await appendRuntimeLog(`bootstrap:error ${error?.message || 'unknown'}`);
+                try {
+                    await clearAccessToken();
+                } catch {
+                    // Keep bootstrapping even when secure storage cleanup fails.
+                }
                 delete api.defaults.headers.common.Authorization;
                 setSession(null);
                 setEvents([]);
+            } finally {
+                await appendRuntimeLog('bootstrap:done');
+                setLoadingSession(false);
             }
-
-            setLoadingSession(false);
         }
 
         bootstrap();
