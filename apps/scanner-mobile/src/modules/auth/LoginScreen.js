@@ -49,27 +49,30 @@ export default function LoginScreen({ onLoggedIn }) {
                 <Text style={[styles.title, textStyle]}>{t('appTitle')}</Text>
                 <Text style={[styles.subtitle, textStyle]}>{t('subtitle')}</Text>
 
+                <Text style={[styles.fieldLabel, textStyle]}>{t('clientIdentifier')}</Text>
                 <TextInput
                     style={[styles.input, textStyle]}
                     value={clientIdentifier}
                     onChangeText={setClientIdentifier}
-                    placeholder={t('clientIdentifier')}
+                    placeholder="Enter client email or ID"
                     autoCapitalize="none"
                 />
 
+                <Text style={[styles.fieldLabel, textStyle]}>{t('scannerName')}</Text>
                 <TextInput
                     style={[styles.input, textStyle]}
                     value={name}
                     onChangeText={setName}
-                    placeholder={t('scannerName')}
+                    placeholder="Enter scanner name"
                     autoCapitalize="none"
                 />
 
+                <Text style={[styles.fieldLabel, textStyle]}>{t('pin')}</Text>
                 <TextInput
                     style={[styles.input, textStyle]}
                     value={pin}
                     onChangeText={setPin}
-                    placeholder={t('pin')}
+                    placeholder="Enter PIN"
                     secureTextEntry
                 />
 
@@ -118,6 +121,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: tokens.colors.textSecondary,
         marginBottom: 8
+    },
+    fieldLabel: {
+        fontSize: 13,
+        color: tokens.colors.textSecondary
     },
     input: {
         height: 52,
