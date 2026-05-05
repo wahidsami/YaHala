@@ -562,7 +562,7 @@ router.get('/events/:eventId/stats', authenticateScanner, async (req, res, next)
             SELECT
                 COUNT(*)::int AS invited_total,
                 COUNT(*) FILTER (
-                    WHERE COALESCE(r.metadata->>'attendance_status', '') = 'attended'
+                    WHERE COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') IN ('attended', 'checked_in')
                 )::int AS attended_from_invitations
             FROM invitation_projects p
             JOIN invitation_recipients r ON r.project_id = p.id
