@@ -48,6 +48,7 @@ export default function LoginScreen({ onLoggedIn }) {
             <View style={styles.card}>
                 <Text style={[styles.title, textStyle]}>{t('appTitle')}</Text>
                 <Text style={[styles.subtitle, textStyle]}>{t('subtitle')}</Text>
+                <Text style={[styles.hint, textStyle]}>{t('loginFieldHelp')}</Text>
 
                 <Text style={[styles.fieldLabel, textStyle]}>{t('clientIdentifier')}</Text>
                 <TextInput
@@ -125,6 +126,11 @@ const styles = StyleSheet.create({
     fieldLabel: {
         fontSize: 13,
         color: tokens.colors.textSecondary
+    },
+    hint: {
+        fontSize: 12,
+        color: tokens.colors.textSecondary,
+        marginBottom: 6
     },
     input: {
         height: 52,

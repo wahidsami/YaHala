@@ -404,7 +404,7 @@ router.post('/auth/login', async (req, res, next) => {
         );
 
         if (!clientRows.length) {
-            throw new AppError('Entity not found', 404, 'CLIENT_NOT_FOUND');
+            throw new AppError('Client not found. First field must be client email or client ID.', 404, 'CLIENT_NOT_FOUND');
         }
 
         const client = clientRows[0];

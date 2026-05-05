@@ -6,6 +6,7 @@ const resources = {
         translation: {
             appTitle: 'YaHala Scanner',
             subtitle: 'Fast event check-in with secure access',
+            loginFieldHelp: 'Use Client Email/ID, then Scanner Name, then PIN',
             clientIdentifier: 'Client Email or ID',
             scannerName: 'Scanner Name',
             pin: 'PIN',
@@ -19,6 +20,7 @@ const resources = {
         translation: {
             appTitle: 'يا هلا سكانر',
             subtitle: 'تسجيل دخول سريع وآمن للفعاليات',
+            loginFieldHelp: 'استخدم بريد/معرّف العميل ثم اسم الماسح ثم الرقم السري',
             clientIdentifier: 'معرّف العميل أو البريد الإلكتروني',
             scannerName: 'اسم جهاز المسح',
             pin: 'الرقم السري',
