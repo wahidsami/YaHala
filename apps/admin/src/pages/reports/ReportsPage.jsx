@@ -55,6 +55,25 @@ function labelize(value) {
         .replace(/^\w/, (char) => char.toUpperCase());
 }
 
+function getStorageBaseUrl() {
+    const baseUrl = api.defaults.baseURL || import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    return baseUrl.replace(/\/api\/?$/, '');
+}
+
+function resolveStorageUrl(storagePath) {
+    if (!storagePath) {
+        return '';
+    }
+    if (/^(https?:\/\/|data:|blob:)/i.test(storagePath)) {
+        return storagePath;
+    }
+    if (storagePath.startsWith('/storage/') || storagePath.startsWith('storage/')) {
+        const normalizedPath = storagePath.startsWith('/storage/') ? storagePath : `/${storagePath}`;
+        return `${getStorageBaseUrl()}${normalizedPath}`;
+    }
+    return storagePath.startsWith('/') ? `${window.location.origin}${storagePath}` : `${window.location.origin}/${storagePath}`;
+}
+
 function OverviewCard({ title, value, subtitle, icon: Icon, tone = 'neutral' }) {
     return (
         <div className={`report-card report-card--${tone}`}>
@@ -92,6 +111,11 @@ export default function ReportsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [refreshTick, setRefreshTick] = useState(0);
+    const [eventOptions, setEventOptions] = useState([]);
+    const [selectedEventId, setSelectedEventId] = useState('');
+    const [eventReport, setEventReport] = useState(null);
+    const [eventReportLoading, setEventReportLoading] = useState(false);
+    const [eventReportError, setEventReportError] = useState('');
 
     const isArabic = i18n.language?.startsWith('ar');
 
@@ -127,6 +151,59 @@ export default function ReportsPage() {
         };
     }, [refreshTick, t]);
 
+    useEffect(() => {
+        let mounted = true;
+        async function fetchEventsForReports() {
+            try {
+                const response = await api.get('/admin/reports/events');
+                const rows = response.data?.data || [];
+                if (mounted) {
+                    setEventOptions(rows);
+                    if (!selectedEventId && rows.length) {
+                        setSelectedEventId(rows[0].id);
+                    }
+                }
+            } catch (fetchError) {
+                console.error('Failed to load report events:', fetchError);
+            }
+        }
+        fetchEventsForReports();
+        return () => {
+            mounted = false;
+        };
+    }, [selectedEventId]);
+
+    useEffect(() => {
+        if (!selectedEventId) {
+            setEventReport(null);
+            return;
+        }
+        let mounted = true;
+        async function fetchEventReport() {
+            setEventReportLoading(true);
+            setEventReportError('');
+            try {
+                const response = await api.get(`/admin/reports/events/${selectedEventId}`);
+                if (mounted) {
+                    setEventReport(response.data?.data || null);
+                }
+            } catch (fetchError) {
+                if (mounted) {
+                    setEventReport(null);
+                    setEventReportError(fetchError.response?.data?.message || 'Failed to load event report');
+                }
+            } finally {
+                if (mounted) {
+                    setEventReportLoading(false);
+                }
+            }
+        }
+        fetchEventReport();
+        return () => {
+            mounted = false;
+        };
+    }, [selectedEventId]);
+
     const overview = data?.summary || {};
     const invitations = data?.invitations || {};
     const rsvp = data?.rsvp || {};
@@ -143,6 +220,10 @@ export default function ReportsPage() {
         setRefreshTick((value) => value + 1);
     }
 
+    function exportEventReportPdf() {
+        window.print();
+    }
+
     return (
         <div className="reports-page">
             <div className="page-header">
@@ -157,6 +238,109 @@ export default function ReportsPage() {
             </div>
 
             {error && <div className="reports-error">{error}</div>}
+
+            <section className="report-section">
+                <SectionHeader
+                    title="Event Report Center"
+                    subtitle="Select any event to view complete operational and attendance report, then export to PDF."
+                    action={(
+                        <button type="button" className="btn btn-secondary" onClick={exportEventReportPdf} disabled={!eventReport}>
+                            <FileText size={16} />
+                            <span>Export PDF</span>
+                        </button>
+                    )}
+                />
+                <div className="event-report-toolbar">
+                    <label htmlFor="eventReportSelect">Event</label>
+                    <select
+                        id="eventReportSelect"
+                        className="form-select"
+                        value={selectedEventId}
+                        onChange={(event) => setSelectedEventId(event.target.value)}
+                    >
+                        {eventOptions.map((event) => (
+                            <option key={event.id} value={event.id}>
+                                {isArabic ? (event.name_ar || event.name) : (event.name || event.name_ar)} · {isArabic ? (event.client_name_ar || event.client_name) : (event.client_name || event.client_name_ar)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {eventReportError && <div className="reports-error">{eventReportError}</div>}
+
+                {eventReportLoading ? (
+                    <div className="report-empty">Loading event report...</div>
+                ) : eventReport ? (
+                    <div className="event-report-sheet" id="event-report-pdf">
+                        <div className="event-report-sheet__header">
+                            <div className="event-report-sheet__brand">
+                                <img src="/yahala-logo.svg" alt="YaHala" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                                <div>
+                                    <strong>YaHala Event Report</strong>
+                                    <small>{formatDateTime(new Date().toISOString(), i18n.language)}</small>
+                                </div>
+                            </div>
+                            <div className="event-report-sheet__logos">
+                                {eventReport?.event?.client_logo_path ? <img src={resolveStorageUrl(eventReport.event.client_logo_path)} alt="Client logo" /> : null}
+                                {eventReport?.event?.event_logo_path ? <img src={resolveStorageUrl(eventReport.event.event_logo_path)} alt="Event logo" /> : null}
+                            </div>
+                        </div>
+
+                        <div className="report-grid report-grid--four">
+                            <OverviewCard title="Invited" value={formatNumber(eventReport?.invitationStats?.total_recipients)} icon={Users} tone="primary" />
+                            <OverviewCard title="Checked In" value={formatNumber(eventReport?.invitationStats?.checked_in_count)} icon={UserCheck} tone="success" />
+                            <OverviewCard title="Walk-ins" value={formatNumber(eventReport?.walkInStats?.walk_in_count)} icon={Activity} tone="accent" />
+                            <OverviewCard title="Response Rate" value={percent(eventReport?.rsvpStats?.total_submissions, eventReport?.invitationStats?.total_recipients)} icon={Reply} tone="dark" />
+                        </div>
+
+                        <div className="report-mini-grid">
+                            <div className="report-mini-card"><span>Sent</span><strong>{formatNumber(eventReport?.invitationStats?.sent_count)}</strong></div>
+                            <div className="report-mini-card"><span>Delivered</span><strong>{formatNumber(eventReport?.invitationStats?.delivered_count)}</strong></div>
+                            <div className="report-mini-card"><span>Opened</span><strong>{formatNumber(eventReport?.invitationStats?.opened_count)}</strong></div>
+                            <div className="report-mini-card"><span>Responded</span><strong>{formatNumber(eventReport?.invitationStats?.responded_count)}</strong></div>
+                            <div className="report-mini-card"><span>Failed</span><strong>{formatNumber(eventReport?.invitationStats?.failed_count)}</strong></div>
+                            <div className="report-mini-card"><span>Opted Out</span><strong>{formatNumber(eventReport?.invitationStats?.opted_out_count)}</strong></div>
+                            <div className="report-mini-card"><span>RSVP Attending</span><strong>{formatNumber(eventReport?.rsvpStats?.attending_count)}</strong></div>
+                            <div className="report-mini-card"><span>RSVP Maybe</span><strong>{formatNumber(eventReport?.rsvpStats?.maybe_count)}</strong></div>
+                        </div>
+
+                        <div className="report-table-wrap">
+                            <table className="data-table report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Guest</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Status</th>
+                                        <th>Attendance</th>
+                                        <th>Opened At</th>
+                                        <th>Responded At</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(eventReport.attendees || []).length === 0 ? (
+                                        <tr><td colSpan="7" className="empty-cell">No attendees found for this event.</td></tr>
+                                    ) : (
+                                        eventReport.attendees.map((attendee) => (
+                                            <tr key={attendee.recipient_id}>
+                                                <td>{isArabic ? (attendee.display_name_ar || attendee.display_name || '—') : (attendee.display_name || attendee.display_name_ar || '—')}</td>
+                                                <td>{attendee.email || '—'}</td>
+                                                <td>{attendee.phone || '—'}</td>
+                                                <td>{labelize(attendee.overall_status)}</td>
+                                                <td>{labelize(attendee.attendance_status)}</td>
+                                                <td>{formatDateTime(attendee.opened_at, i18n.language)}</td>
+                                                <td>{formatDateTime(attendee.responded_at, i18n.language)}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : (
+                    <EmptyState message="Choose an event to start reporting." />
+                )}
+            </section>
 
             <section className="report-section">
                 <div className="report-callout">

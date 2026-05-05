@@ -160,4 +160,141 @@ router.get('/overview', requirePermission('reports.view'), async (req, res, next
     }
 });
 
+router.get('/events', requirePermission('reports.view'), async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT
+                e.id,
+                e.name,
+                e.name_ar,
+                e.status,
+                e.start_datetime,
+                e.end_datetime,
+                e.event_logo_path,
+                c.name AS client_name,
+                c.name_ar AS client_name_ar,
+                c.logo_path AS client_logo_path
+            FROM events e
+            JOIN clients c ON c.id = e.client_id
+            ORDER BY e.start_datetime DESC NULLS LAST, e.created_at DESC
+        `);
+
+        res.json({ data: rows });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.get('/events/:eventId', requirePermission('reports.view'), async (req, res, next) => {
+    try {
+        const { eventId } = req.params;
+        const tableCheck = await pool.query(`SELECT to_regclass('public.event_walk_ins') AS walk_ins_table`);
+        const hasWalkIns = Boolean(tableCheck.rows?.[0]?.walk_ins_table);
+
+        const { rows: metaRows } = await pool.query(`
+            SELECT
+                e.id,
+                e.name,
+                e.name_ar,
+                e.status,
+                e.event_type,
+                e.start_datetime,
+                e.end_datetime,
+                e.venue,
+                e.location_mode,
+                e.google_map_url,
+                e.address_street,
+                e.address_city,
+                e.address_region,
+                e.event_logo_path,
+                c.id AS client_id,
+                c.name AS client_name,
+                c.name_ar AS client_name_ar,
+                c.logo_path AS client_logo_path
+            FROM events e
+            JOIN clients c ON c.id = e.client_id
+            WHERE e.id = $1
+            LIMIT 1
+        `, [eventId]);
+
+        if (!metaRows.length) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const eventMeta = metaRows[0];
+
+        const { rows: invitationStatsRows } = await pool.query(`
+            SELECT
+                COUNT(r.id)::int AS total_recipients,
+                COUNT(*) FILTER (WHERE r.overall_status = 'sent')::int AS sent_count,
+                COUNT(*) FILTER (WHERE r.overall_status = 'delivered')::int AS delivered_count,
+                COUNT(*) FILTER (WHERE r.overall_status = 'opened')::int AS opened_count,
+                COUNT(*) FILTER (WHERE r.overall_status = 'responded')::int AS responded_count,
+                COUNT(*) FILTER (WHERE r.overall_status = 'failed')::int AS failed_count,
+                COUNT(*) FILTER (WHERE r.overall_status = 'opted_out')::int AS opted_out_count,
+                COUNT(*) FILTER (
+                    WHERE COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') IN ('attended', 'checked_in')
+                )::int AS checked_in_count
+            FROM invitation_projects p
+            LEFT JOIN invitation_recipients r ON r.project_id = p.id
+            WHERE p.event_id = $1
+        `, [eventId]);
+
+        const { rows: rsvpRows } = await pool.query(`
+            SELECT
+                COUNT(*)::int AS total_submissions,
+                COUNT(*) FILTER (WHERE LOWER(COALESCE(mr.response_data->>'attendance', '')) = 'attending')::int AS attending_count,
+                COUNT(*) FILTER (WHERE LOWER(COALESCE(mr.response_data->>'attendance', '')) = 'not_attending')::int AS not_attending_count,
+                COUNT(*) FILTER (WHERE LOWER(COALESCE(mr.response_data->>'attendance', '')) = 'maybe')::int AS maybe_count
+            FROM invitation_module_responses mr
+            JOIN invitation_modules m ON m.id = mr.module_id AND m.module_type = 'rsvp'
+            WHERE mr.event_id = $1
+        `, [eventId]);
+
+        let walkInStats = { walk_in_count: 0 };
+        if (hasWalkIns) {
+            const { rows } = await pool.query(`
+                SELECT COUNT(*)::int AS walk_in_count
+                FROM event_walk_ins
+                WHERE event_id = $1
+            `, [eventId]);
+            walkInStats = rows[0] || walkInStats;
+        }
+
+        const { rows: attendeeRows } = await pool.query(`
+            SELECT
+                r.id AS recipient_id,
+                r.public_token,
+                r.display_name,
+                r.display_name_ar,
+                r.email,
+                r.phone,
+                r.overall_status,
+                r.responded_at,
+                r.opened_at,
+                COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', 'pending') AS attendance_status,
+                cg.id AS guest_id,
+                cg.position,
+                cg.organization
+            FROM invitation_projects p
+            JOIN invitation_recipients r ON r.project_id = p.id
+            LEFT JOIN client_guests cg ON cg.id = r.client_guest_id
+            WHERE p.event_id = $1
+            ORDER BY r.created_at DESC
+        `, [eventId]);
+
+        res.json({
+            data: {
+                event: eventMeta,
+                invitationStats: invitationStatsRows[0] || {},
+                rsvpStats: rsvpRows[0] || {},
+                walkInStats,
+                attendees: attendeeRows
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 export default router;

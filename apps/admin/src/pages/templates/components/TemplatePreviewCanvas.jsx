@@ -1,5 +1,5 @@
 import { buildCanvasBackgroundStyle, normalizeLayout } from '../backgroundUtils';
-import { InvitationWidgetPreview } from './InvitationCanvasRenderer';
+import { InvitationWidgetPreview, computeEffectiveCanvasHeight } from './InvitationCanvasRenderer';
 import BubbleBackground from './BubbleBackground';
 import GravityStarsBackground from './GravityStarsBackground';
 import StarsBackground from './StarsBackground';
@@ -116,7 +116,8 @@ export default function TemplatePreviewCanvas({ designData, language = 'ar', can
     const coverTemplate = designData || {};
     const layout = normalizeLayout(coverTemplate.layout || {});
     const canvasWidgets = getCanvasWidgets(coverTemplate);
-    const canvasHeight = Math.max(640, Number(canvasHeightOverride) || Number(layout.height) || 640);
+    const inferredHeight = computeEffectiveCanvasHeight(layout, canvasWidgets);
+    const canvasHeight = Math.max(640, Number(canvasHeightOverride) || inferredHeight);
 
     if (!canvasWidgets.length) {
         return (

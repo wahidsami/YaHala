@@ -4,7 +4,7 @@ import { CheckCircle2, ChevronRight, Loader2, Sparkles, MapPin, X } from 'lucide
 import api from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { normalizeLayout } from '../templates/backgroundUtils';
-import InvitationCanvasRenderer from '../templates/components/InvitationCanvasRenderer';
+import InvitationCanvasRenderer, { computeEffectiveCanvasHeight } from '../templates/components/InvitationCanvasRenderer';
 import './PublicInvitationPage.css';
 
 const COPY = {
@@ -432,7 +432,7 @@ function CoverPreview({ project, recipient, language, hasRsvpPage, rsvpCompleted
     const coverTemplate = project.cover_template_snapshot || project.cover_template?.design_data;
     const layout = normalizeLayout(coverTemplate?.layout || {});
     const canvasWidgets = getCanvasWidgets(coverTemplate);
-    const canvasHeight = Math.max(640, Number(layout.height) || 640);
+    const canvasHeight = computeEffectiveCanvasHeight(layout, canvasWidgets);
 
     if (!canvasWidgets.length) {
         return (
@@ -984,7 +984,8 @@ export default function PublicInvitationPage() {
     const copy = COPY[activeLanguage];
     const coverLayout = useMemo(() => normalizeLayout(invitation?.project?.cover_template_snapshot?.layout || invitation?.project?.cover_template?.design_data?.layout || {}), [invitation?.project?.cover_template_snapshot?.layout, invitation?.project?.cover_template?.design_data?.layout]);
     const canvasBaseWidth = 360;
-    const canvasHeight = Math.max(640, Number(coverLayout.height) || 640);
+    const coverWidgets = useMemo(() => getCanvasWidgets(invitation?.project?.cover_template_snapshot || invitation?.project?.cover_template?.design_data || {}), [invitation?.project?.cover_template_snapshot, invitation?.project?.cover_template?.design_data]);
+    const canvasHeight = computeEffectiveCanvasHeight(coverLayout, coverWidgets);
     const fitScale = useMemo(() => {
         const viewportWidth = guestViewport.width || 0;
         const viewportHeight = guestViewport.height || 0;

@@ -135,6 +135,20 @@ function getCanvasWidgets(coverTemplate) {
     return orderedSections.flatMap((section) => section.widgets || []);
 }
 
+export function computeEffectiveCanvasHeight(layout, widgets = []) {
+    const savedHeight = Math.max(640, Number(layout?.height) || 640);
+    const widgetBottom = widgets.reduce((max, widget) => {
+        const geometry = widget?.geometry || {};
+        const y = Number.isFinite(Number(geometry.y)) ? Number(geometry.y) : 20;
+        const h = Number.isFinite(Number(geometry.h))
+            ? Number(geometry.h)
+            : (Number.isFinite(Number(geometry.height)) ? Number(geometry.height) : 80);
+        return Math.max(max, y + h);
+    }, 0);
+
+    return Math.max(savedHeight, widgetBottom + 24);
+}
+
 function getPublicRuleContext(project, recipient) {
     const metadata = recipient?.metadata || {};
     const rawScanStatus = metadata.attendance_status || metadata.check_in_status;
@@ -404,7 +418,7 @@ export default function InvitationCanvasRenderer({
     const canvasWidgets = getCanvasWidgets(coverTemplate);
     const publicRuleContext = getPublicRuleContext(project, recipient);
     const visibleWidgets = canvasWidgets.filter((widget) => isWidgetVisible(widget, publicRuleContext));
-    const canvasHeight = Math.max(640, Number(layout.height) || 640);
+    const canvasHeight = computeEffectiveCanvasHeight(layout, visibleWidgets);
     const inlineResponseWidget = canvasWidgets.some((widget) => widget.type === 'response');
 
     if (!visibleWidgets.length) {
