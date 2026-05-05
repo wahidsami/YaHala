@@ -35,7 +35,16 @@
     },
     "owner": "waheedaami",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow YaHala Scanner to access your camera",
+          "microphonePermission": "Allow YaHala Scanner to access your microphone",
+          "recordAudioAndroid": true,
+          "barcodeScannerEnabled": true
+        }
+      ]
     ]
   }
 }

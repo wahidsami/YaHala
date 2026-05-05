@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,16 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
     const [lastTokenPreview, setLastTokenPreview] = useState('');
     const lastScanAtRef = useRef(0);
 
+    useEffect(() => {
+        if (!enabled) {
+            setStatusText('Select an event first to activate scanning');
+            setErrorText('');
+            return;
+        }
+
+        setStatusText('Camera initializing...');
+    }, [enabled]);
+
     function handleBarcodeScanned(result) {
         if (!enabled || busy) {
             return;
@@ -56,7 +66,7 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
         setErrorText('');
         setLastTokenPreview(token.slice(0, 18));
         setStatusText('Scanning QR...');
-        onScanned(token)
+        Promise.resolve(onScanned(token))
             .then(() => {
                 setStatusText('Scan sent successfully');
                 setTimeout(() => setStatusText('Camera ready'), 900);
@@ -102,6 +112,11 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
                     facing="back"
                     barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                     onBarcodeScanned={enabled ? handleBarcodeScanned : undefined}
+                    onCameraReady={() => setStatusText('Camera ready')}
+                    onMountError={(event) => {
+                        setStatusText('Camera failed to start');
+                        setErrorText(event?.nativeEvent?.message || 'Camera mount error');
+                    }}
                 />
             </View>
 
