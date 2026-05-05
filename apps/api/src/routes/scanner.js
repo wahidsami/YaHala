@@ -138,8 +138,20 @@ async function transcribeAudioWithProvider({ audioBase64, mimeType = 'audio/m4a'
     });
 
     if (!response.ok) {
-        const errorBody = await response.text();
-        throw new AppError(`STT provider error: ${errorBody}`, 502, 'STT_PROVIDER_ERROR');
+        let providerErrorCode = '';
+        try {
+            const payload = await response.json();
+            providerErrorCode = normalizeText(payload?.error?.code || '');
+        } catch {
+            providerErrorCode = '';
+        }
+
+        // Never leak upstream provider payloads (can include sensitive key fragments).
+        if (response.status === 401 || providerErrorCode === 'invalid_api_key') {
+            throw new AppError('Speech-to-text configuration error. Contact admin.', 502, 'STT_PROVIDER_ERROR');
+        }
+
+        throw new AppError('Speech-to-text provider request failed', 502, 'STT_PROVIDER_ERROR');
     }
 
     const data = await response.json();

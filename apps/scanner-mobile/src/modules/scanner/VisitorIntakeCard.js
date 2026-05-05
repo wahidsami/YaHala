@@ -83,7 +83,12 @@ export default function VisitorIntakeCard({ eventId, onCompleted }) {
 
             setTranscript(stt.transcript || '');
         } catch (requestError) {
-            setError(requestError.response?.data?.message || requestError.message || 'Transcription failed');
+            const rawMessage = requestError.response?.data?.message || requestError.message || 'Transcription failed';
+            if (String(rawMessage).toLowerCase().includes('api key')) {
+                setError('Speech-to-text is not configured correctly. Please contact admin.');
+            } else {
+                setError(rawMessage);
+            }
         } finally {
             setTranscribing(false);
         }
@@ -192,11 +197,26 @@ export default function VisitorIntakeCard({ eventId, onCompleted }) {
             ) : null}
 
             <View style={styles.grid}>
-                <TextInput style={[styles.input, textStyle]} placeholder="Name" value={fields.name} onChangeText={(v) => updateField('name', v)} />
-                <TextInput style={[styles.input, textStyle]} placeholder="Position" value={fields.position} onChangeText={(v) => updateField('position', v)} />
-                <TextInput style={[styles.input, textStyle]} placeholder="Organization" value={fields.organization} onChangeText={(v) => updateField('organization', v)} />
-                <TextInput style={[styles.input, textStyle]} placeholder="Email" value={fields.email} onChangeText={(v) => updateField('email', v)} autoCapitalize="none" />
-                <TextInput style={[styles.input, textStyle]} placeholder="Mobile Number" value={fields.mobileNumber} onChangeText={(v) => updateField('mobileNumber', v)} />
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, textStyle]}>Name</Text>
+                    <TextInput style={[styles.input, textStyle]} placeholder="Enter full name" value={fields.name} onChangeText={(v) => updateField('name', v)} />
+                </View>
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, textStyle]}>Position</Text>
+                    <TextInput style={[styles.input, textStyle]} placeholder="Enter position" value={fields.position} onChangeText={(v) => updateField('position', v)} />
+                </View>
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, textStyle]}>Organization</Text>
+                    <TextInput style={[styles.input, textStyle]} placeholder="Enter organization" value={fields.organization} onChangeText={(v) => updateField('organization', v)} />
+                </View>
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, textStyle]}>Email</Text>
+                    <TextInput style={[styles.input, textStyle]} placeholder="Enter email" value={fields.email} onChangeText={(v) => updateField('email', v)} autoCapitalize="none" />
+                </View>
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, textStyle]}>Mobile Number</Text>
+                    <TextInput style={[styles.input, textStyle]} placeholder="Enter mobile number" value={fields.mobileNumber} onChangeText={(v) => updateField('mobileNumber', v)} />
+                </View>
             </View>
 
             {error ? <Text style={[styles.error, textStyle]}>{error}</Text> : null}
@@ -274,6 +294,14 @@ const styles = StyleSheet.create({
     },
     grid: {
         gap: 8
+    },
+    inputGroup: {
+        gap: 6
+    },
+    inputLabel: {
+        color: tokens.colors.textSecondary,
+        fontSize: 12,
+        fontWeight: '600'
     },
     input: {
         height: 48,
