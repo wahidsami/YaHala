@@ -33,7 +33,12 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
     const [statusText, setStatusText] = useState('Camera ready');
     const [errorText, setErrorText] = useState('');
     const [lastTokenPreview, setLastTokenPreview] = useState('');
+    const [lastTokenValue, setLastTokenValue] = useState('');
+    const [lastRawValue, setLastRawValue] = useState('');
+    const [lastScanAt, setLastScanAt] = useState('');
+    const [requestState, setRequestState] = useState('idle');
     const lastScanAtRef = useRef(0);
+    const debugEnabled = String(process.env.EXPO_PUBLIC_SCANNER_DEBUG || '').toLowerCase() === 'true';
 
     useEffect(() => {
         if (!enabled) {
@@ -56,25 +61,33 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
         }
 
         lastScanAtRef.current = now;
-        const token = extractTokenFromScan(result?.data || '');
+        const rawValue = (result?.data || '').trim();
+        const token = extractTokenFromScan(rawValue);
+        setLastRawValue(rawValue);
+        setLastScanAt(new Date(now).toISOString());
 
         if (!token) {
             setErrorText('QR detected but token is empty');
+            setRequestState('failed');
             return;
         }
 
         setErrorText('');
+        setLastTokenValue(token);
         setLastTokenPreview(token.slice(0, 18));
         setStatusText('Scanning QR...');
+        setRequestState('sending');
         Promise.resolve(onScanned(token))
             .then(() => {
                 setStatusText('Scan sent successfully');
+                setRequestState('success');
                 setTimeout(() => setStatusText('Camera ready'), 900);
             })
             .catch((error) => {
                 const message = error?.response?.data?.message || 'Scan failed, try again';
                 setStatusText('Scan failed');
                 setErrorText(message);
+                setRequestState('failed');
             });
     }
 
@@ -124,6 +137,18 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
             {!enabled ? <Text style={[styles.note, textStyle]}>Select an event first to activate scanning.</Text> : null}
             {lastTokenPreview ? <Text style={[styles.note, textStyle]}>Last token: {lastTokenPreview}...</Text> : null}
             {errorText ? <Text style={[styles.error, textStyle]}>{errorText}</Text> : null}
+
+            {debugEnabled ? (
+                <View style={styles.debugWrap}>
+                    <Text style={[styles.debugTitle, textStyle]}>Scanner Debug</Text>
+                    <Text style={[styles.debugLine, textStyle]}>enabled: {String(enabled)}</Text>
+                    <Text style={[styles.debugLine, textStyle]}>busy: {String(Boolean(busy))}</Text>
+                    <Text style={[styles.debugLine, textStyle]}>request: {requestState}</Text>
+                    <Text style={[styles.debugLine, textStyle]}>lastScanAt: {lastScanAt || '-'}</Text>
+                    <Text style={[styles.debugLine, textStyle]}>raw: {lastRawValue || '-'}</Text>
+                    <Text style={[styles.debugLine, textStyle]}>token: {lastTokenValue || '-'}</Text>
+                </View>
+            ) : null}
         </View>
     );
 }
@@ -174,6 +199,23 @@ const styles = StyleSheet.create({
     error: {
         color: tokens.colors.danger,
         fontSize: 13
+    },
+    debugWrap: {
+        borderWidth: 1,
+        borderColor: '#E7EDF4',
+        borderRadius: tokens.radius.md,
+        backgroundColor: '#FAFCFF',
+        padding: 10,
+        gap: 4
+    },
+    debugTitle: {
+        color: tokens.colors.textPrimary,
+        fontSize: 12,
+        fontWeight: '700'
+    },
+    debugLine: {
+        color: '#35516A',
+        fontSize: 11
     },
     button: {
         alignSelf: 'flex-start',
