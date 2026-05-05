@@ -8,13 +8,15 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://yapi.testproject.cloud/api"
+        "EXPO_PUBLIC_API_URL": "https://yapi.testproject.cloud/api",
+        "EXPO_PUBLIC_SCANNER_DEBUG": "true"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://yapi.testproject.cloud/api"
+        "EXPO_PUBLIC_API_URL": "https://yapi.testproject.cloud/api",
+        "EXPO_PUBLIC_SCANNER_DEBUG": "true"
       }
     },
     "production": {
