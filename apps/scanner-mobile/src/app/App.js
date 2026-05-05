@@ -2,15 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useFonts, Cairo_400Regular, Cairo_700Bold } from '@expo-google-fonts/cairo';
 import { I18nextProvider, useTranslation } from 'react-i18next';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import i18n from '../shared/i18n';
 import api from '../shared/api/client';
 import { clearAccessToken, getAccessToken, saveAccessToken } from '../modules/auth/sessionStorage';
 import LoginScreen from '../modules/auth/LoginScreen';
 import BrandedSplash from '../shared/components/BrandedSplash';
 import { fontFamilyForLocale, tokens } from '../shared/theme/tokens';
-import ScannerHomeScreen from '../modules/scanner/ScannerHomeScreen';
+import DashboardScreen from '../modules/scanner/DashboardScreen';
+import ScanScreen from '../modules/scanner/ScanScreen';
+import AccountScreen from '../modules/scanner/AccountScreen';
+import AboutScreen from '../modules/scanner/AboutScreen';
 import { fetchScannerEvents, fetchScannerProfile } from '../modules/scanner/scannerApi';
 import { appendRuntimeLog } from '../shared/debug/runtimeLogger';
+
+const Tab = createBottomTabNavigator();
 
 function HomeScreen({ scannerUser, client, events, onLogout }) {
     const { t, i18n: i18nCtx } = useTranslation();
@@ -18,6 +25,9 @@ function HomeScreen({ scannerUser, client, events, onLogout }) {
     const textStyle = useMemo(() => ({
         fontFamily: fontFamilyForLocale(isArabic)
     }), [isArabic]);
+
+    const [activeEventId, setActiveEventId] = useState('');
+    const [scanResult, setScanResult] = useState(null);
 
     if (!events.length) {
         return (
@@ -34,15 +44,68 @@ function HomeScreen({ scannerUser, client, events, onLogout }) {
     }
 
     return (
-        <SafeAreaView style={styles.safeFill}>
-            <StatusBar barStyle="dark-content" />
-            <ScannerHomeScreen
-                scannerUser={scannerUser}
-                client={client}
-                events={events}
-                onLogout={onLogout}
-            />
-        </SafeAreaView>
+        <NavigationContainer>
+            <Tab.Navigator
+                screenOptions={{
+                    tabBarStyle: { backgroundColor: tokens.colors.surface },
+                    tabBarActiveTintColor: tokens.colors.primary,
+                    tabBarInactiveTintColor: tokens.colors.textSecondary,
+                    headerStyle: { backgroundColor: tokens.colors.primary },
+                    headerTintColor: tokens.colors.onPrimary,
+                }}
+            >
+                <Tab.Screen
+                    name="Dashboard"
+                    options={{ title: 'Dashboard' }}
+                >
+                    {(props) => (
+                        <DashboardScreen
+                            {...props}
+                            scannerUser={scannerUser}
+                            client={client}
+                            events={events}
+                            activeEventId={activeEventId}
+                            setActiveEventId={setActiveEventId}
+                            onLogout={onLogout}
+                        />
+                    )}
+                </Tab.Screen>
+                <Tab.Screen
+                    name="Scan"
+                    options={{ title: 'Scan' }}
+                >
+                    {(props) => (
+                        <ScanScreen
+                            {...props}
+                            scannerUser={scannerUser}
+                            client={client}
+                            events={events}
+                            activeEventId={activeEventId}
+                            onScanResult={setScanResult}
+                        />
+                    )}
+                </Tab.Screen>
+                <Tab.Screen
+                    name="Account"
+                    options={{ title: 'Account' }}
+                >
+                    {(props) => (
+                        <AccountScreen
+                            {...props}
+                            scannerUser={scannerUser}
+                            client={client}
+                            events={events}
+                        />
+                    )}
+                </Tab.Screen>
+                <Tab.Screen
+                    name="About"
+                    options={{ title: 'About' }}
+                >
+                    {(props) => <AboutScreen {...props} />}
+                </Tab.Screen>
+            </Tab.Navigator>
+        </NavigationContainer>
     );
 }
 

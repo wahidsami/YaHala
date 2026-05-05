@@ -517,6 +517,7 @@ router.post('/:id/scanner-users', requirePermission('scanner_users.create'), asy
         const name = normalizeText(req.body?.name);
         const pin = normalizeText(req.body?.pin);
         const status = normalizeText(req.body?.status || 'active') || 'active';
+        const eventId = req.body?.event_id || null;
 
         if (!name || !pin) {
             throw new AppError('Name and PIN are required', 400, 'VALIDATION_ERROR');
@@ -526,6 +527,12 @@ router.post('/:id/scanner-users', requirePermission('scanner_users.create'), asy
         }
         if (!['active', 'inactive'].includes(status)) {
             throw new AppError('Status is invalid', 400, 'VALIDATION_ERROR');
+        }
+        if (eventId) {
+            const { rows: event } = await pool.query('SELECT id FROM events WHERE id = $1 AND client_id = $2', [eventId, clientId]);
+            if (!event.length) {
+                throw new AppError('Event not found or does not belong to client', 400, 'INVALID_EVENT');
+            }
         }
 
         const { rows: client } = await pool.query('SELECT id FROM clients WHERE id = $1', [clientId]);
@@ -549,11 +556,11 @@ router.post('/:id/scanner-users', requirePermission('scanner_users.create'), asy
         const pinHash = await bcrypt.hash(pin, 10);
         const { rows } = await pool.query(
             `
-            INSERT INTO scanner_users (id, client_id, name, pin_hash, status)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, client_id, name, status, created_at, updated_at
+            INSERT INTO scanner_users (id, client_id, name, pin_hash, status, event_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, client_id, name, status, event_id, created_at, updated_at
             `,
-            [uuidv4(), clientId, name, pinHash, status]
+            [uuidv4(), clientId, name, pinHash, status, eventId]
         );
 
         res.status(201).json({ data: rows[0] });

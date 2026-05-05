@@ -369,9 +369,12 @@ async function authenticateScanner(req, res, next) {
 
         const { rows } = await pool.query(
             `
-            SELECT s.id, s.client_id, s.name, s.status, c.name AS client_name, c.name_ar AS client_name_ar
+            SELECT s.id, s.client_id, s.name, s.status, s.event_id,
+                   c.name AS client_name, c.name_ar AS client_name_ar,
+                   e.name AS event_name, e.name_ar AS event_name_ar
             FROM scanner_users s
             JOIN clients c ON c.id = s.client_id
+            LEFT JOIN events e ON e.id = s.event_id
             WHERE s.id = $1
             `,
             [decoded.scannerUserId]
@@ -423,9 +426,11 @@ router.post('/auth/login', async (req, res, next) => {
 
         const { rows } = await pool.query(
             `
-            SELECT s.*, c.name AS client_name, c.name_ar AS client_name_ar
+            SELECT s.*, c.name AS client_name, c.name_ar AS client_name_ar,
+                   e.id AS event_id, e.name AS event_name, e.name_ar AS event_name_ar
             FROM scanner_users s
             JOIN clients c ON c.id = s.client_id
+            LEFT JOIN events e ON e.id = s.event_id
             WHERE s.client_id = $1
               AND LOWER(s.name) = LOWER($2)
             LIMIT 1
@@ -462,6 +467,9 @@ router.post('/auth/login', async (req, res, next) => {
                 client_id: scannerUser.client_id,
                 name: scannerUser.name,
                 status: scannerUser.status,
+                event_id: scannerUser.event_id,
+                event_name: scannerUser.event_name,
+                event_name_ar: scannerUser.event_name_ar,
                 client_name: client.name,
                 client_name_ar: client.name_ar,
                 client_email: client.email
@@ -481,7 +489,10 @@ router.get('/me', authenticateScanner, async (req, res) => {
             id: req.scannerUser.id,
             client_id: req.scannerUser.client_id,
             name: req.scannerUser.name,
-            status: req.scannerUser.status
+            status: req.scannerUser.status,
+            event_id: req.scannerUser.event_id,
+            event_name: req.scannerUser.event_name,
+            event_name_ar: req.scannerUser.event_name_ar
         },
         client: {
             id: req.scannerUser.client_id,
@@ -494,6 +505,9 @@ router.get('/me', authenticateScanner, async (req, res) => {
 // GET /api/scanner/events
 router.get('/events', authenticateScanner, async (req, res, next) => {
     try {
+        const eventFilter = req.scannerUser.event_id ? 'AND e.id = $2' : '';
+        const params = req.scannerUser.event_id ? [req.scannerUser.client_id, req.scannerUser.event_id] : [req.scannerUser.client_id];
+
         const { rows } = await pool.query(
             `
             SELECT
@@ -520,10 +534,10 @@ router.get('/events', authenticateScanner, async (req, res, next) => {
                       AND COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') IN ('attended', 'checked_in')
                 ), 0)::int AS attended_count
             FROM events e
-            WHERE e.client_id = $1
+            WHERE e.client_id = $1 ${eventFilter}
             ORDER BY e.start_datetime DESC
             `,
-            [req.scannerUser.client_id]
+            params
         );
 
         sendScannerSuccess(res, rows);

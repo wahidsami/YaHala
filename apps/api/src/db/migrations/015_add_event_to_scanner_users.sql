@@ -1,0 +1,1 @@
+ALTER TABLE scanner_users ADD COLUMN event_id UUID REFERENCES events(id) ON DELETE SET NULL;
