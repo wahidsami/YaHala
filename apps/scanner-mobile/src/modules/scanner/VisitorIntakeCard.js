@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
@@ -30,6 +30,15 @@ export default function VisitorIntakeCard({ eventId, onCompleted }) {
     const [confidence, setConfidence] = useState(null);
     const [warnings, setWarnings] = useState([]);
     const [error, setError] = useState('');
+    const [sendInvitation, setSendInvitation] = useState(true);
+
+    const hasEmail = Boolean(fields.email?.trim());
+
+    useEffect(() => {
+        if (!hasEmail && sendInvitation) {
+            setSendInvitation(false);
+        }
+    }, [hasEmail, sendInvitation]);
 
     async function startRecording() {
         if (recording || transcribing || saving) {
@@ -134,13 +143,14 @@ export default function VisitorIntakeCard({ eventId, onCompleted }) {
                 eventId,
                 action,
                 fields,
-                sendInvitation: Boolean(fields.email?.trim())
+                sendInvitation: Boolean(sendInvitation && hasEmail)
             });
             onCompleted?.(result, action);
             setTranscript('');
             setFields(createEmptyFields());
             setConfidence(null);
             setWarnings([]);
+            setSendInvitation(true);
         } catch (requestError) {
             setError(requestError.response?.data?.message || 'Could not save visitor');
         } finally {
@@ -217,6 +227,24 @@ export default function VisitorIntakeCard({ eventId, onCompleted }) {
                     <Text style={[styles.inputLabel, textStyle]}>Mobile Number</Text>
                     <TextInput style={[styles.input, textStyle]} placeholder="Enter mobile number" value={fields.mobileNumber} onChangeText={(v) => updateField('mobileNumber', v)} />
                 </View>
+            </View>
+
+            <View style={styles.toggleRow}>
+                <View style={styles.toggleTextWrap}>
+                    <Text style={[styles.subTitle, textStyle]}>Send invitation</Text>
+                    <Text style={[styles.note, textStyle]}>
+                        {hasEmail
+                            ? 'When enabled, an invitation is sent to the guest email after approval.'
+                            : 'Add guest email to enable invitation sending.'}
+                    </Text>
+                </View>
+                <Switch
+                    value={Boolean(sendInvitation && hasEmail)}
+                    disabled={!hasEmail}
+                    onValueChange={setSendInvitation}
+                    trackColor={{ false: '#D6DEE8', true: '#A9D8C3' }}
+                    thumbColor={Boolean(sendInvitation && hasEmail) ? '#157455' : '#F4F4F4'}
+                />
             </View>
 
             {error ? <Text style={[styles.error, textStyle]}>{error}</Text> : null}
@@ -319,6 +347,21 @@ const styles = StyleSheet.create({
     },
     actions: {
         gap: 8
+    },
+    toggleRow: {
+        borderWidth: 1,
+        borderColor: '#E7EDF4',
+        borderRadius: tokens.radius.md,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10
+    },
+    toggleTextWrap: {
+        flex: 1,
+        gap: 3
     },
     primaryBtn: {
         height: 46,
