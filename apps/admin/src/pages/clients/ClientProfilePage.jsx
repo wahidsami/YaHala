@@ -60,6 +60,12 @@ export default function ClientProfilePage() {
     const [eventPagination, setEventPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 0 });
     const [eventFilters, setEventFilters] = useState({ search: '', status: 'all' });
     const [confirmDialog, setConfirmDialog] = useState(null);
+    const [scannerUsers, setScannerUsers] = useState([]);
+    const [scannerUsersLoading, setScannerUsersLoading] = useState(false);
+    const [scannerError, setScannerError] = useState('');
+    const [showScannerModal, setShowScannerModal] = useState(false);
+    const [scannerForm, setScannerForm] = useState({ name: '', pin: '', status: 'active' });
+    const [savingScanner, setSavingScanner] = useState(false);
     const locale = useMemo(() => (i18n.language === 'ar' ? 'ar-EG' : 'en-US'), [i18n.language]);
     const notAvailable = t('common.notAvailable');
 
@@ -71,6 +77,9 @@ export default function ClientProfilePage() {
     useEffect(() => {
         if (activeTab === 'events') {
             fetchEvents();
+        }
+        if (activeTab === 'scanners') {
+            fetchScannerUsers();
         }
     }, [activeTab, id, eventPagination.page, eventFilters]);
 
@@ -114,6 +123,52 @@ export default function ClientProfilePage() {
             console.error('Failed to fetch client events:', error);
         } finally {
             setEventsLoading(false);
+        }
+    }
+
+    async function fetchScannerUsers() {
+        setScannerUsersLoading(true);
+        setScannerError('');
+        try {
+            const response = await api.get(`/admin/clients/${id}/scanner-users`);
+            setScannerUsers(response.data.data || []);
+        } catch (error) {
+            setScannerError(error.response?.data?.error?.message || 'Failed to load scanner users');
+        } finally {
+            setScannerUsersLoading(false);
+        }
+    }
+
+    function openScannerModal() {
+        setScannerForm({ name: '', pin: '', status: 'active' });
+        setScannerError('');
+        setShowScannerModal(true);
+    }
+
+    async function handleCreateScannerUser(event) {
+        event.preventDefault();
+        const name = scannerForm.name.trim();
+        const pin = scannerForm.pin.trim();
+        if (!name || !pin) {
+            setScannerError('Name and PIN are required');
+            return;
+        }
+
+        setSavingScanner(true);
+        setScannerError('');
+        try {
+            await api.post(`/admin/clients/${id}/scanner-users`, {
+                name,
+                pin,
+                status: scannerForm.status
+            });
+            setShowScannerModal(false);
+            await fetchScannerUsers();
+            await fetchStats();
+        } catch (error) {
+            setScannerError(error.response?.data?.error?.message || 'Failed to create scanner user');
+        } finally {
+            setSavingScanner(false);
         }
     }
 
@@ -440,10 +495,87 @@ export default function ClientProfilePage() {
                         <div className="tab-header">
                             <h3>{t('clients.tabs.scanners')}</h3>
                             <RoleGuard permission="scanner_users.create">
-                                <button className="btn btn-primary">{t('clients.profile.addScannerUser')}</button>
+                                <button className="btn btn-primary" onClick={openScannerModal}>{t('clients.profile.addScannerUser')}</button>
                             </RoleGuard>
                         </div>
-                        <p className="placeholder-text">{t('clients.profile.scannersPlaceholder')}</p>
+                        {scannerUsersLoading ? (
+                            <p className="placeholder-text">{t('common.loading')}</p>
+                        ) : scannerUsers.length === 0 ? (
+                            <p className="placeholder-text">{t('clients.profile.scannersPlaceholder')}</p>
+                        ) : (
+                            <div className="events-table-wrap">
+                                <table className="events-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {scannerUsers.map((user) => (
+                                            <tr key={user.id}>
+                                                <td>{user.name}</td>
+                                                <td>
+                                                    <span className={`status-badge status-${user.status}`}>{user.status}</span>
+                                                </td>
+                                                <td>{formatDate(user.created_at, locale)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        {scannerError ? <p className="error-text">{scannerError}</p> : null}
+
+                        {showScannerModal ? (
+                            <div className="modal-overlay" role="dialog" aria-modal="true">
+                                <div className="modal-card">
+                                    <h3>{t('clients.profile.addScannerUser')}</h3>
+                                    <form onSubmit={handleCreateScannerUser} className="modal-form">
+                                        <label>
+                                            <span>Name</span>
+                                            <input
+                                                type="text"
+                                                value={scannerForm.name}
+                                                onChange={(e) => setScannerForm((prev) => ({ ...prev, name: e.target.value }))}
+                                                required
+                                            />
+                                        </label>
+                                        <label>
+                                            <span>PIN</span>
+                                            <input
+                                                type="password"
+                                                value={scannerForm.pin}
+                                                onChange={(e) => setScannerForm((prev) => ({ ...prev, pin: e.target.value }))}
+                                                minLength={4}
+                                                maxLength={12}
+                                                required
+                                            />
+                                        </label>
+                                        <label>
+                                            <span>Status</span>
+                                            <select
+                                                value={scannerForm.status}
+                                                onChange={(e) => setScannerForm((prev) => ({ ...prev, status: e.target.value }))}
+                                            >
+                                                <option value="active">active</option>
+                                                <option value="inactive">inactive</option>
+                                            </select>
+                                        </label>
+                                        {scannerError ? <p className="error-text">{scannerError}</p> : null}
+                                        <div className="modal-actions">
+                                            <button type="button" className="btn btn-secondary" onClick={() => setShowScannerModal(false)}>
+                                                {t('common.cancel')}
+                                            </button>
+                                            <button type="submit" className="btn btn-primary" disabled={savingScanner}>
+                                                {savingScanner ? t('common.loading') : t('common.save')}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 )}
             </div>

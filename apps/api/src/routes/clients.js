@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcryptjs';
 import pool from '../db/connection.js';
 import { authenticate, requirePermission } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -479,6 +480,83 @@ router.get('/:id/stats', requirePermission('clients.view'), async (req, res, nex
                 scannerUsers: parseInt(scannerCount[0].count)
             }
         });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// GET /api/admin/clients/:id/scanner-users
+router.get('/:id/scanner-users', requirePermission('scanner_users.view'), async (req, res, next) => {
+    try {
+        const clientId = req.params.id;
+        const { rows: client } = await pool.query('SELECT id FROM clients WHERE id = $1', [clientId]);
+        if (!client.length) {
+            throw new AppError('Client not found', 404, 'NOT_FOUND');
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT id, client_id, name, status, created_at, updated_at
+            FROM scanner_users
+            WHERE client_id = $1
+            ORDER BY created_at DESC
+            `,
+            [clientId]
+        );
+
+        res.json({ data: rows });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// POST /api/admin/clients/:id/scanner-users
+router.post('/:id/scanner-users', requirePermission('scanner_users.create'), async (req, res, next) => {
+    try {
+        const clientId = req.params.id;
+        const name = normalizeText(req.body?.name);
+        const pin = normalizeText(req.body?.pin);
+        const status = normalizeText(req.body?.status || 'active') || 'active';
+
+        if (!name || !pin) {
+            throw new AppError('Name and PIN are required', 400, 'VALIDATION_ERROR');
+        }
+        if (pin.length < 4 || pin.length > 12) {
+            throw new AppError('PIN must be between 4 and 12 characters', 400, 'VALIDATION_ERROR');
+        }
+        if (!['active', 'inactive'].includes(status)) {
+            throw new AppError('Status is invalid', 400, 'VALIDATION_ERROR');
+        }
+
+        const { rows: client } = await pool.query('SELECT id FROM clients WHERE id = $1', [clientId]);
+        if (!client.length) {
+            throw new AppError('Client not found', 404, 'NOT_FOUND');
+        }
+
+        const { rows: duplicate } = await pool.query(
+            `
+            SELECT id
+            FROM scanner_users
+            WHERE client_id = $1 AND LOWER(name) = LOWER($2)
+            LIMIT 1
+            `,
+            [clientId, name]
+        );
+        if (duplicate.length) {
+            throw new AppError('Scanner user name already exists for this client', 400, 'DUPLICATE_SCANNER_USER');
+        }
+
+        const pinHash = await bcrypt.hash(pin, 10);
+        const { rows } = await pool.query(
+            `
+            INSERT INTO scanner_users (id, client_id, name, pin_hash, status)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, client_id, name, status, created_at, updated_at
+            `,
+            [uuidv4(), clientId, name, pinHash, status]
+        );
+
+        res.status(201).json({ data: rows[0] });
     } catch (error) {
         next(error);
     }
