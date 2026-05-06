@@ -3,14 +3,13 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useTranslation } from 'react-i18next';
 import { submitScan } from './scannerApi';
 import CameraScanCard from './CameraScanCard';
-import VisitorIntakeCard from './VisitorIntakeCard';
 import { fontFamilyForLocale, tokens } from '../../shared/theme/tokens';
 
 function localizedName(language, en, ar) {
     return language === 'ar' ? (ar || en || '') : (en || ar || '');
 }
 
-export default function ScanScreen({ scannerUser, client, events, activeEventId, onScanResult }) {
+export default function ScanScreen({ events, activeEventId, onScanResult }) {
     const { i18n } = useTranslation();
     const isArabic = i18n.language === 'ar';
     const textStyle = useMemo(() => ({ fontFamily: fontFamilyForLocale(isArabic) }), [isArabic]);
@@ -63,7 +62,14 @@ export default function ScanScreen({ scannerUser, client, events, activeEventId,
 
     return (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-            <CameraScanCard onScan={handleCameraScan} submitting={submittingScan} />
+            <View style={styles.contextCard}>
+                <Text style={[styles.contextLabel, textStyle]}>Active Event</Text>
+                <Text style={[styles.contextValue, textStyle]}>
+                    {activeEvent ? localizedName(i18n.language, activeEvent.name, activeEvent.name_ar) : 'No event selected'}
+                </Text>
+            </View>
+
+            <CameraScanCard enabled={Boolean(activeEvent?.id)} onScanned={handleCameraScan} busy={submittingScan} />
 
             <View style={styles.manualScan}>
                 <Text style={[styles.sectionTitle, textStyle]}>Manual Scan</Text>
@@ -79,12 +85,10 @@ export default function ScanScreen({ scannerUser, client, events, activeEventId,
                 </Pressable>
             </View>
 
-            <VisitorIntakeCard eventId={activeEvent?.id} />
-
             {result && (
                 <View style={styles.result}>
                     <Text style={[styles.resultText, textStyle]}>
-                        {result.status === 'success' ? 'Success' : 'Failed'}: {localizedName(i18n.language, result.attendee?.name, result.attendee?.name_ar)}
+                        {result.status === 'attended' || result.status === 'duplicate' ? 'Success' : 'Failed'}: {localizedName(i18n.language, result.attendee?.name, result.attendee?.name_ar)}
                     </Text>
                 </View>
             )}
@@ -113,6 +117,24 @@ const styles = StyleSheet.create({
     },
     manualScan: {
         marginVertical: tokens.spacing.lg,
+    },
+    contextCard: {
+        marginBottom: tokens.spacing.md,
+        borderWidth: 1,
+        borderColor: tokens.colors.border,
+        borderRadius: tokens.borderRadius.md,
+        backgroundColor: '#FFFFFF',
+        padding: tokens.spacing.md
+    },
+    contextLabel: {
+        fontSize: tokens.fontSize.sm,
+        color: tokens.colors.textSecondary
+    },
+    contextValue: {
+        marginTop: 4,
+        fontSize: tokens.fontSize.lg,
+        color: tokens.colors.textPrimary,
+        fontWeight: '700'
     },
     sectionTitle: {
         fontSize: tokens.fontSize.lg,

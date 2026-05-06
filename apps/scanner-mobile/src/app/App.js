@@ -10,58 +10,66 @@ import BrandedSplash from '../shared/components/BrandedSplash';
 import { fontFamilyForLocale, tokens } from '../shared/theme/tokens';
 import DashboardScreen from '../modules/scanner/DashboardScreen';
 import ScanScreen from '../modules/scanner/ScanScreen';
+import GuestsScreen from '../modules/scanner/GuestsScreen';
+import ReportsScreen from '../modules/scanner/ReportsScreen';
+import AddonsScreen from '../modules/scanner/AddonsScreen';
 import AccountScreen from '../modules/scanner/AccountScreen';
 import AboutScreen from '../modules/scanner/AboutScreen';
 import { fetchScannerEvents, fetchScannerProfile } from '../modules/scanner/scannerApi';
 import { appendRuntimeLog, appendRuntimeLogIfEnabled, isRuntimeDebugEnabled } from '../shared/debug/runtimeLogger';
 
 function HomeScreen({ scannerUser, client, events, onLogout }) {
-    const { t, i18n: i18nCtx } = useTranslation();
+    const { i18n: i18nCtx } = useTranslation();
     const isArabic = i18nCtx.language === 'ar';
     const textStyle = useMemo(() => ({
         fontFamily: fontFamilyForLocale(isArabic)
     }), [isArabic]);
 
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [activeEventId, setActiveEventId] = useState('');
     const [scanResult, setScanResult] = useState(null);
+    const activeEvent = events[0] || null;
 
     const tabs = [
         { key: 'dashboard', label: 'Dashboard' },
         { key: 'scan', label: 'Scan' },
+        { key: 'guests', label: 'Guests' },
+        { key: 'reports', label: 'Reports' },
+        { key: 'addons', label: 'Addons' },
         { key: 'account', label: 'Account' },
-        { key: 'about', label: 'About' },
+        { key: 'about', label: 'About' }
     ];
 
-    const renderTabContent = () => {
+    function renderTabContent() {
         switch (activeTab) {
             case 'dashboard':
                 return (
                     <DashboardScreen
                         scannerUser={scannerUser}
                         client={client}
-                        events={events}
-                        activeEventId={activeEventId}
-                        setActiveEventId={setActiveEventId}
-                        onLogout={onLogout}
+                        activeEvent={activeEvent}
                     />
                 );
             case 'scan':
                 return (
                     <ScanScreen
-                        scannerUser={scannerUser}
-                        client={client}
                         events={events}
-                        activeEventId={activeEventId}
+                        activeEventId={activeEvent?.id || ''}
                         onScanResult={setScanResult}
                     />
                 );
+            case 'guests':
+                return <GuestsScreen activeEventId={activeEvent?.id || ''} />;
+            case 'reports':
+                return <ReportsScreen activeEvent={activeEvent} />;
+            case 'addons':
+                return <AddonsScreen activeEvent={activeEvent} />;
             case 'account':
                 return (
                     <AccountScreen
                         scannerUser={scannerUser}
                         client={client}
-                        events={events}
+                        activeEvent={activeEvent}
+                        onLogout={onLogout}
                     />
                 );
             case 'about':
@@ -69,16 +77,15 @@ function HomeScreen({ scannerUser, client, events, onLogout }) {
             default:
                 return null;
         }
-    };
+    }
 
     if (!events.length) {
         return (
             <SafeAreaView style={styles.safe}>
                 <StatusBar barStyle="dark-content" />
                 <View style={styles.homeCard}>
-                    <Text style={[styles.homeTitle, textStyle]}>{t('appTitle')}</Text>
-                    <Text style={[styles.homeSubtitle, textStyle]}>{scannerUser?.name}</Text>
-                    <Text style={[styles.homeHint, textStyle]}>No events assigned yet.</Text>
+                    <Text style={[styles.homeTitle, textStyle]}>No events available for this scanner user.</Text>
+                    <Text style={[styles.homeHint, textStyle]}>Please contact admin to assign an event.</Text>
                     <Text style={[styles.logout, textStyle]} onPress={onLogout}>Logout</Text>
                 </View>
             </SafeAreaView>
@@ -89,6 +96,18 @@ function HomeScreen({ scannerUser, client, events, onLogout }) {
         <SafeAreaView style={styles.safeFill}>
             <StatusBar barStyle="dark-content" />
             <View style={styles.container}>
+                <View style={styles.topHeader}>
+                    <View style={styles.topHeaderTextWrap}>
+                        <Text style={[styles.topHeaderTitle, textStyle]}>Welcome, {scannerUser?.name}</Text>
+                        <Text style={[styles.topHeaderSubtitle, textStyle]}>
+                            {isArabic ? (activeEvent?.name_ar || activeEvent?.name) : (activeEvent?.name || activeEvent?.name_ar)}
+                        </Text>
+                    </View>
+                    <Pressable style={styles.topHeaderLogoutBtn} onPress={onLogout}>
+                        <Text style={[styles.topHeaderLogoutText, textStyle]}>Logout</Text>
+                    </Pressable>
+                </View>
+
                 <View style={styles.content}>
                     {renderTabContent()}
                 </View>
@@ -130,27 +149,24 @@ function AppRoot() {
                 await appendRuntimeLog('bootstrap:token_found');
                 api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
                 const profile = await fetchScannerProfile();
-                await appendRuntimeLog('bootstrap:profile_loaded');
                 const list = await fetchScannerEvents();
-                await appendRuntimeLog(`bootstrap:events_loaded count=${Array.isArray(list) ? list.length : 0}`);
                 setSession({
                     accessToken,
                     scannerUser: profile.scannerUser,
                     client: profile.client
                 });
-                setEvents(list);
+                setEvents(Array.isArray(list) ? list : []);
             } catch (error) {
                 await appendRuntimeLog(`bootstrap:error ${error?.message || 'unknown'}`);
                 try {
                     await clearAccessToken();
                 } catch {
-                    // Keep bootstrapping even when secure storage cleanup fails.
+                    // Ignore secure-store clear errors in bootstrap recovery.
                 }
                 delete api.defaults.headers.common.Authorization;
                 setSession(null);
                 setEvents([]);
             } finally {
-                await appendRuntimeLog('bootstrap:done');
                 setLoadingSession(false);
             }
         }
@@ -159,25 +175,20 @@ function AppRoot() {
     }, []);
 
     async function handleLoggedIn(payload) {
-        try {
-            await appendRuntimeLog('auth:handleLoggedIn:start');
-            await saveAccessToken(payload.accessToken);
-            api.defaults.headers.common.Authorization = `Bearer ${payload.accessToken}`;
+        await appendRuntimeLog('auth:handleLoggedIn:start');
+        await saveAccessToken(payload.accessToken);
+        api.defaults.headers.common.Authorization = `Bearer ${payload.accessToken}`;
 
-            const profile = await fetchScannerProfile();
-            const list = await fetchScannerEvents();
+        const profile = await fetchScannerProfile();
+        const list = await fetchScannerEvents();
 
-            setSession({
-                accessToken: payload.accessToken,
-                scannerUser: profile.scannerUser,
-                client: profile.client
-            });
-            setEvents(list);
-            await appendRuntimeLog(`auth:handleLoggedIn:success events=${Array.isArray(list) ? list.length : 0}`);
-        } catch (error) {
-            await appendRuntimeLog(`auth:handleLoggedIn:error ${error?.message || 'unknown'}`);
-            throw error;
-        }
+        setSession({
+            accessToken: payload.accessToken,
+            scannerUser: profile.scannerUser,
+            client: profile.client
+        });
+        setEvents(Array.isArray(list) ? list : []);
+        await appendRuntimeLog(`auth:handleLoggedIn:success events=${Array.isArray(list) ? list.length : 0}`);
     }
 
     async function handleLogout() {
@@ -189,13 +200,8 @@ function AppRoot() {
         await appendRuntimeLogIfEnabled('auth:logout:done');
     }
 
-    if (loadingSession) {
-        return <BrandedSplash />;
-    }
-
-    if (!session) {
-        return <LoginScreen onLoggedIn={handleLoggedIn} />;
-    }
+    if (loadingSession) return <BrandedSplash />;
+    if (!session) return <LoginScreen onLoggedIn={handleLoggedIn} />;
 
     return (
         <HomeScreen
@@ -221,9 +227,7 @@ export default function App() {
         appendRuntimeLogIfEnabled(`app:fontsLoaded=${String(fontsLoaded)}`);
     }, [fontsLoaded]);
 
-    if (!fontsLoaded) {
-        return <BrandedSplash />;
-    }
+    if (!fontsLoaded) return <BrandedSplash />;
 
     return (
         <I18nextProvider i18n={i18n}>
@@ -252,12 +256,8 @@ const styles = StyleSheet.create({
         gap: 10
     },
     homeTitle: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '700',
-        color: tokens.colors.textPrimary
-    },
-    homeSubtitle: {
-        fontSize: 18,
         color: tokens.colors.textPrimary
     },
     homeHint: {
@@ -271,33 +271,68 @@ const styles = StyleSheet.create({
         fontWeight: '700'
     },
     container: {
-        flex: 1,
+        flex: 1
+    },
+    topHeader: {
+        paddingHorizontal: tokens.spacing.md,
+        paddingTop: tokens.spacing.sm,
+        paddingBottom: tokens.spacing.sm,
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: tokens.colors.border,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: tokens.spacing.sm
+    },
+    topHeaderTextWrap: {
+        flex: 1
+    },
+    topHeaderTitle: {
+        color: tokens.colors.textPrimary,
+        fontSize: tokens.fontSize.md,
+        fontWeight: '700'
+    },
+    topHeaderSubtitle: {
+        marginTop: 2,
+        color: tokens.colors.textSecondary,
+        fontSize: tokens.fontSize.sm
+    },
+    topHeaderLogoutBtn: {
+        backgroundColor: tokens.colors.danger,
+        borderRadius: tokens.borderRadius.md,
+        paddingHorizontal: 12,
+        paddingVertical: 8
+    },
+    topHeaderLogoutText: {
+        color: '#FFFFFF',
+        fontSize: tokens.fontSize.sm,
+        fontWeight: '700'
     },
     content: {
-        flex: 1,
+        flex: 1
     },
     tabBar: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         backgroundColor: tokens.colors.surface,
         borderTopWidth: 1,
-        borderTopColor: tokens.colors.border,
-        paddingBottom: 5, // For safe area
+        borderTopColor: tokens.colors.border
     },
     tabItem: {
-        flex: 1,
-        paddingVertical: tokens.spacing.md,
-        alignItems: 'center',
+        width: '33.33%',
+        paddingVertical: tokens.spacing.sm,
+        alignItems: 'center'
     },
     activeTabItem: {
-        borderTopWidth: 2,
-        borderTopColor: tokens.colors.primary,
+        backgroundColor: '#EEF5FB'
     },
     tabText: {
         fontSize: tokens.fontSize.sm,
-        color: tokens.colors.textSecondary,
+        color: tokens.colors.textSecondary
     },
     activeTabText: {
         color: tokens.colors.primary,
-        fontWeight: 'bold',
-    },
+        fontWeight: '700'
+    }
 });

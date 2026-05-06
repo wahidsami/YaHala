@@ -10,6 +10,8 @@ export default function LoginScreen({ onLoggedIn }) {
     const [clientIdentifier, setClientIdentifier] = useState('');
     const [name, setName] = useState('');
     const [pin, setPin] = useState('');
+    const [pendingEvents, setPendingEvents] = useState([]);
+    const [selectedEventId, setSelectedEventId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -24,12 +26,30 @@ export default function LoginScreen({ onLoggedIn }) {
             setError(t('invalidCredentials'));
             return;
         }
+        if (pendingEvents.length > 0 && !selectedEventId) {
+            setError('Please select an event to continue.');
+            return;
+        }
 
         setLoading(true);
         setError('');
 
         try {
-            const result = await loginScanner({ clientIdentifier, name, pin });
+            const result = await loginScanner({
+                clientIdentifier,
+                name,
+                pin,
+                eventId: selectedEventId || undefined
+            });
+            if (result.requiresEventSelection) {
+                setPendingEvents(Array.isArray(result.events) ? result.events : []);
+                if (Array.isArray(result.events) && result.events.length === 1) {
+                    setSelectedEventId(result.events[0].id);
+                }
+                await appendRuntimeLogIfEnabled(`auth:loginScreen:event_selection_loaded count=${Array.isArray(result.events) ? result.events.length : 0}`);
+                setLoading(false);
+                return;
+            }
             await appendRuntimeLogIfEnabled('auth:loginScreen:onSubmit:success');
             onLoggedIn(result);
         } catch (requestError) {
@@ -79,6 +99,25 @@ export default function LoginScreen({ onLoggedIn }) {
                     placeholder="Enter PIN"
                     secureTextEntry
                 />
+
+                {pendingEvents.length > 0 ? (
+                    <View style={styles.eventPickerWrap}>
+                        <Text style={[styles.fieldLabel, textStyle]}>Select Event</Text>
+                        <View style={styles.eventChips}>
+                            {pendingEvents.map((event) => (
+                                <Pressable
+                                    key={event.id}
+                                    style={[styles.eventChip, selectedEventId === event.id && styles.eventChipActive]}
+                                    onPress={() => setSelectedEventId(event.id)}
+                                >
+                                    <Text style={[styles.eventChipText, textStyle, selectedEventId === event.id && styles.eventChipTextActive]}>
+                                        {isArabic ? (event.name_ar || event.name) : (event.name || event.name_ar)}
+                                    </Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    </View>
+                ) : null}
 
                 {error ? <Text style={[styles.error, textStyle]}>{error}</Text> : null}
 
@@ -172,5 +211,32 @@ const styles = StyleSheet.create({
     error: {
         color: tokens.colors.danger,
         fontSize: 13
+    },
+    eventPickerWrap: {
+        gap: 8
+    },
+    eventChips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8
+    },
+    eventChip: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: tokens.colors.border,
+        borderRadius: tokens.radius.md,
+        paddingHorizontal: 12,
+        paddingVertical: 10
+    },
+    eventChipActive: {
+        backgroundColor: tokens.colors.primary,
+        borderColor: tokens.colors.primary
+    },
+    eventChipText: {
+        fontSize: 13,
+        color: tokens.colors.textPrimary
+    },
+    eventChipTextActive: {
+        color: '#FFFFFF'
     }
 });

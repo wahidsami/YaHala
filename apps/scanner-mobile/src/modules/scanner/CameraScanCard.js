@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTranslation } from 'react-i18next';
 import { fontFamilyForLocale, tokens } from '../../shared/theme/tokens';
+import { isRuntimeDebugEnabled } from '../../shared/debug/runtimeLogger';
 
 function extractTokenFromScan(rawValue) {
     const raw = (rawValue || '').trim();
@@ -40,6 +41,7 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
     const [showDebug, setShowDebug] = useState(false);
     const [debugTokenInput, setDebugTokenInput] = useState('');
     const lastScanAtRef = useRef(0);
+    const debugEnabled = isRuntimeDebugEnabled();
 
     useEffect(() => {
         if (!enabled) {
@@ -127,9 +129,11 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
             <View style={styles.headerRow}>
                 <Text style={[styles.title, textStyle]}>Live QR Scan</Text>
                 <View style={styles.headerActions}>
-                    <Pressable style={styles.debugPillBtn} onPress={() => setShowDebug((prev) => !prev)}>
-                        <Text style={[styles.debugPillText, textStyle]}>{showDebug ? 'Hide Debug' : 'Debug'}</Text>
-                    </Pressable>
+                    {debugEnabled ? (
+                        <Pressable style={styles.debugPillBtn} onPress={() => setShowDebug((prev) => !prev)}>
+                            <Text style={[styles.debugPillText, textStyle]}>{showDebug ? 'Hide Debug' : 'Debug'}</Text>
+                        </Pressable>
+                    ) : null}
                     <Text style={[styles.livePill, textStyle]}>{busy ? 'Busy' : 'Live'}</Text>
                 </View>
             </View>
@@ -153,7 +157,7 @@ export default function CameraScanCard({ enabled, onScanned, busy }) {
             {lastTokenPreview ? <Text style={[styles.note, textStyle]}>Last token: {lastTokenPreview}...</Text> : null}
             {errorText ? <Text style={[styles.error, textStyle]}>{errorText}</Text> : null}
 
-            {showDebug ? (
+            {debugEnabled && showDebug ? (
                 <View style={styles.debugWrap}>
                     <Text style={[styles.debugTitle, textStyle]}>Scanner Debug</Text>
                     <Text style={[styles.debugLine, textStyle]}>enabled: {String(enabled)}</Text>

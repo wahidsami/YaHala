@@ -326,11 +326,12 @@ function generatePublicToken() {
     return crypto.randomBytes(24).toString('hex');
 }
 
-function signScannerToken(scannerUser) {
+function signScannerToken(scannerUser, selectedEventId = null) {
     return jwt.sign(
         {
             scannerUserId: scannerUser.id,
             clientId: scannerUser.client_id,
+            eventId: selectedEventId || null,
             role: 'scanner'
         },
         SCANNER_JWT_SECRET,
@@ -390,7 +391,27 @@ async function authenticateScanner(req, res, next) {
             throw new AppError('Scanner account inactive', 403, 'SCANNER_INACTIVE');
         }
 
-        req.scannerUser = scannerUser;
+        const effectiveSessionEventId = normalizeText(decoded.eventId) || scannerUser.event_id || null;
+        if (effectiveSessionEventId) {
+            const { rows: sessionEventRows } = await pool.query(
+                `
+                SELECT id
+                FROM events
+                WHERE id = $1 AND client_id = $2
+                LIMIT 1
+                `,
+                [effectiveSessionEventId, scannerUser.client_id]
+            );
+
+            if (!sessionEventRows.length) {
+                throw new AppError('Selected event is no longer available', 403, 'SESSION_EVENT_INVALID');
+            }
+        }
+
+        req.scannerUser = {
+            ...scannerUser,
+            session_event_id: effectiveSessionEventId
+        };
         next();
     } catch (error) {
         next(error);
@@ -403,6 +424,7 @@ router.post('/auth/login', async (req, res, next) => {
         const clientIdentifier = normalizeText(req.body?.clientIdentifier || req.body?.clientId);
         const name = normalizeText(req.body?.name);
         const pin = normalizeText(req.body?.pin);
+        const selectedEventId = normalizeText(req.body?.eventId);
 
         if (!clientIdentifier || !name || !pin) {
             throw new AppError('Client, name, and PIN are required', 400, 'VALIDATION_ERROR');
@@ -453,12 +475,43 @@ router.post('/auth/login', async (req, res, next) => {
             throw new AppError('Invalid scanner credentials', 401, 'INVALID_SCANNER_CREDENTIALS');
         }
 
+        const availableEventsParams = scannerUser.event_id ? [client.id, scannerUser.event_id] : [client.id];
+        const availableEventsFilter = scannerUser.event_id ? 'AND id = $2' : '';
+        const { rows: availableEvents } = await pool.query(
+            `
+            SELECT id, name, name_ar, start_datetime, end_datetime, status
+            FROM events
+            WHERE client_id = $1 ${availableEventsFilter}
+            ORDER BY start_datetime DESC
+            `,
+            availableEventsParams
+        );
+
+        if (!selectedEventId) {
+            sendScannerSuccess(res, {
+                requiresEventSelection: true,
+                scannerUser: {
+                    id: scannerUser.id,
+                    client_id: scannerUser.client_id,
+                    name: scannerUser.name,
+                    status: scannerUser.status
+                },
+                events: availableEvents
+            });
+            return;
+        }
+
+        const selectedEvent = availableEvents.find((event) => event.id === selectedEventId);
+        if (!selectedEvent) {
+            throw new AppError('Selected event is invalid for this scanner user', 400, 'INVALID_EVENT');
+        }
+
         await pool.query(
             'UPDATE scanner_users SET updated_at = NOW() WHERE id = $1',
             [scannerUser.id]
         );
 
-        const accessToken = signScannerToken(scannerUser);
+        const accessToken = signScannerToken(scannerUser, selectedEventId);
 
         const responsePayload = {
             accessToken,
@@ -467,9 +520,9 @@ router.post('/auth/login', async (req, res, next) => {
                 client_id: scannerUser.client_id,
                 name: scannerUser.name,
                 status: scannerUser.status,
-                event_id: scannerUser.event_id,
-                event_name: scannerUser.event_name,
-                event_name_ar: scannerUser.event_name_ar,
+                event_id: selectedEvent.id,
+                event_name: selectedEvent.name,
+                event_name_ar: selectedEvent.name_ar,
                 client_name: client.name,
                 client_name_ar: client.name_ar,
                 client_email: client.email
@@ -505,8 +558,8 @@ router.get('/me', authenticateScanner, async (req, res) => {
 // GET /api/scanner/events
 router.get('/events', authenticateScanner, async (req, res, next) => {
     try {
-        const eventFilter = req.scannerUser.event_id ? 'AND e.id = $2' : '';
-        const params = req.scannerUser.event_id ? [req.scannerUser.client_id, req.scannerUser.event_id] : [req.scannerUser.client_id];
+        const eventFilter = req.scannerUser.session_event_id ? 'AND e.id = $2' : '';
+        const params = req.scannerUser.session_event_id ? [req.scannerUser.client_id, req.scannerUser.session_event_id] : [req.scannerUser.client_id];
 
         const { rows } = await pool.query(
             `
@@ -553,6 +606,9 @@ router.get('/events/:eventId/stats', authenticateScanner, async (req, res, next)
 
         if (!eventId) {
             throw new AppError('Event is required', 400, 'VALIDATION_ERROR');
+        }
+        if (req.scannerUser.session_event_id && eventId !== req.scannerUser.session_event_id) {
+            throw new AppError('This event is outside your current scanner session', 403, 'EVENT_SCOPE_VIOLATION');
         }
 
         const { rows: eventRows } = await pool.query(
@@ -612,6 +668,29 @@ router.get('/events/:eventId/stats', authenticateScanner, async (req, res, next)
         const invitedAttended = invitationStats.attended_from_invitations || 0;
         const invitedPending = Math.max(invitedTotal - invitedAttended, 0);
         const walkInCheckedIn = walkInStats.walk_in_checked_in || 0;
+        const { rows: duplicateScanRows } = await pool.query(
+            `
+            SELECT COUNT(*)::int AS duplicate_scan_count
+            FROM activity_logs
+            WHERE user_type = 'scanner'
+              AND action = 'duplicate_scan'
+              AND details->>'eventId' = $1
+            `,
+            [eventId]
+        );
+
+        const { rows: recentScanRows } = await pool.query(
+            `
+            SELECT created_at, action, details
+            FROM activity_logs
+            WHERE user_type = 'scanner'
+              AND action IN ('guest_attended', 'duplicate_scan')
+              AND details->>'eventId' = $1
+            ORDER BY created_at DESC
+            LIMIT 8
+            `,
+            [eventId]
+        );
 
         sendScannerSuccess(res, {
             event: {
@@ -626,8 +705,14 @@ router.get('/events/:eventId/stats', authenticateScanner, async (req, res, next)
                 invitedPending,
                 walkInTotal: walkInStats.walk_in_total || 0,
                 walkInCheckedIn,
-                checkedInTotal: invitedAttended + walkInCheckedIn
+                checkedInTotal: invitedAttended + walkInCheckedIn,
+                duplicateScanCount: duplicateScanRows[0]?.duplicate_scan_count || 0
             },
+            recentScans: recentScanRows.map((row) => ({
+                action: row.action,
+                created_at: row.created_at,
+                details: safeJson(row.details, {})
+            })),
             lastUpdatedAt: new Date().toISOString()
         });
     } catch (error) {
@@ -725,6 +810,9 @@ router.post('/visitor-intake/approve', authenticateScanner, async (req, res, nex
 
         if (!['add_only', 'add_and_check_in'].includes(action)) {
             throw new AppError('Action is invalid', 400, 'VALIDATION_ERROR');
+        }
+        if (req.scannerUser.session_event_id && eventId && eventId !== req.scannerUser.session_event_id) {
+            throw new AppError('This event is outside your current scanner session', 403, 'EVENT_SCOPE_VIOLATION');
         }
 
         if (action === 'add_and_check_in' && !eventId) {
@@ -1114,6 +1202,9 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
         if (!rawToken) {
             throw new AppError('QR token is required', 400, 'VALIDATION_ERROR');
         }
+        if (req.scannerUser.session_event_id && eventId && eventId !== req.scannerUser.session_event_id) {
+            throw new AppError('This event is outside your current scanner session', 403, 'EVENT_SCOPE_VIOLATION');
+        }
 
         await db.query('BEGIN');
 
@@ -1155,6 +1246,9 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
 
         if (eventId && eventId !== recipient.event_id) {
             throw new AppError('This QR code does not match the selected event', 400, 'EVENT_MISMATCH');
+        }
+        if (req.scannerUser.session_event_id && recipient.event_id !== req.scannerUser.session_event_id) {
+            throw new AppError('This QR code belongs to a different event than your current session', 403, 'EVENT_SCOPE_VIOLATION');
         }
 
         const currentMetadata = safeJson(recipient.metadata, {});
