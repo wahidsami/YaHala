@@ -3,6 +3,7 @@ import { I18nManager, Pressable, StyleSheet, Text, TextInput, View } from 'react
 import { useTranslation } from 'react-i18next';
 import { loginScanner } from './authApi';
 import { fontFamilyForLocale, tokens } from '../../shared/theme/tokens';
+import { appendRuntimeLogIfEnabled } from '../../shared/debug/runtimeLogger';
 
 export default function LoginScreen({ onLoggedIn }) {
     const { t, i18n } = useTranslation();
@@ -29,8 +30,10 @@ export default function LoginScreen({ onLoggedIn }) {
 
         try {
             const result = await loginScanner({ clientIdentifier, name, pin });
+            await appendRuntimeLogIfEnabled('auth:loginScreen:onSubmit:success');
             onLoggedIn(result);
         } catch (requestError) {
+            await appendRuntimeLogIfEnabled(`auth:loginScreen:onSubmit:error ${requestError?.message || 'unknown'}`);
             setError(requestError.response?.data?.message || t('invalidCredentials'));
         } finally {
             setLoading(false);

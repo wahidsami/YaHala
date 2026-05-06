@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system';
 
 const LOG_FILE = 'runtime-log.txt';
 const MAX_LOG_SIZE_BYTES = 512 * 1024;
+const DEBUG_ENABLED = String(process.env.EXPO_PUBLIC_SCANNER_DEBUG || '').toLowerCase() === 'true';
 
 function nowIso() {
     return new Date().toISOString();
@@ -43,6 +44,15 @@ export async function appendRuntimeLog(message) {
     } catch {
         // Avoid crashing when logger cannot write.
     }
+}
+
+export function isRuntimeDebugEnabled() {
+    return DEBUG_ENABLED;
+}
+
+export async function appendRuntimeLogIfEnabled(message) {
+    if (!DEBUG_ENABLED) return;
+    await appendRuntimeLog(message);
 }
 
 export async function readRuntimeLog() {

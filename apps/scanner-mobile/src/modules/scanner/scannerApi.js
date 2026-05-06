@@ -1,22 +1,30 @@
 import api from '../../shared/api/client';
+import { appendRuntimeLogIfEnabled } from '../../shared/debug/runtimeLogger';
 
 function unwrap(response) {
     return response.data?.data ?? response.data;
 }
 
 export async function fetchScannerProfile() {
+    await appendRuntimeLogIfEnabled('api:fetchScannerProfile:start');
     const response = await api.get('/scanner/me');
+    await appendRuntimeLogIfEnabled('api:fetchScannerProfile:success');
     return unwrap(response);
 }
 
 export async function fetchScannerEvents() {
+    await appendRuntimeLogIfEnabled('api:fetchScannerEvents:start');
     const response = await api.get('/scanner/events');
-    return unwrap(response) || [];
+    const payload = unwrap(response) || [];
+    await appendRuntimeLogIfEnabled(`api:fetchScannerEvents:success count=${Array.isArray(payload) ? payload.length : 0}`);
+    return payload;
 }
 
 export async function fetchEventStats(eventId) {
     if (!eventId) return null;
+    await appendRuntimeLogIfEnabled(`api:fetchEventStats:start eventId=${eventId}`);
     const response = await api.get(`/scanner/events/${eventId}/stats`);
+    await appendRuntimeLogIfEnabled(`api:fetchEventStats:success eventId=${eventId}`);
     return unwrap(response);
 }
 

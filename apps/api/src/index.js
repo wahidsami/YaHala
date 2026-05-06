@@ -20,6 +20,7 @@ import clientGuestRoutes from './routes/clientGuests.js';
 import guestRoutes from './routes/guests.js';
 import reportsRoutes from './routes/reports.js';
 import pollRoutes from './routes/polls.js';
+import pool from './db/connection.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -77,6 +78,31 @@ app.use('/api/scanner', scannerRoutes);
 // Error handler
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-    console.log(`🚀 API running on http://localhost:${PORT}`);
+async function ensureCriticalSchema() {
+    const { rows } = await pool.query(
+        `
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'scanner_users'
+          AND column_name = 'event_id'
+        LIMIT 1
+        `
+    );
+
+    if (!rows.length) {
+        throw new Error('Missing required database column public.scanner_users.event_id. Run migrations before starting API.');
+    }
+}
+
+async function startServer() {
+    await ensureCriticalSchema();
+    app.listen(PORT, () => {
+        console.log(`🚀 API running on http://localhost:${PORT}`);
+    });
+}
+
+startServer().catch((error) => {
+    console.error('❌ API startup failed:', error.message);
+    process.exit(1);
 });

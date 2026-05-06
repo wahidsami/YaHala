@@ -127,6 +127,30 @@ router.post('/refresh', async (req, res, next) => {
         }
 
         const user = rows[0];
+        const { rows: tokenRows } = await pool.query(
+            `
+            SELECT token_hash
+            FROM refresh_tokens
+            WHERE user_id = $1
+              AND expires_at > NOW()
+            `,
+            [user.id]
+        );
+
+        let refreshTokenFound = false;
+        for (const tokenRow of tokenRows) {
+            // bcrypt compare is async and must be done per row.
+            // eslint-disable-next-line no-await-in-loop
+            const isMatch = await bcrypt.compare(refreshToken, tokenRow.token_hash);
+            if (isMatch) {
+                refreshTokenFound = true;
+                break;
+            }
+        }
+
+        if (!refreshTokenFound) {
+            throw new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN');
+        }
 
         // Generate new access token
         const accessToken = jwt.sign(
@@ -179,7 +203,7 @@ router.get('/me', async (req, res, next) => {
         }
 
         const { rows } = await pool.query(
-            `SELECT u.id, u.email, u.name, r.name as role_name, r.id as role_id
+            `SELECT u.id, u.email, u.name, u.status, r.name as role_name, r.id as role_id
        FROM dashboard_users u 
        JOIN roles r ON u.role_id = r.id 
        WHERE u.id = $1`,
@@ -191,6 +215,9 @@ router.get('/me', async (req, res, next) => {
         }
 
         const user = rows[0];
+        if (user.status !== 'active') {
+            throw new AppError('Account inactive', 403, 'ACCOUNT_INACTIVE');
+        }
 
         // Get permissions
         const { rows: permRows } = await pool.query(

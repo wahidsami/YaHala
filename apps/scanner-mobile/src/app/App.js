@@ -13,7 +13,7 @@ import ScanScreen from '../modules/scanner/ScanScreen';
 import AccountScreen from '../modules/scanner/AccountScreen';
 import AboutScreen from '../modules/scanner/AboutScreen';
 import { fetchScannerEvents, fetchScannerProfile } from '../modules/scanner/scannerApi';
-import { appendRuntimeLog } from '../shared/debug/runtimeLogger';
+import { appendRuntimeLog, appendRuntimeLogIfEnabled, isRuntimeDebugEnabled } from '../shared/debug/runtimeLogger';
 
 function HomeScreen({ scannerUser, client, events, onLogout }) {
     const { t, i18n: i18nCtx } = useTranslation();
@@ -159,25 +159,34 @@ function AppRoot() {
     }, []);
 
     async function handleLoggedIn(payload) {
-        await saveAccessToken(payload.accessToken);
-        api.defaults.headers.common.Authorization = `Bearer ${payload.accessToken}`;
+        try {
+            await appendRuntimeLog('auth:handleLoggedIn:start');
+            await saveAccessToken(payload.accessToken);
+            api.defaults.headers.common.Authorization = `Bearer ${payload.accessToken}`;
 
-        const profile = await fetchScannerProfile();
-        const list = await fetchScannerEvents();
+            const profile = await fetchScannerProfile();
+            const list = await fetchScannerEvents();
 
-        setSession({
-            accessToken: payload.accessToken,
-            scannerUser: profile.scannerUser,
-            client: profile.client
-        });
-        setEvents(list);
+            setSession({
+                accessToken: payload.accessToken,
+                scannerUser: profile.scannerUser,
+                client: profile.client
+            });
+            setEvents(list);
+            await appendRuntimeLog(`auth:handleLoggedIn:success events=${Array.isArray(list) ? list.length : 0}`);
+        } catch (error) {
+            await appendRuntimeLog(`auth:handleLoggedIn:error ${error?.message || 'unknown'}`);
+            throw error;
+        }
     }
 
     async function handleLogout() {
+        await appendRuntimeLogIfEnabled('auth:logout:start');
         await clearAccessToken();
         delete api.defaults.headers.common.Authorization;
         setSession(null);
         setEvents([]);
+        await appendRuntimeLogIfEnabled('auth:logout:done');
     }
 
     if (loadingSession) {
@@ -203,6 +212,14 @@ export default function App() {
         Cairo_400Regular,
         Cairo_700Bold
     });
+
+    useEffect(() => {
+        appendRuntimeLog(`app:init debug=${String(isRuntimeDebugEnabled())}`);
+    }, []);
+
+    useEffect(() => {
+        appendRuntimeLogIfEnabled(`app:fontsLoaded=${String(fontsLoaded)}`);
+    }, [fontsLoaded]);
 
     if (!fontsLoaded) {
         return <BrandedSplash />;

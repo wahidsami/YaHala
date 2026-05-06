@@ -424,9 +424,14 @@ router.delete('/:id', requirePermission('clients.delete'), async (req, res, next
             throw new AppError('Client not found', 404, 'NOT_FOUND');
         }
 
-        await pool.query('DELETE FROM clients WHERE id = $1', [req.params.id]);
+        await pool.query(
+            `UPDATE clients
+             SET status = 'inactive', updated_at = NOW()
+             WHERE id = $1`,
+            [req.params.id]
+        );
 
-        res.json({ message: 'Client deleted successfully' });
+        res.json({ message: 'Client deactivated successfully' });
     } catch (error) {
         next(error);
     }
@@ -496,7 +501,7 @@ router.get('/:id/scanner-users', requirePermission('scanner_users.view'), async 
 
         const { rows } = await pool.query(
             `
-            SELECT id, client_id, name, status, created_at, updated_at
+            SELECT id, client_id, name, status, event_id, created_at, updated_at
             FROM scanner_users
             WHERE client_id = $1
             ORDER BY created_at DESC
