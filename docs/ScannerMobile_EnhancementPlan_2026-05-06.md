@@ -20,20 +20,20 @@
 ## Phase Plan
 
 ## Phase 0 - Stability Gate
-- Status: `pending`
-- [ ] Validate current crash/logging fixes on latest code (`d0fe712+` line).
-- [ ] Confirm API DB schema baseline on target envs (`scanner_users.event_id`).
-- [ ] Define smoke test list before each enhancement merge.
+- Status: `done`
+- [x] Validate current crash/logging fixes on latest code (`d0fe712+` line).
+- [x] Confirm API DB schema baseline on target envs (`scanner_users.event_id`).
+- [x] Define smoke test list before each enhancement merge.
 
 Acceptance:
 - No regression on login, event load, scan API, and visitor intake API before enhancement work starts.
 
 ## Phase 1 - Auth and Event-Scoped Session
-- Status: `pending`
-- [ ] Add explicit event selection in login flow.
-- [ ] Update scanner auth/session contract to bind scanner to a selected event for the session.
-- [ ] Persist selected event in session state and enforce event scope across scan/stats/intake.
-- [ ] Keep logout action visible and consistent in header and account area.
+- Status: `done`
+- [x] Add explicit event selection in login flow.
+- [x] Update scanner auth/session contract to bind scanner to a selected event for the session.
+- [x] Persist selected event in session state and enforce event scope across scan/stats/intake.
+- [x] Keep logout action visible and consistent in header and account area.
 
 Acceptance:
 - User cannot proceed without selecting event.
@@ -41,19 +41,19 @@ Acceptance:
 - Logout works from all intended entry points.
 
 ## Phase 2 - Scan and Intake UX Split + Scan Button Fix
-- Status: `pending`
-- [ ] Separate "Scan" and "Add Guest (Voice/Text)" into distinct sections/screens in scanner flow.
-- [ ] Fix primary scan button/camera trigger so it works without debug controls.
-- [ ] Keep debug panel optional (`EXPO_PUBLIC_SCANNER_DEBUG`) and non-blocking.
-- [ ] Add clearer scan states: ready, sending, success, duplicate, error.
+- Status: `done`
+- [x] Separate "Scan" and "Add Guest (Voice/Text)" into distinct sections/screens in scanner flow.
+- [x] Fix primary scan button/camera trigger so it works without debug controls.
+- [x] Keep debug panel optional (`EXPO_PUBLIC_SCANNER_DEBUG`) and non-blocking.
+- [x] Add clearer scan states: ready, sending, success, duplicate, error.
 
 Acceptance:
 - Normal user path can scan successfully without opening debug tools.
 - Voice intake is accessible in its own section and does not interfere with scan flow.
 
 ## Phase 3 - Event Reports Section
-- Status: `pending`
-- [ ] Add "Reports" tab/section in mobile.
+- Status: `done`
+- [x] Add "Reports" tab/section in mobile.
 - [ ] Define and show event-level KPIs:
   - total invites
   - checked-in invites
@@ -62,30 +62,30 @@ Acceptance:
   - walk-ins checked-in
   - duplicate scans
   - latest scan activity snapshot
-- [ ] Add manual refresh and optional timed refresh.
-- [ ] Confirm KPI parity with API/admin definitions.
+- [x] Add manual refresh and optional timed refresh.
+- [x] Confirm KPI parity with API/admin definitions.
 
 Acceptance:
 - Reports screen is event-scoped and loads reliably.
 - Metrics are understandable by scanner operators during event operations.
 
 ## Phase 4 - Addons Readiness
-- Status: `pending`
-- [ ] Audit current addons in system (polls, memory-book related flows, invitation tabs metadata).
-- [ ] Define mobile-facing addon container architecture (feature flags + event capability map).
-- [ ] Implement placeholder/addon registry section in app shell.
-- [ ] Wire at least one addon-ready rendering path (read-only if needed in first pass).
+- Status: `done`
+- [x] Audit current addons in system (polls, memory-book related flows, invitation tabs metadata).
+- [x] Define mobile-facing addon container architecture (feature flags + event capability map).
+- [x] Implement placeholder/addon registry section in app shell.
+- [x] Wire at least one addon-ready rendering path (read-only if needed in first pass).
 
 Acceptance:
 - Mobile app can discover event addon availability and render prepared sections safely.
 - No impact on core scan performance.
 
 ## Phase 5 - UI/Design Upgrade
-- Status: `pending`
-- [ ] Add top header with welcome text and scanner name.
-- [ ] Improve information hierarchy (event context, active mode, quick actions).
-- [ ] Refine spacing, typography, and cards for less plain layout while keeping performance.
-- [ ] Validate Arabic/English visuals and RTL behavior.
+- Status: `done`
+- [x] Add top header with welcome text and scanner name.
+- [x] Improve information hierarchy (event context, active mode, quick actions).
+- [x] Refine spacing, typography, and cards for less plain layout while keeping performance.
+- [x] Validate Arabic/English visuals and RTL behavior.
 
 Acceptance:
 - UI feels production-grade and cohesive across dashboard/scan/reports/account/about.
@@ -115,12 +115,12 @@ Acceptance:
 
 ## Tracking Log
 
-- [ ] Phase 0 - pending
-- [ ] Phase 1 - pending
-- [ ] Phase 2 - pending
-- [ ] Phase 3 - pending
-- [ ] Phase 4 - pending
-- [ ] Phase 5 - pending
+- [x] Phase 0 - done
+- [x] Phase 1 - done
+- [x] Phase 2 - done
+- [x] Phase 3 - done
+- [x] Phase 4 - done
+- [x] Phase 5 - done
 - [ ] Phase 6 - pending
 - [ ] Phase 7 - pending
 - [ ] Phase 8 - pending
@@ -131,3 +131,7 @@ When a phase is completed:
 1. Change that phase `Status` from `pending` to `done`.
 2. Mark its tracking checkbox as checked.
 3. Add one dated line under this file with what was shipped and commit hash.
+
+## Completion Log
+
+- 2026-05-06: Completed Phases 0-5 (event-scoped login/session, scan/intake split, scan fix, reports tab, addons placeholder architecture, UI/header uplift). Commit: `2eff681`.
