@@ -789,6 +789,59 @@ router.post('/:id/send-invitations', requirePermission('events.edit'), async (re
     }
 });
 
+// GET /api/admin/events/:id/invitation-summary
+router.get('/:id/invitation-summary', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { event, project } = await resolvePrimaryInvitationProject(pool, eventId);
+        const { rows: aggregateRows } = await pool.query(
+            `
+            SELECT
+                COUNT(*)::int AS recipients,
+                COUNT(*) FILTER (WHERE overall_status = 'queued')::int AS queued,
+                COUNT(*) FILTER (WHERE overall_status = 'sent')::int AS sent,
+                COUNT(*) FILTER (WHERE overall_status = 'delivered')::int AS delivered,
+                COUNT(*) FILTER (WHERE overall_status = 'opened')::int AS opened,
+                COUNT(*) FILTER (WHERE overall_status = 'responded')::int AS responded,
+                COUNT(*) FILTER (WHERE overall_status = 'failed')::int AS failed
+            FROM invitation_recipients
+            WHERE project_id = $1
+            `,
+            [project.id]
+        );
+
+        const totals = aggregateRows[0] || {
+            recipients: 0,
+            queued: 0,
+            sent: 0,
+            delivered: 0,
+            opened: 0,
+            responded: 0,
+            failed: 0
+        };
+
+        res.json({
+            data: {
+                eventId: event.id,
+                projectId: project.id,
+                totals,
+                lastUpdatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Failed to fetch event invitation summary:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    }
+});
+
 // PATCH /api/admin/events/:id/status - Activate or deactivate event
 router.patch('/:id/status', requirePermission('events.edit'), async (req, res, next) => {
     try {

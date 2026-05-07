@@ -136,6 +136,7 @@ Desired workflow:
 
 - `GET /api/admin/events/:id/invitation-summary`
   - returns aggregated delivery states + response funnel
+- [x] Implemented in `apps/api/src/routes/events.js`.
 
 - `GET /api/admin/events/:id/attendance-summary`
   - invitation attendance + walk-ins + scanner duplicate scans
@@ -362,3 +363,4 @@ System is done when:
 - 2026-05-07: Added migration `017` to backfill `events.primary_invitation_project_id` for existing events.
 - 2026-05-07: Phase C started with event-level endpoint `POST /api/admin/events/:id/sync-invitation-template`.
 - 2026-05-07: Added event-level endpoint `POST /api/admin/events/:id/send-invitations` using shared invitation send service.
+- 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/invitation-summary`.
