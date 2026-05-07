@@ -30,6 +30,20 @@ function normalizeText(value) {
     return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeLanguage(language, fallback = 'ar') {
+    const normalizedFallback = LANGUAGES.has(fallback) ? fallback : 'ar';
+    const text = normalizeText(language).toLowerCase();
+    if (!text) {
+        return normalizedFallback;
+    }
+
+    if (LANGUAGES.has(text)) {
+        return text;
+    }
+
+    return normalizedFallback;
+}
+
 function toInt(value, fallback) {
     const parsed = parseInt(value, 10);
     return Number.isNaN(parsed) ? fallback : parsed;
