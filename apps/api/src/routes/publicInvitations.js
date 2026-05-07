@@ -656,8 +656,13 @@ router.post('/:token/pages/:pageKey/vote', async (req, res, next) => {
         }
 
         const poll = runtime.poll;
-        if (!['published', 'ended'].includes(poll.status)) {
+        if (poll.status !== 'published') {
             throw new AppError('Poll is not available for voting', 400, 'POLL_NOT_AVAILABLE');
+        }
+
+        const startDate = poll.start_date ? new Date(poll.start_date) : null;
+        if (startDate && !Number.isNaN(startDate.getTime()) && startDate.getTime() > Date.now()) {
+            throw new AppError('Poll has not started yet', 400, 'POLL_NOT_STARTED');
         }
 
         const endDate = poll.end_date ? new Date(poll.end_date) : null;

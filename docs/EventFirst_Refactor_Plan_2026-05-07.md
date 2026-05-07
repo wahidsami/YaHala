@@ -376,3 +376,4 @@ System is done when:
 - 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/addons-summary`.
 - 2026-05-07: Phase D started with Event Dashboard invitation operations + addons tabs wired to new event-level endpoints.
 - 2026-05-07: Added event-level guest assignment flow (`GET /events/:id/guest-directory`, `POST /events/:id/guest-directory/assign`) and Event Dashboard `Guests` tab.
+- 2026-05-07: Poll hardening pass: enforced publish/start/end checks on vote endpoint and aligned public invitation UI voting guard.

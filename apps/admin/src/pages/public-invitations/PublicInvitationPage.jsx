@@ -630,7 +630,10 @@ function PollPanel({ language, page, token, sessionToken, setSessionToken }) {
     const totalVotes = options.reduce((sum, option) => sum + (Number(option.votes_count) || 0), 0);
     const pollEnded = pollState.status === 'ended'
         || (pollState.end_date && !Number.isNaN(new Date(pollState.end_date).getTime()) && new Date(pollState.end_date).getTime() < Date.now());
-    const canVote = pollState.status === 'published' && !pollEnded;
+    const pollNotStarted = pollState.start_date
+        && !Number.isNaN(new Date(pollState.start_date).getTime())
+        && new Date(pollState.start_date).getTime() > Date.now();
+    const canVote = pollState.status === 'published' && !pollEnded && !pollNotStarted;
     const showResults = pollState.show_results_mode === 'immediately'
         || (submitted && pollState.show_results_mode === 'after_vote')
         || (pollState.show_results_mode === 'after_end' && pollEnded);
