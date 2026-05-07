@@ -848,7 +848,7 @@ async function buildInvitationEmailSendContext(db, projectId, requestedRecipient
     };
 }
 
-async function executeInvitationEmailSend({
+export async function executeInvitationEmailSend({
     projectId,
     requestedRecipientIds = [],
     scheduledFor = null,

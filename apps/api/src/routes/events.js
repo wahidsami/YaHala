@@ -5,6 +5,7 @@ import pool from '../db/connection.js';
 import { authenticate, requirePermission } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { saveEventLogo } from '../services/eventAssets.js';
+import { executeInvitationEmailSend } from './invitationProjects.js';
 
 const router = Router();
 
@@ -118,6 +119,29 @@ function computeDesignDataHash(value) {
     }
 
     return crypto.createHash('sha256').update(stableStringify(value)).digest('hex');
+}
+
+function normalizeRecipientIdList(value) {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean);
+}
+
+function parseOptionalSchedule(value) {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new AppError('scheduledFor must be a valid datetime', 400, 'VALIDATION_ERROR');
+    }
+
+    return parsed;
 }
 
 async function resolvePrimaryInvitationProject(db, eventId) {
@@ -725,6 +749,43 @@ router.post('/:id/sync-invitation-template', requirePermission('events.edit'), a
         next(error);
     } finally {
         db.release();
+    }
+});
+
+// POST /api/admin/events/:id/send-invitations
+router.post('/:id/send-invitations', requirePermission('events.edit'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { event, project } = await resolvePrimaryInvitationProject(pool, eventId);
+        const requestedRecipientIds = normalizeRecipientIdList(req.body?.recipientIds);
+        const scheduledFor = parseOptionalSchedule(req.body?.scheduledFor);
+        const sendResult = await executeInvitationEmailSend({
+            projectId: project.id,
+            requestedRecipientIds,
+            scheduledFor,
+            trace: false,
+            createdBy: req.user?.id || null
+        });
+
+        res.json({
+            data: {
+                eventId: event.id,
+                projectId: project.id,
+                summary: sendResult.summary,
+                selection: sendResult.debug?.selection || null
+            }
+        });
+    } catch (error) {
+        console.error('Failed to send invitations from event dashboard:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
     }
 });
 
