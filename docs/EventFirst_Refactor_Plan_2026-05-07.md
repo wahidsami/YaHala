@@ -140,6 +140,7 @@ Desired workflow:
 
 - `GET /api/admin/events/:id/attendance-summary`
   - invitation attendance + walk-ins + scanner duplicate scans
+- [x] Implemented in `apps/api/src/routes/events.js`.
 
 - `GET /api/admin/events/:id/addons-summary`
   - source from `event.settings.addIns` + `invitation_setup.tabs`
@@ -364,3 +365,4 @@ System is done when:
 - 2026-05-07: Phase C started with event-level endpoint `POST /api/admin/events/:id/sync-invitation-template`.
 - 2026-05-07: Added event-level endpoint `POST /api/admin/events/:id/send-invitations` using shared invitation send service.
 - 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/invitation-summary`.
+- 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/attendance-summary`.

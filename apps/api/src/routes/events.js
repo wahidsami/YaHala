@@ -842,6 +842,111 @@ router.get('/:id/invitation-summary', requirePermission('events.view'), async (r
     }
 });
 
+// GET /api/admin/events/:id/attendance-summary
+router.get('/:id/attendance-summary', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { rows: eventRows } = await pool.query(
+            `
+            SELECT id, client_id, name, name_ar, status
+            FROM events
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [eventId]
+        );
+
+        if (!eventRows.length) {
+            throw new AppError('Event not found', 404, 'NOT_FOUND');
+        }
+
+        const event = eventRows[0];
+        const { rows: invitationStatsRows } = await pool.query(
+            `
+            SELECT
+                COUNT(*)::int AS invited_total,
+                COUNT(*) FILTER (
+                    WHERE COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') IN ('attended', 'checked_in')
+                )::int AS attended_from_invitations
+            FROM invitation_projects p
+            JOIN invitation_recipients r ON r.project_id = p.id
+            WHERE p.event_id = $1
+            `,
+            [eventId]
+        );
+
+        const invitationStats = invitationStatsRows[0] || {
+            invited_total: 0,
+            attended_from_invitations: 0
+        };
+
+        const { rows: walkInRows } = await pool.query(
+            `
+            SELECT
+                COUNT(*)::int AS walk_in_total,
+                COUNT(*) FILTER (WHERE check_in_status = 'checked_in')::int AS walk_in_checked_in
+            FROM event_walk_ins
+            WHERE event_id = $1
+            `,
+            [eventId]
+        );
+
+        const walkInStats = walkInRows[0] || {
+            walk_in_total: 0,
+            walk_in_checked_in: 0
+        };
+
+        const { rows: duplicateScanRows } = await pool.query(
+            `
+            SELECT COUNT(*)::int AS duplicate_scan_count
+            FROM activity_logs
+            WHERE user_type = 'scanner'
+              AND action = 'duplicate_scan'
+              AND details->>'eventId' = $1
+            `,
+            [eventId]
+        );
+
+        const invitedTotal = invitationStats.invited_total || 0;
+        const invitedAttended = invitationStats.attended_from_invitations || 0;
+        const invitedPending = Math.max(invitedTotal - invitedAttended, 0);
+        const walkInTotal = walkInStats.walk_in_total || 0;
+        const walkInCheckedIn = walkInStats.walk_in_checked_in || 0;
+
+        res.json({
+            data: {
+                event: {
+                    id: event.id,
+                    name: event.name,
+                    name_ar: event.name_ar,
+                    status: event.status
+                },
+                totals: {
+                    invitedTotal,
+                    invitedAttended,
+                    invitedPending,
+                    walkInTotal,
+                    walkInCheckedIn,
+                    checkedInTotal: invitedAttended + walkInCheckedIn,
+                    duplicateScanCount: duplicateScanRows[0]?.duplicate_scan_count || 0
+                },
+                lastUpdatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Failed to fetch event attendance summary:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    }
+});
+
 // PATCH /api/admin/events/:id/status - Activate or deactivate event
 router.patch('/:id/status', requirePermission('events.edit'), async (req, res, next) => {
     try {
