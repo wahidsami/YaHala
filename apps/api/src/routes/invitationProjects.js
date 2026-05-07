@@ -1535,6 +1535,11 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
     const db = await pool.connect();
 
     try {
+        const projectId = normalizeText(req.params.id);
+        if (!projectId) {
+            throw new AppError('Project id is required', 400, 'VALIDATION_ERROR');
+        }
+
         await db.query('BEGIN');
 
         const { rows: projectRows } = await db.query(
@@ -1544,7 +1549,7 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
             JOIN events e ON e.id = p.event_id
             WHERE p.id = $1
             `,
-            [req.params.id]
+            [projectId]
         );
 
         if (!projectRows.length) {
@@ -1572,7 +1577,7 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
                 eventTemplateId,
                 coverTemplatePayload.snapshot === null ? null : JSON.stringify(coverTemplatePayload.snapshot),
                 JSON.stringify(nextSettings),
-                req.params.id
+                projectId
             ]
         );
 
@@ -1591,23 +1596,27 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
                     coverTemplateSnapshot: coverTemplatePayload.snapshot,
                     coverTemplateHash: coverTemplatePayload.hash
                 }),
-                req.params.id
+                projectId
             ]
         );
 
         await db.query('COMMIT');
 
-        const { project, summary, pages } = await fetchProjectWithContext(req.params.id, db);
-
         res.json({
             data: {
-                project,
-                summary,
-                pages
+                projectId,
+                synced: true,
+                eventTemplateId,
+                coverTemplateHash: coverTemplatePayload.hash
             }
         });
     } catch (error) {
         await db.query('ROLLBACK').catch(() => {});
+        console.error('Failed to sync invitation template:', {
+            projectId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
         next(error);
     } finally {
         db.release();

@@ -516,8 +516,8 @@ export default function InvitationProjectDetailPage() {
         setDeliveryNotice(null);
 
         try {
-            const response = await api.post(`/admin/invitation-projects/${id}/sync-template`);
-            setProjectData(response.data.data);
+            await api.post(`/admin/invitation-projects/${id}/sync-template`);
+            await fetchProject();
             setDeliveryNotice(t('invitationProjects.syncTemplateSuccess'));
         } catch (syncError) {
             console.error('Failed to sync invitation template:', syncError);
