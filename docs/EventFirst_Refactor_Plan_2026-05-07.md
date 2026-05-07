@@ -333,6 +333,8 @@ Desired workflow:
   - [x] Event dashboard addon/ops views now include questionnaire counts and submissions.
   - [x] Reports overview now includes questionnaire totals and top questionnaires table.
 - G.6.5 Scanner read-only state integration.
+  - [x] Scanner `/scan` response now includes guest questionnaire state summary (submitted/total/pending + last submitted timestamp).
+  - [x] Scanner mobile result views display read-only questionnaire completion state.
 
 ### G.7 Acceptance
 - Admin can create/publish questionnaire and attach it to event setup tabs.
@@ -472,3 +474,4 @@ System is done when:
 - 2026-05-07: Implemented Questionnaire admin CRUD/report routes and event-level questionnaire summary endpoint.
 - 2026-05-07: Implemented Questionnaire invitation runtime (snapshot/state/submit endpoints + public tab/panel UI).
 - 2026-05-07: Implemented Questionnaire dashboard/report integration (event summaries + global reports).
+- 2026-05-07: Implemented Questionnaire scanner read-only state in scan response and scanner mobile result UI.

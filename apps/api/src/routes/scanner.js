@@ -326,6 +326,49 @@ function generatePublicToken() {
     return crypto.randomBytes(24).toString('hex');
 }
 
+async function fetchRecipientQuestionnaireState(db, eventId, recipientId) {
+    if (!eventId || !recipientId) {
+        return {
+            totalQuestionnaires: 0,
+            submittedQuestionnaires: 0,
+            pendingQuestionnaires: 0,
+            status: 'not_started',
+            lastSubmittedAt: null
+        };
+    }
+
+    const { rows } = await db.query(
+        `
+        SELECT
+            COUNT(*)::int AS total_questionnaires,
+            COUNT(qs.id)::int AS submission_rows,
+            COUNT(DISTINCT qs.questionnaire_id)::int AS submitted_questionnaires,
+            MAX(qs.submitted_at) AS last_submitted_at
+        FROM questionnaires q
+        LEFT JOIN questionnaire_submissions qs
+          ON qs.questionnaire_id = q.id
+         AND qs.recipient_id = $2
+        WHERE q.event_id = $1
+          AND q.status = 'published'
+          AND (q.start_date IS NULL OR q.start_date <= NOW())
+          AND (q.end_date IS NULL OR q.end_date >= NOW())
+        `,
+        [eventId, recipientId]
+    );
+
+    const totalQuestionnaires = rows[0]?.total_questionnaires || 0;
+    const submittedQuestionnaires = rows[0]?.submitted_questionnaires || 0;
+    const pendingQuestionnaires = Math.max(totalQuestionnaires - submittedQuestionnaires, 0);
+
+    return {
+        totalQuestionnaires,
+        submittedQuestionnaires,
+        pendingQuestionnaires,
+        status: submittedQuestionnaires > 0 ? 'submitted' : 'not_started',
+        lastSubmittedAt: rows[0]?.last_submitted_at || null
+    };
+}
+
 function signScannerToken(scannerUser, selectedEventId = null) {
     return jwt.sign(
         {
@@ -1254,6 +1297,7 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
         const currentMetadata = safeJson(recipient.metadata, {});
         const alreadyAttended = getInvitationAttendanceStatus(currentMetadata) === 'checked_in';
         const scannedAt = new Date().toISOString();
+        const questionnaire = await fetchRecipientQuestionnaireState(db, recipient.event_id, recipient.recipient_id);
 
         if (!alreadyAttended) {
             const nextMetadata = {
@@ -1312,7 +1356,8 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
                 name: recipient.display_name,
                 name_ar: recipient.display_name_ar,
                 attendance_status: 'checked_in',
-                attended_at: alreadyAttended ? currentMetadata.attended_at || null : scannedAt
+                attended_at: alreadyAttended ? currentMetadata.attended_at || null : scannedAt,
+                questionnaire
             },
             event: {
                 id: recipient.event_id,

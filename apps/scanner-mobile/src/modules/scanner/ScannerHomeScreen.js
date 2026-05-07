@@ -191,6 +191,12 @@ export default function ScannerHomeScreen({ scannerUser, client, events, onLogou
                         <Text style={[styles.resultLine, textStyle]}>Status: {result.status}</Text>
                         <Text style={[styles.resultLine, textStyle]}>{localizedName(i18n.language, result.attendee?.name, result.attendee?.name_ar)}</Text>
                         <Text style={[styles.resultLineMuted, textStyle]}>{localizedName(i18n.language, result.event?.name, result.event?.name_ar)}</Text>
+                        {result.attendee?.questionnaire ? (
+                            <Text style={[styles.resultLineMuted, textStyle]}>
+                                Questionnaire: {result.attendee.questionnaire.submittedQuestionnaires || 0}/{result.attendee.questionnaire.totalQuestionnaires || 0}
+                                {result.attendee.questionnaire.lastSubmittedAt ? ` · last ${new Date(result.attendee.questionnaire.lastSubmittedAt).toLocaleString()}` : ''}
+                            </Text>
+                        ) : null}
                         {result.invitationLabel ? <Text style={[styles.resultLineMuted, textStyle]}>{result.invitationLabel}</Text> : null}
                     </>
                 ) : (

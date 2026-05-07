@@ -90,6 +90,11 @@ export default function ScanScreen({ events, activeEventId, onScanResult }) {
                     <Text style={[styles.resultText, textStyle]}>
                         {result.status === 'attended' || result.status === 'duplicate' ? 'Success' : 'Failed'}: {localizedName(i18n.language, result.attendee?.name, result.attendee?.name_ar)}
                     </Text>
+                    {result.attendee?.questionnaire ? (
+                        <Text style={[styles.recentText, textStyle]}>
+                            Questionnaire: {result.attendee.questionnaire.submittedQuestionnaires || 0}/{result.attendee.questionnaire.totalQuestionnaires || 0}
+                        </Text>
+                    ) : null}
                 </View>
             )}
 
