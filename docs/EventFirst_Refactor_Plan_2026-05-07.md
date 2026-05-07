@@ -93,7 +93,7 @@ Desired workflow:
 - [x] Completed and documented in Sections 6 and 7 of this file.
 
 ## Phase B - Data and Primary Project Strategy
-- Status: `pending`
+- Status: `in_progress`
 
 ### B.1 Primary Project Selection Rule
 - Add deterministic rule:
@@ -106,6 +106,7 @@ Desired workflow:
   - add `primary_invitation_project_id` to `events` (nullable FK to `invitation_projects.id`)
   - add index on `events(primary_invitation_project_id)`
 - Keep fallback logic for old records.
+- [x] Migration `016_events_primary_invitation_project.sql` added.
 
 ### B.3 Backfill Script
 - One-time script:
@@ -354,3 +355,4 @@ System is done when:
 ## Change Log
 - 2026-05-07: Initial detailed plan created for review.
 - 2026-05-07: Phase A completed (current-state mapping + endpoint contract draft + UI target mapping).
+- 2026-05-07: Phase B started with schema migration `016` for event primary invitation project pointer.
