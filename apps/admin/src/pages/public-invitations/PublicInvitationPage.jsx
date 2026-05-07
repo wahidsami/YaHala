@@ -61,6 +61,12 @@ const COPY = {
         pollVotingClosed: 'Voting is closed for this poll.',
         pollVoteSuccess: 'Your vote has been recorded.',
         selectAtLeastOne: 'Please select at least one option.',
+        questionnaireUnavailable: 'This questionnaire is not available right now.',
+        questionnaireSubmitSuccess: 'Your questionnaire response has been saved.',
+        questionnaireRequired: 'Please answer all required questions.',
+        questionnaireYes: 'Yes',
+        questionnaireNo: 'No',
+        questionnaireRating: 'Rating',
         copied: 'Link copied'
     },
     ar: {
@@ -116,6 +122,12 @@ const COPY = {
         pollVotingClosed: 'تم إغلاق التصويت لهذا الاستطلاع.',
         pollVoteSuccess: 'تم تسجيل صوتك بنجاح.',
         selectAtLeastOne: 'الرجاء اختيار خيار واحد على الأقل.',
+        questionnaireUnavailable: 'هذا الاستبيان غير متاح حالياً.',
+        questionnaireSubmitSuccess: 'تم حفظ إجابتك على الاستبيان.',
+        questionnaireRequired: 'يرجى الإجابة على جميع الأسئلة المطلوبة.',
+        questionnaireYes: 'نعم',
+        questionnaireNo: 'لا',
+        questionnaireRating: 'التقييم',
         copied: 'تم نسخ الرابط'
     }
 };
@@ -796,6 +808,206 @@ function PollPanel({ language, page, token, sessionToken, setSessionToken }) {
     );
 }
 
+function QuestionnairePanel({ language, page, token, sessionToken, setSessionToken }) {
+    const copy = COPY[language];
+    const snapshot = page?.settings?.addon_snapshot || page?.settings?.questionnaire_snapshot || {};
+    const [questionnaireState, setQuestionnaireState] = useState(snapshot);
+    const [submitted, setSubmitted] = useState(false);
+    const [answers, setAnswers] = useState({});
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    useEffect(() => {
+        setQuestionnaireState(snapshot);
+        setSubmitted(false);
+        setAnswers({});
+        setSubmitting(false);
+        setError('');
+        setSuccess('');
+    }, [snapshot.questionnaire_id, page?.id]);
+
+    useEffect(() => {
+        let mounted = true;
+        async function loadState() {
+            try {
+                const response = await api.get(
+                    `/public/invitations/${token}/pages/${page.page_key}/questionnaire-state`,
+                    { params: { sessionToken: sessionToken || undefined }, skipAuthRefresh: true }
+                );
+                if (!mounted) return;
+                setQuestionnaireState(response.data?.data?.questionnaire || snapshot);
+                setSubmitted(Boolean(response.data?.data?.submitted));
+            } catch (loadError) {
+                if (!mounted) return;
+                setError(loadError.response?.data?.message || copy.questionnaireUnavailable);
+            }
+        }
+        loadState();
+        return () => {
+            mounted = false;
+        };
+    }, [token, page.page_key]);
+
+    const questions = Array.isArray(questionnaireState.questions)
+        ? [...questionnaireState.questions].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        : [];
+    const questionnaireEnded = questionnaireState.status === 'archived'
+        || (questionnaireState.end_date && !Number.isNaN(new Date(questionnaireState.end_date).getTime()) && new Date(questionnaireState.end_date).getTime() < Date.now());
+    const questionnaireNotStarted = questionnaireState.start_date
+        && !Number.isNaN(new Date(questionnaireState.start_date).getTime())
+        && new Date(questionnaireState.start_date).getTime() > Date.now();
+    const canSubmit = questionnaireState.status === 'published' && !questionnaireEnded && !questionnaireNotStarted && !submitted;
+
+    function setAnswer(questionId, value) {
+        setError('');
+        setSuccess('');
+        setAnswers((current) => ({ ...current, [questionId]: value }));
+    }
+
+    function buildPayloadAnswers() {
+        return questions
+            .map((question) => {
+                const value = answers[question.id];
+                if (value === undefined || value === null || value === '') return null;
+                if (question.question_type === 'yes_no') return { questionId: question.id, boolean: Boolean(value) };
+                if (question.question_type === 'single_choice') return { questionId: question.id, optionIds: value ? [value] : [] };
+                if (question.question_type === 'multiple_choice') return { questionId: question.id, optionIds: Array.isArray(value) ? value : [] };
+                if (question.question_type === 'short_text') return { questionId: question.id, text: String(value || '').trim() };
+                if (question.question_type === 'rating') return { questionId: question.id, number: Number(value) };
+                return null;
+            })
+            .filter(Boolean);
+    }
+
+    function hasValidationError() {
+        for (const question of questions) {
+            if (!question.is_required) continue;
+            const value = answers[question.id];
+            if (question.question_type === 'yes_no' && typeof value !== 'boolean') return true;
+            if (question.question_type === 'single_choice' && !value) return true;
+            if (question.question_type === 'multiple_choice' && (!Array.isArray(value) || !value.length)) return true;
+            if (question.question_type === 'short_text' && !String(value || '').trim()) return true;
+            if (question.question_type === 'rating' && (value === undefined || value === null || value === '')) return true;
+        }
+        return false;
+    }
+
+    async function submitQuestionnaire() {
+        if (hasValidationError()) {
+            setError(copy.questionnaireRequired);
+            return;
+        }
+
+        setSubmitting(true);
+        setError('');
+        setSuccess('');
+        try {
+            const response = await api.post(
+                `/public/invitations/${token}/pages/${page.page_key}/questionnaire-submit`,
+                { sessionToken: sessionToken || undefined, answers: buildPayloadAnswers() },
+                { skipAuthRefresh: true }
+            );
+            const nextSessionToken = response.data?.data?.sessionToken;
+            if (nextSessionToken) {
+                setSessionToken?.(nextSessionToken);
+                window.localStorage.setItem(`rawaj-public-session:${token}`, nextSessionToken);
+            }
+            setSubmitted(true);
+            setSuccess(copy.questionnaireSubmitSuccess);
+        } catch (submitError) {
+            setError(submitError.response?.data?.message || copy.questionnaireUnavailable);
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <div className="module-panel">
+            <div className="panel-header">
+                <span className="eyebrow">{copy.questionnaire}</span>
+                <h2>{localizedText(language, page.title || questionnaireState.title || copy.questionnaire, page.title_ar || questionnaireState.title_ar || copy.questionnaire)}</h2>
+                <p>{localizedText(language, page.description || questionnaireState.description || '', page.description_ar || questionnaireState.description_ar || '')}</p>
+            </div>
+            <div className="poll-shell">
+                {questions.map((question, index) => {
+                    const label = localizedText(language, question.title, question.title_ar);
+                    const help = localizedText(language, question.description || '', question.description_ar || '');
+                    const value = answers[question.id];
+                    return (
+                        <div key={question.id} className="form-block">
+                            <label>{index + 1}. {label} {question.is_required ? '*' : ''}</label>
+                            {help && <small>{help}</small>}
+                            {question.question_type === 'yes_no' && (
+                                <div className="choice-grid">
+                                    <button type="button" className={`choice-card ${value === true ? 'selected' : ''}`} onClick={() => setAnswer(question.id, true)} disabled={!canSubmit || submitting}>{copy.questionnaireYes}</button>
+                                    <button type="button" className={`choice-card ${value === false ? 'selected' : ''}`} onClick={() => setAnswer(question.id, false)} disabled={!canSubmit || submitting}>{copy.questionnaireNo}</button>
+                                </div>
+                            )}
+                            {question.question_type === 'single_choice' && (
+                                <div className="choice-grid">
+                                    {(question.options || []).map((option) => (
+                                        <button key={option.id} type="button" className={`choice-card ${value === option.id ? 'selected' : ''}`} onClick={() => setAnswer(question.id, option.id)} disabled={!canSubmit || submitting}>
+                                            {localizedText(language, option.label, option.label_ar)}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            {question.question_type === 'multiple_choice' && (
+                                <div className="choice-grid">
+                                    {(question.options || []).map((option) => {
+                                        const selectedValues = Array.isArray(value) ? value : [];
+                                        const checked = selectedValues.includes(option.id);
+                                        return (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                className={`choice-card ${checked ? 'selected' : ''}`}
+                                                onClick={() => {
+                                                    const current = Array.isArray(value) ? value : [];
+                                                    if (checked) setAnswer(question.id, current.filter((id) => id !== option.id));
+                                                    else setAnswer(question.id, [...current, option.id]);
+                                                }}
+                                                disabled={!canSubmit || submitting}
+                                            >
+                                                {localizedText(language, option.label, option.label_ar)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {question.question_type === 'short_text' && (
+                                <textarea rows="3" value={value || ''} onChange={(event) => setAnswer(question.id, event.target.value)} disabled={!canSubmit || submitting} />
+                            )}
+                            {question.question_type === 'rating' && (
+                                <div className="choice-grid">
+                                    {Array.from(
+                                        { length: Number(question.settings?.max || 5) - Number(question.settings?.min || 1) + 1 },
+                                        (_, idx) => Number(question.settings?.min || 1) + idx
+                                    ).map((rating) => (
+                                        <button key={rating} type="button" className={`choice-card ${Number(value) === rating ? 'selected' : ''}`} onClick={() => setAnswer(question.id, rating)} disabled={!canSubmit || submitting}>
+                                            {copy.questionnaireRating} {rating}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+                {error && <div className="form-error">{error}</div>}
+                {success && <div className="status-banner success">{success}</div>}
+                {canSubmit ? (
+                    <button type="button" className="submit-btn poll-cta" onClick={submitQuestionnaire} disabled={submitting}>
+                        <span>{submitting ? copy.submitting : copy.submit}</span>
+                    </button>
+                ) : (
+                    <div className="poll-empty-state">{submitted ? copy.questionnaireSubmitSuccess : copy.questionnaireUnavailable}</div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function PlaceholderPanel({ language, page }) {
     const copy = COPY[language];
 
@@ -984,6 +1196,7 @@ export default function PublicInvitationPage() {
     }, [invitation]);
 
     const hasRsvpPage = pages.some((page) => page.page_type === 'rsvp' && page.is_enabled);
+    const interactivePages = pages.filter((page) => page.is_enabled && !['cover', 'rsvp'].includes(page.page_type));
     const copy = COPY[activeLanguage];
     const coverLayout = useMemo(() => normalizeLayout(invitation?.project?.cover_template_snapshot?.layout || invitation?.project?.cover_template?.design_data?.layout || {}), [invitation?.project?.cover_template_snapshot?.layout, invitation?.project?.cover_template?.design_data?.layout]);
     const canvasBaseWidth = 360;
@@ -1003,6 +1216,16 @@ export default function PublicInvitationPage() {
     }, [canvasHeight, guestViewport.height, guestViewport.width]);
     const scaledWidth = canvasBaseWidth * fitScale;
     const scaledHeight = canvasHeight * fitScale;
+
+    useEffect(() => {
+        if (!interactivePages.length) {
+            setActivePageKey('cover');
+            return;
+        }
+        if (!interactivePages.some((page) => page.page_key === activePageKey)) {
+            setActivePageKey(interactivePages[0].page_key);
+        }
+    }, [activePageKey, interactivePages]);
 
     if (loading) {
         return (
@@ -1055,6 +1278,51 @@ export default function PublicInvitationPage() {
                         />
                     </div>
                 </div>
+
+                {interactivePages.length > 0 && (
+                    <div className="card-tabs">
+                        {interactivePages.map((page) => (
+                            <button
+                                key={page.page_key}
+                                type="button"
+                                className={activePageKey === page.page_key ? 'active' : ''}
+                                onClick={() => setActivePageKey(page.page_key)}
+                            >
+                                {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {interactivePages.length > 0 && (() => {
+                    const activePage = interactivePages.find((page) => page.page_key === activePageKey) || interactivePages[0];
+                    if (!activePage) {
+                        return null;
+                    }
+                    if (activePage.page_type === 'poll') {
+                        return (
+                            <PollPanel
+                                language={activeLanguage}
+                                page={activePage}
+                                token={token}
+                                sessionToken={sessionToken}
+                                setSessionToken={setSessionToken}
+                            />
+                        );
+                    }
+                    if (activePage.page_type === 'questionnaire') {
+                        return (
+                            <QuestionnairePanel
+                                language={activeLanguage}
+                                page={activePage}
+                                token={token}
+                                sessionToken={sessionToken}
+                                setSessionToken={setSessionToken}
+                            />
+                        );
+                    }
+                    return <PlaceholderPanel language={activeLanguage} page={activePage} />;
+                })()}
 
             {showRsvpModal && hasRsvpPage && !rsvpCompleted && (
                 <div className="rsvp-modal-overlay" role="presentation" onClick={() => setShowRsvpModal(false)}>

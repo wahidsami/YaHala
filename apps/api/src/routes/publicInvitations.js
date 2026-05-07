@@ -109,6 +109,22 @@ function shapePollSnapshot(poll, options = [], stats = {}) {
     };
 }
 
+function shapeQuestionnaireSnapshot(questionnaire, questions = []) {
+    return {
+        type: 'questionnaire',
+        questionnaire_id: questionnaire.id,
+        title: questionnaire.title,
+        title_ar: questionnaire.title_ar || '',
+        description: questionnaire.description || '',
+        description_ar: questionnaire.description_ar || '',
+        status: questionnaire.status,
+        start_date: questionnaire.start_date,
+        end_date: questionnaire.end_date,
+        settings: safeJson(questionnaire.settings, {}),
+        questions
+    };
+}
+
 async function fetchPollRuntimeState(db, pollId, clientId, eventId) {
     const { rows: polls } = await db.query(
         `
@@ -151,6 +167,82 @@ async function fetchPollRuntimeState(db, pollId, clientId, eventId) {
         poll: polls[0],
         options,
         stats: voteStats[0] || { total_votes: 0, participants_count: 0 }
+    };
+}
+
+async function fetchQuestionnaireRuntimeState(db, questionnaireId, clientId, eventId) {
+    const { rows: questionnaires } = await db.query(
+        `
+        SELECT *
+        FROM questionnaires
+        WHERE id = $1
+          AND client_id = $2
+          AND event_id = $3
+        LIMIT 1
+        `,
+        [questionnaireId, clientId, eventId]
+    );
+
+    if (!questionnaires.length) {
+        return null;
+    }
+
+    const questionnaire = questionnaires[0];
+    const { rows: questions } = await db.query(
+        `
+        SELECT *
+        FROM questionnaire_questions
+        WHERE questionnaire_id = $1
+        ORDER BY sort_order ASC, created_at ASC
+        `,
+        [questionnaireId]
+    );
+
+    const questionIds = questions.map((question) => question.id);
+    let options = [];
+    if (questionIds.length) {
+        const { rows } = await db.query(
+            `
+            SELECT *
+            FROM questionnaire_options
+            WHERE question_id = ANY($1::uuid[])
+            ORDER BY sort_order ASC, created_at ASC
+            `,
+            [questionIds]
+        );
+        options = rows;
+    }
+
+    const optionsByQuestionId = options.reduce((accumulator, option) => {
+        if (!accumulator[option.question_id]) {
+            accumulator[option.question_id] = [];
+        }
+        accumulator[option.question_id].push({
+            id: option.id,
+            label: option.label,
+            label_ar: option.label_ar || '',
+            value: option.value,
+            sort_order: option.sort_order
+        });
+        return accumulator;
+    }, {});
+
+    const normalizedQuestions = questions.map((question) => ({
+        id: question.id,
+        question_type: question.question_type,
+        title: question.title,
+        title_ar: question.title_ar || '',
+        description: question.description || '',
+        description_ar: question.description_ar || '',
+        is_required: question.is_required,
+        sort_order: question.sort_order,
+        settings: safeJson(question.settings, {}),
+        options: optionsByQuestionId[question.id] || []
+    }));
+
+    return {
+        questionnaire,
+        questions: normalizedQuestions
     };
 }
 
@@ -333,21 +425,35 @@ async function fetchPublicInvitationBundle(db, token) {
     for (const page of pages) {
         const settings = safeJson(page.settings, {});
         const snapshot = safeJson(settings.addon_snapshot || settings.poll_snapshot, null);
-        if (!snapshot || snapshot.type !== 'poll' || !snapshot.poll_id) {
-            continue;
-        }
+        if (snapshot && snapshot.type === 'poll' && snapshot.poll_id) {
+            const runtime = await fetchPollRuntimeState(db, snapshot.poll_id, recipient.client_id, recipient.event_id);
+            if (!runtime) {
+                continue;
+            }
 
-        const runtime = await fetchPollRuntimeState(db, snapshot.poll_id, recipient.client_id, recipient.event_id);
-        if (!runtime) {
-            continue;
-        }
+            const liveSnapshot = shapePollSnapshot(runtime.poll, runtime.options, runtime.stats);
+            page.settings = {
+                ...settings,
+                addon_snapshot: liveSnapshot,
+                poll_snapshot: liveSnapshot
+            };
+        } else if (
+            (snapshot && snapshot.type === 'questionnaire' && snapshot.questionnaire_id)
+            || (settings.addon_type === 'questionnaire' && settings.addon_id)
+        ) {
+            const questionnaireId = snapshot?.questionnaire_id || settings.addon_id;
+            const runtime = await fetchQuestionnaireRuntimeState(db, questionnaireId, recipient.client_id, recipient.event_id);
+            if (!runtime) {
+                continue;
+            }
 
-        const liveSnapshot = shapePollSnapshot(runtime.poll, runtime.options, runtime.stats);
-        page.settings = {
-            ...settings,
-            addon_snapshot: liveSnapshot,
-            poll_snapshot: liveSnapshot
-        };
+            const liveSnapshot = shapeQuestionnaireSnapshot(runtime.questionnaire, runtime.questions);
+            page.settings = {
+                ...settings,
+                addon_snapshot: liveSnapshot,
+                questionnaire_snapshot: liveSnapshot
+            };
+        }
     }
 
     const project = {
@@ -403,6 +509,26 @@ function normalizeSelectedOptionIds(value) {
                 : [];
 
     return [...new Set(rawValues.map((item) => (typeof item === 'string' ? item.trim() : String(item ?? '').trim())).filter(Boolean))];
+}
+
+function normalizeQuestionnaireAnswers(value) {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map((answer) => ({
+            questionId: typeof answer?.questionId === 'string' ? answer.questionId.trim() : '',
+            optionIds: Array.isArray(answer?.optionIds)
+                ? answer.optionIds.map((id) => (typeof id === 'string' ? id.trim() : '')).filter(Boolean)
+                : [],
+            text: typeof answer?.text === 'string' ? answer.text.trim() : '',
+            number: answer?.number === undefined || answer?.number === null || answer?.number === ''
+                ? null
+                : Number(answer.number),
+            boolean: typeof answer?.boolean === 'boolean' ? answer.boolean : null
+        }))
+        .filter((answer) => answer.questionId);
 }
 
 async function fetchRsvpModule(db, projectId) {
@@ -768,6 +894,286 @@ router.post('/:token/pages/:pageKey/vote', async (req, res, next) => {
                 selectedOptionIds: [...selectedOptionSet],
                 voted: true,
                 sessionToken: voteSessionId
+            }
+        });
+    } catch (error) {
+        await db.query('ROLLBACK').catch(() => {});
+        next(error);
+    } finally {
+        db.release();
+    }
+});
+
+// GET /api/public/invitations/:token/pages/:pageKey/questionnaire-state
+router.get('/:token/pages/:pageKey/questionnaire-state', async (req, res, next) => {
+    const db = await pool.connect();
+    try {
+        const bundle = await fetchPublicInvitationBundle(db, req.params.token);
+        const page = bundle.pages.find((entry) => entry.page_key === req.params.pageKey);
+        if (!page) {
+            throw new AppError('Questionnaire page not found', 404, 'NOT_FOUND');
+        }
+
+        const settings = safeJson(page.settings, {});
+        const snapshot = safeJson(settings.addon_snapshot || settings.questionnaire_snapshot, null);
+        if (!snapshot || snapshot.type !== 'questionnaire' || !snapshot.questionnaire_id) {
+            throw new AppError('Questionnaire page is not configured', 400, 'VALIDATION_ERROR');
+        }
+
+        const runtime = await fetchQuestionnaireRuntimeState(
+            db,
+            snapshot.questionnaire_id,
+            bundle.recipient.client_id,
+            bundle.recipient.event_id
+        );
+        if (!runtime) {
+            throw new AppError('Questionnaire not found', 404, 'NOT_FOUND');
+        }
+
+        const { rows: submissionRows } = await db.query(
+            `
+            SELECT id, submitted_at
+            FROM questionnaire_submissions
+            WHERE questionnaire_id = $1
+              AND (
+                recipient_id = $2
+                OR (recipient_id IS NULL AND session_id = $3)
+              )
+            ORDER BY submitted_at DESC
+            LIMIT 1
+            `,
+            [runtime.questionnaire.id, bundle.recipient.recipient_id, req.query?.sessionToken || '']
+        );
+
+        res.json({
+            data: {
+                pageKey: page.page_key,
+                questionnaire: shapeQuestionnaireSnapshot(runtime.questionnaire, runtime.questions),
+                submitted: Boolean(submissionRows.length),
+                submittedAt: submissionRows[0]?.submitted_at || null
+            }
+        });
+    } catch (error) {
+        next(error);
+    } finally {
+        db.release();
+    }
+});
+
+// POST /api/public/invitations/:token/pages/:pageKey/questionnaire-submit
+router.post('/:token/pages/:pageKey/questionnaire-submit', async (req, res, next) => {
+    const db = await pool.connect();
+    try {
+        const bundle = await fetchPublicInvitationBundle(db, req.params.token);
+        const page = bundle.pages.find((entry) => entry.page_key === req.params.pageKey);
+        if (!page) {
+            throw new AppError('Questionnaire page not found', 404, 'NOT_FOUND');
+        }
+
+        const settings = safeJson(page.settings, {});
+        const snapshot = safeJson(settings.addon_snapshot || settings.questionnaire_snapshot, null);
+        if (!snapshot || snapshot.type !== 'questionnaire' || !snapshot.questionnaire_id) {
+            throw new AppError('Questionnaire page is not configured', 400, 'VALIDATION_ERROR');
+        }
+
+        const runtime = await fetchQuestionnaireRuntimeState(
+            db,
+            snapshot.questionnaire_id,
+            bundle.recipient.client_id,
+            bundle.recipient.event_id
+        );
+        if (!runtime) {
+            throw new AppError('Questionnaire not found', 404, 'NOT_FOUND');
+        }
+
+        const questionnaire = runtime.questionnaire;
+        if (questionnaire.status !== 'published') {
+            throw new AppError('Questionnaire is not available', 400, 'QUESTIONNAIRE_NOT_AVAILABLE');
+        }
+
+        const now = Date.now();
+        const startDate = questionnaire.start_date ? new Date(questionnaire.start_date).getTime() : null;
+        const endDate = questionnaire.end_date ? new Date(questionnaire.end_date).getTime() : null;
+        if (startDate && !Number.isNaN(startDate) && startDate > now) {
+            throw new AppError('Questionnaire has not started yet', 400, 'QUESTIONNAIRE_NOT_STARTED');
+        }
+        if (endDate && !Number.isNaN(endDate) && endDate < now) {
+            throw new AppError('Questionnaire has ended', 410, 'QUESTIONNAIRE_ENDED');
+        }
+
+        const sessionToken = typeof req.body?.sessionToken === 'string' && req.body.sessionToken.trim()
+            ? req.body.sessionToken.trim()
+            : generateSessionToken();
+        const answers = normalizeQuestionnaireAnswers(req.body?.answers);
+        if (!answers.length) {
+            throw new AppError('At least one answer is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const questionMap = new Map(runtime.questions.map((question) => [question.id, question]));
+        const answeredQuestionIds = new Set(answers.map((answer) => answer.questionId));
+
+        for (const question of runtime.questions) {
+            if (question.is_required && !answeredQuestionIds.has(question.id)) {
+                throw new AppError('Required question is missing an answer', 400, 'VALIDATION_ERROR');
+            }
+        }
+
+        await db.query('BEGIN');
+
+        const { rows: existingRows } = await db.query(
+            `
+            SELECT id
+            FROM questionnaire_submissions
+            WHERE questionnaire_id = $1
+              AND (
+                recipient_id = $2
+                OR (recipient_id IS NULL AND session_id = $3)
+              )
+            LIMIT 1
+            `,
+            [questionnaire.id, bundle.recipient.recipient_id, sessionToken]
+        );
+        if (existingRows.length) {
+            throw new AppError('Questionnaire already submitted', 409, 'QUESTIONNAIRE_ALREADY_SUBMITTED');
+        }
+
+        const submissionId = generateUuid();
+        await db.query(
+            `
+            INSERT INTO questionnaire_submissions (
+                id, questionnaire_id, event_id, project_id, recipient_id, client_guest_id, session_id, metadata
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8::jsonb
+            )
+            `,
+            [
+                submissionId,
+                questionnaire.id,
+                bundle.recipient.event_id,
+                bundle.recipient.project_id,
+                bundle.recipient.recipient_id || null,
+                bundle.recipient.client_guest_id || null,
+                bundle.recipient.recipient_id ? null : sessionToken,
+                JSON.stringify({ pageKey: page.page_key })
+            ]
+        );
+
+        for (const answer of answers) {
+            const question = questionMap.get(answer.questionId);
+            if (!question) {
+                throw new AppError('Question not found in questionnaire', 404, 'QUESTION_NOT_FOUND');
+            }
+
+            const questionType = question.question_type;
+            if (questionType === 'yes_no') {
+                if (typeof answer.boolean !== 'boolean') {
+                    throw new AppError('Yes/No answer must be boolean', 400, 'VALIDATION_ERROR');
+                }
+                await db.query(
+                    `
+                    INSERT INTO questionnaire_answers (
+                        id, submission_id, question_id, answer_boolean, answer_json
+                    ) VALUES ($1, $2, $3, $4, $5::jsonb)
+                    `,
+                    [generateUuid(), submissionId, question.id, answer.boolean, JSON.stringify({})]
+                );
+            } else if (questionType === 'single_choice') {
+                if (!answer.optionIds.length) {
+                    throw new AppError('Single choice answer is required', 400, 'VALIDATION_ERROR');
+                }
+                const optionId = answer.optionIds[0];
+                const validOptionIds = new Set((question.options || []).map((option) => option.id));
+                if (!validOptionIds.has(optionId)) {
+                    throw new AppError('Selected option is invalid for this question', 400, 'VALIDATION_ERROR');
+                }
+                await db.query(
+                    `
+                    INSERT INTO questionnaire_answers (
+                        id, submission_id, question_id, option_id, answer_json
+                    ) VALUES ($1, $2, $3, $4, $5::jsonb)
+                    `,
+                    [generateUuid(), submissionId, question.id, optionId, JSON.stringify({})]
+                );
+            } else if (questionType === 'multiple_choice') {
+                if (!answer.optionIds.length) {
+                    throw new AppError('Multiple choice answer is required', 400, 'VALIDATION_ERROR');
+                }
+                const validOptionIds = new Set((question.options || []).map((option) => option.id));
+                for (const optionId of answer.optionIds) {
+                    if (!validOptionIds.has(optionId)) {
+                        throw new AppError('Selected option is invalid for this question', 400, 'VALIDATION_ERROR');
+                    }
+                    await db.query(
+                        `
+                        INSERT INTO questionnaire_answers (
+                            id, submission_id, question_id, option_id, answer_json
+                        ) VALUES ($1, $2, $3, $4, $5::jsonb)
+                        `,
+                        [generateUuid(), submissionId, question.id, optionId, JSON.stringify({})]
+                    );
+                }
+            } else if (questionType === 'short_text') {
+                if (!answer.text) {
+                    throw new AppError('Short text answer is required', 400, 'VALIDATION_ERROR');
+                }
+                await db.query(
+                    `
+                    INSERT INTO questionnaire_answers (
+                        id, submission_id, question_id, answer_text, answer_json
+                    ) VALUES ($1, $2, $3, $4, $5::jsonb)
+                    `,
+                    [generateUuid(), submissionId, question.id, answer.text, JSON.stringify({})]
+                );
+            } else if (questionType === 'rating') {
+                if (answer.number === null || Number.isNaN(answer.number)) {
+                    throw new AppError('Rating answer is required', 400, 'VALIDATION_ERROR');
+                }
+                const questionSettings = safeJson(question.settings, {});
+                const minValue = Number(questionSettings.min ?? 1);
+                const maxValue = Number(questionSettings.max ?? 5);
+                if (answer.number < minValue || answer.number > maxValue) {
+                    throw new AppError('Rating answer out of range', 400, 'VALIDATION_ERROR');
+                }
+                await db.query(
+                    `
+                    INSERT INTO questionnaire_answers (
+                        id, submission_id, question_id, answer_number, answer_json
+                    ) VALUES ($1, $2, $3, $4, $5::jsonb)
+                    `,
+                    [generateUuid(), submissionId, question.id, answer.number, JSON.stringify({})]
+                );
+            }
+        }
+
+        await db.query(
+            `
+            INSERT INTO invitation_events (
+                id, project_id, recipient_id, session_id, event_type, event_name, event_data
+            ) VALUES (
+                $1, $2, $3, $4, 'questionnaire_submit', $5, $6::jsonb
+            )
+            `,
+            [
+                generateUuid(),
+                bundle.recipient.project_id,
+                bundle.recipient.recipient_id,
+                null,
+                'Questionnaire submitted',
+                JSON.stringify({
+                    pageKey: page.page_key,
+                    questionnaireId: questionnaire.id
+                })
+            ]
+        );
+
+        await db.query('COMMIT');
+
+        res.json({
+            data: {
+                pageKey: page.page_key,
+                questionnaireId: questionnaire.id,
+                submitted: true,
+                sessionToken: bundle.recipient.recipient_id ? null : sessionToken
             }
         });
     } catch (error) {

@@ -648,6 +648,98 @@ async function buildAddonPagesFromEventSetup(db, projectId, clientId, eventId, i
                     }))
                 }
             };
+        } else if (type === 'questionnaire') {
+            const { rows: questionnaires } = await db.query(
+                `
+                SELECT *
+                FROM questionnaires
+                WHERE id = $1
+                  AND client_id = $2
+                  AND event_id = $3
+                LIMIT 1
+                `,
+                [addonId, clientId, eventId]
+            );
+
+            if (!questionnaires.length) {
+                console.warn('[invitationProjects] Skipping missing questionnaire addon during project creation', {
+                    projectId,
+                    eventId,
+                    addonId
+                });
+                continue;
+            }
+
+            const questionnaire = questionnaires[0];
+            const { rows: questions } = await db.query(
+                `
+                SELECT *
+                FROM questionnaire_questions
+                WHERE questionnaire_id = $1
+                ORDER BY sort_order ASC, created_at ASC
+                `,
+                [questionnaire.id]
+            );
+            const questionIds = questions.map((question) => question.id);
+            let options = [];
+            if (questionIds.length) {
+                const { rows } = await db.query(
+                    `
+                    SELECT *
+                    FROM questionnaire_options
+                    WHERE question_id = ANY($1::uuid[])
+                    ORDER BY sort_order ASC, created_at ASC
+                    `,
+                    [questionIds]
+                );
+                options = rows;
+            }
+
+            const optionsByQuestionId = options.reduce((accumulator, option) => {
+                if (!accumulator[option.question_id]) {
+                    accumulator[option.question_id] = [];
+                }
+                accumulator[option.question_id].push({
+                    id: option.id,
+                    label: option.label,
+                    label_ar: option.label_ar,
+                    value: option.value,
+                    sort_order: option.sort_order
+                });
+                return accumulator;
+            }, {});
+
+            title = title || questionnaire.title;
+            titleAr = titleAr || questionnaire.title_ar || '';
+            description = questionnaire.description || '';
+            descriptionAr = questionnaire.description_ar || '';
+            settings = {
+                ...settings,
+                addon_snapshot: {
+                    type: 'questionnaire',
+                    questionnaire_id: questionnaire.id,
+                    title: questionnaire.title,
+                    title_ar: questionnaire.title_ar || '',
+                    description: questionnaire.description || '',
+                    description_ar: questionnaire.description_ar || '',
+                    status: questionnaire.status,
+                    start_date: questionnaire.start_date,
+                    end_date: questionnaire.end_date,
+                    settings: safeJson(questionnaire.settings, {}),
+                    questions: questions.map((question) => ({
+                        id: question.id,
+                        question_type: question.question_type,
+                        title: question.title,
+                        title_ar: question.title_ar || '',
+                        description: question.description || '',
+                        description_ar: question.description_ar || '',
+                        is_required: question.is_required,
+                        sort_order: question.sort_order,
+                        settings: safeJson(question.settings, {}),
+                        options: optionsByQuestionId[question.id] || []
+                    }))
+                }
+            };
         }
 
         await db.query(

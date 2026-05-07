@@ -324,6 +324,11 @@ Desired workflow:
   - [x] Added `apps/api/src/routes/questionnaires.js` and mounted `/api/admin/questionnaires`.
   - [x] Added event-level summary endpoint `GET /api/admin/events/:id/questionnaire-summary`.
 - G.6.3 Invitation-card questionnaire tab runtime + submit API.
+  - [x] Added questionnaire addon snapshot generation in project page builder.
+  - [x] Added public endpoints:
+    - `GET /api/public/invitations/:token/pages/:pageKey/questionnaire-state`
+    - `POST /api/public/invitations/:token/pages/:pageKey/questionnaire-submit`
+  - [x] Added public invitation card tab rendering and questionnaire interactive panel.
 - G.6.4 Event dashboard + reports integration.
 - G.6.5 Scanner read-only state integration.
 
@@ -463,3 +468,4 @@ System is done when:
 - 2026-05-07: Added Phase G Questionnaire plan with V1 question-type contract and wiring matrix (card/dashboard/scanner/reports).
 - 2026-05-07: Added migration `018_questionnaire_addon.sql` (questionnaires, questions, options, submissions, answers).
 - 2026-05-07: Implemented Questionnaire admin CRUD/report routes and event-level questionnaire summary endpoint.
+- 2026-05-07: Implemented Questionnaire invitation runtime (snapshot/state/submit endpoints + public tab/panel UI).
