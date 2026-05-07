@@ -92,10 +92,10 @@ Acceptance:
 - Header and navigation are consistent on common phone sizes.
 
 ## Phase 6 - QA, Build, and Release Prep
-- Status: `pending`
+- Status: `in_progress`
 - [ ] Run functional regression on auth/scan/intake/reports/logout.
-- [ ] Validate scanner debug log coverage for launch-critical paths.
-- [ ] Prepare release checklist and build notes for Expo/EAS.
+- [x] Validate scanner debug log coverage for launch-critical paths.
+- [x] Prepare release checklist and build notes for Expo/EAS.
 - [ ] Ship candidate build.
 
 Acceptance:
@@ -121,7 +121,7 @@ Acceptance:
 - [x] Phase 3 - done
 - [x] Phase 4 - done
 - [x] Phase 5 - done
-- [ ] Phase 6 - pending
+- [ ] Phase 6 - in_progress
 - [ ] Phase 7 - pending
 - [ ] Phase 8 - pending
 
@@ -135,3 +135,4 @@ When a phase is completed:
 ## Completion Log
 
 - 2026-05-06: Completed Phases 0-5 (event-scoped login/session, scan/intake split, scan fix, reports tab, addons placeholder architecture, UI/header uplift). Commit: `2eff681`.
+- 2026-05-07: Phase 6 started with automated syntax/bundle gates and dated QA/release checklist. Candidate build pending manual smoke and deployment order.
