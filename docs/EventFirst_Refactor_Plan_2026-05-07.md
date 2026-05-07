@@ -68,7 +68,7 @@ Desired workflow:
 ## 5) Detailed Phases
 
 ## Phase A - Discovery and Contracts
-- Status: `pending`
+- Status: `done`
 
 ### A.1 Current Flow Mapping
 - Map these backend routes and dependencies:
@@ -90,6 +90,7 @@ Desired workflow:
 
 ### A.3 Acceptance
 - Approved OpenAPI-style contract draft for new event-level endpoints.
+- [x] Completed and documented in Sections 6 and 7 of this file.
 
 ## Phase B - Data and Primary Project Strategy
 - Status: `pending`
@@ -343,7 +344,7 @@ System is done when:
 
 ## 11) Execution Tracking
 
-- [ ] Phase A done
+- [x] Phase A done
 - [ ] Phase B done
 - [ ] Phase C done
 - [ ] Phase D done
@@ -352,3 +353,4 @@ System is done when:
 
 ## Change Log
 - 2026-05-07: Initial detailed plan created for review.
+- 2026-05-07: Phase A completed (current-state mapping + endpoint contract draft + UI target mapping).
