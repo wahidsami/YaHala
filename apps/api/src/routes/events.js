@@ -572,10 +572,19 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
         const hasInvitationSetup = Object.prototype.hasOwnProperty.call(req.body, 'invitationSetup');
 
         let nextSettings = { ...currentSettings };
+        const hasAddIns = Object.prototype.hasOwnProperty.call(req.body, 'addIns');
+        const requestedAddIns = hasAddIns
+            ? normalizeAddIns(req.body.addIns)
+            : normalizeAddIns(currentSettings.addIns || []);
+
+        if (hasAddIns) {
+            nextSettings.addIns = requestedAddIns;
+        }
+
         if (hasInvitationSetup) {
             const setup = req.body.invitationSetup;
             const normalizedTabs = normalizeInvitationSetupTabs(setup?.tabs);
-            const enabledAddIns = new Set(Array.isArray(currentSettings.addIns) ? currentSettings.addIns : []);
+            const enabledAddIns = new Set(requestedAddIns);
             const selectedTabs = [];
 
             for (const tab of normalizedTabs) {

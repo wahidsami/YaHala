@@ -485,3 +485,4 @@ System is done when:
 - 2026-05-07: Completed event-level send trace in Invitation Operations and closed all plan phases as implemented.
 - 2026-05-07: Hardening pass (Step 1): fixed questionnaire route order so `GET /api/admin/questionnaires/overview-stats` is resolved before `/:id`.
 - 2026-05-07: Hardening pass (Step 2): wired `/addons` Questionnaire tab to live questionnaire APIs instead of placeholder "Coming soon".
+- 2026-05-08: Invitation Setup enhancement: added add-on checkbox controls (poll/questionnaire), persisted `settings.addIns` via invitation-setup route, and auto-generated event tabs for checked addons.

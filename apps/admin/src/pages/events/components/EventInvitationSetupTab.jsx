@@ -10,38 +10,44 @@ function localizedText(i18n, primary, secondary) {
     return i18n.language?.startsWith('ar') ? (secondary || primary || '') : (primary || secondary || '');
 }
 
-function isPollAddonEnabled(event) {
-    return Array.isArray(event?.settings?.addIns) && event.settings.addIns.includes('poll');
-}
-
 export default function EventInvitationSetupTab({ event, onUpdated }) {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [templates, setTemplates] = useState([]);
     const [polls, setPolls] = useState([]);
+    const [questionnaires, setQuestionnaires] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [formData, setFormData] = useState({
         templateId: '',
-        pollIds: []
+        addIns: [],
+        pollIds: [],
+        questionnaireId: ''
     });
 
-    const pollEnabled = isPollAddonEnabled(event);
     const invitationSetup = event?.settings?.invitation_setup || {};
 
     useEffect(() => {
         setFormData({
             templateId: invitationSetup.templateId || event?.template_id || '',
+            addIns: Array.isArray(event?.settings?.addIns) ? event.settings.addIns : [],
             pollIds: Array.isArray(invitationSetup.tabs)
                 ? invitationSetup.tabs
                     .filter((tab) => tab?.type === 'poll')
                     .map((tab) => tab.addon_id || tab.addonId)
                     .filter(Boolean)
-                : []
+                : [],
+            questionnaireId: Array.isArray(invitationSetup.tabs)
+                ? invitationSetup.tabs
+                    .find((tab) => tab?.type === 'questionnaire')
+                    ?.addon_id
+                    || invitationSetup.tabs.find((tab) => tab?.type === 'questionnaire')?.addonId
+                    || ''
+                : ''
         });
-    }, [event?.id, event?.template_id, invitationSetup.templateId, invitationSetup.tabs]);
+    }, [event?.id, event?.template_id, event?.settings?.addIns, invitationSetup.templateId, invitationSetup.tabs]);
 
     useEffect(() => {
         async function fetchReferences() {
@@ -53,13 +59,15 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
             setError('');
 
             try {
-                const [templatesResponse, pollsResponse] = await Promise.all([
+                const [templatesResponse, pollsResponse, questionnairesResponse] = await Promise.all([
                     api.get('/admin/templates?pageSize=200'),
-                    api.get(`/admin/polls?eventId=${event.id}&pageSize=200`)
+                    api.get(`/admin/polls?eventId=${event.id}&pageSize=200`),
+                    api.get(`/admin/questionnaires?eventId=${event.id}&pageSize=200`)
                 ]);
 
                 setTemplates(templatesResponse.data.data || []);
                 setPolls(pollsResponse.data.data || []);
+                setQuestionnaires(questionnairesResponse.data.data || []);
             } catch (fetchError) {
                 console.error('Failed to load invitation setup references:', fetchError);
                 setError(fetchError.response?.data?.message || t('events.invitationSetup.loadFailed'));
@@ -76,6 +84,11 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
         return polls.filter((poll) => selected.has(poll.id));
     }, [polls, formData.pollIds]);
 
+    const selectedQuestionnaire = useMemo(
+        () => questionnaires.find((item) => item.id === formData.questionnaireId) || null,
+        [questionnaires, formData.questionnaireId]
+    );
+
     const setupChecklist = useMemo(() => [
         {
             label: t('events.invitationSetup.checklist.template'),
@@ -83,17 +96,25 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
         },
         {
             label: t('events.invitationSetup.checklist.pollAddon'),
-            done: pollEnabled
+            done: formData.addIns.includes('poll')
         },
         {
             label: t('events.invitationSetup.checklist.pollTabs'),
-            done: selectedPolls.length > 0
+            done: !formData.addIns.includes('poll') || selectedPolls.length > 0
+        },
+        {
+            label: t('addons.questionnaireTab'),
+            done: !formData.addIns.includes('questionnaire') || Boolean(formData.questionnaireId)
         },
         {
             label: t('events.invitationSetup.checklist.ready'),
-            done: Boolean(formData.templateId && selectedPolls.length > 0)
+            done: Boolean(
+                formData.templateId
+                && (!formData.addIns.includes('poll') || selectedPolls.length > 0)
+                && (!formData.addIns.includes('questionnaire') || formData.questionnaireId)
+            )
         }
-    ], [formData.templateId, pollEnabled, selectedPolls.length, t]);
+    ], [formData.addIns, formData.questionnaireId, formData.templateId, selectedPolls.length, t]);
 
     function openPoll(pollId) {
         navigate(`/addons/polls/${pollId}`);
@@ -117,6 +138,21 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
         });
     }
 
+    function toggleAddon(addonId, checked) {
+        setFormData((prev) => {
+            const addIns = checked
+                ? Array.from(new Set([...prev.addIns, addonId]))
+                : prev.addIns.filter((id) => id !== addonId);
+
+            return {
+                ...prev,
+                addIns,
+                pollIds: addonId === 'poll' && !checked ? [] : prev.pollIds,
+                questionnaireId: addonId === 'questionnaire' && !checked ? '' : prev.questionnaireId
+            };
+        });
+    }
+
     async function saveInvitationSetup() {
         setSaving(true);
         setError('');
@@ -128,9 +164,17 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                 addonId: pollId,
                 sortOrder: index
             }));
+            if (formData.addIns.includes('questionnaire') && formData.questionnaireId) {
+                tabs.push({
+                    type: 'questionnaire',
+                    addonId: formData.questionnaireId,
+                    sortOrder: tabs.length
+                });
+            }
 
             await api.patch(`/admin/events/${event.id}/invitation-setup`, {
                 templateId: formData.templateId || null,
+                addIns: formData.addIns,
                 invitationSetup: {
                     tabs
                 }
@@ -167,7 +211,7 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                             : t('events.invitationSetup.noTemplateSelected')}
                     </span>
                     <span className="summary-chip">
-                        {t('events.invitationSetup.selectedTabs', { count: selectedPolls.length })}
+                        {t('events.invitationSetup.selectedTabs', { count: selectedPolls.length + (selectedQuestionnaire ? 1 : 0) })}
                     </span>
                     {selectedPolls.map((poll) => (
                         <button
@@ -180,6 +224,11 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                             {localizedText(i18n, poll.title, poll.title_ar)}
                         </button>
                     ))}
+                    {selectedQuestionnaire && (
+                        <span className="summary-chip summary-chip-soft">
+                            {t('addons.questionnaireTab')}: {localizedText(i18n, selectedQuestionnaire.title, selectedQuestionnaire.title_ar)}
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -204,6 +253,34 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
             </section>
 
             <div className="invitation-setup-grid">
+                <section className="setup-card">
+                    <div className="section-header">
+                        <div>
+                            <h3>Add-ons</h3>
+                            <p>Enable add-ons and they will appear in event tabs.</p>
+                        </div>
+                        <CheckSquare2 size={18} />
+                    </div>
+                    <div className="addon-toggle-row">
+                        <label className="addon-toggle-item">
+                            <input
+                                type="checkbox"
+                                checked={formData.addIns.includes('poll')}
+                                onChange={(event) => toggleAddon('poll', event.target.checked)}
+                            />
+                            <span>{t('events.form.addin.poll.title')}</span>
+                        </label>
+                        <label className="addon-toggle-item">
+                            <input
+                                type="checkbox"
+                                checked={formData.addIns.includes('questionnaire')}
+                                onChange={(event) => toggleAddon('questionnaire', event.target.checked)}
+                            />
+                            <span>{t('events.form.addin.questionnaire.title')}</span>
+                        </label>
+                    </div>
+                </section>
+
                 <section className="setup-card">
                     <div className="section-header">
                         <div>
@@ -248,7 +325,7 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                         <CheckSquare2 size={18} />
                     </div>
 
-                    {!pollEnabled ? (
+                    {!formData.addIns.includes('poll') ? (
                         <div className="setup-empty-state">
                             <MessageSquare size={20} />
                             <p>{t('events.invitationSetup.pollDisabled')}</p>
@@ -285,6 +362,44 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                                     </label>
                                 );
                             })}
+                        </div>
+                    )}
+                </section>
+
+                <section className="setup-card setup-card--wide">
+                    <div className="section-header">
+                        <div>
+                            <h3>{t('addons.questionnaireTab')}</h3>
+                            <p>Select one questionnaire for the event invitation tab.</p>
+                        </div>
+                        <CheckSquare2 size={18} />
+                    </div>
+
+                    {!formData.addIns.includes('questionnaire') ? (
+                        <div className="setup-empty-state">
+                            <MessageSquare size={20} />
+                            <p>Enable Questionnaire addon to add this tab.</p>
+                        </div>
+                    ) : questionnaires.length === 0 ? (
+                        <div className="setup-empty-state">
+                            <MessageSquare size={20} />
+                            <p>No questionnaires found for this event.</p>
+                        </div>
+                    ) : (
+                        <div className="form-group">
+                            <label htmlFor="setupQuestionnaireId">{t('addons.questionnaireTab')}</label>
+                            <select
+                                id="setupQuestionnaireId"
+                                value={formData.questionnaireId}
+                                onChange={(event) => setFormData((prev) => ({ ...prev, questionnaireId: event.target.value }))}
+                            >
+                                <option value="">Select questionnaire</option>
+                                {questionnaires.map((questionnaire) => (
+                                    <option key={questionnaire.id} value={questionnaire.id}>
+                                        {localizedText(i18n, questionnaire.title, questionnaire.title_ar)}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     )}
                 </section>

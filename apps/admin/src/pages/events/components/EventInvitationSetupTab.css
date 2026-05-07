@@ -130,6 +130,24 @@
     font-weight: 700;
 }
 
+.addon-toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.addon-toggle-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(148, 111, 167, 0.18);
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.95);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
 .setup-empty-state {
     min-height: 220px;
     border-radius: 18px;
