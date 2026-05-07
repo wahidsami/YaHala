@@ -144,6 +144,7 @@ Desired workflow:
 
 - `GET /api/admin/events/:id/addons-summary`
   - source from `event.settings.addIns` + `invitation_setup.tabs`
+- [x] Implemented in `apps/api/src/routes/events.js`.
 
 ### C.2 Internal Refactor
 - Extract services from `invitationProjects.js`:
@@ -366,3 +367,4 @@ System is done when:
 - 2026-05-07: Added event-level endpoint `POST /api/admin/events/:id/send-invitations` using shared invitation send service.
 - 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/invitation-summary`.
 - 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/attendance-summary`.
+- 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/addons-summary`.

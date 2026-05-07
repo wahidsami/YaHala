@@ -947,6 +947,90 @@ router.get('/:id/attendance-summary', requirePermission('events.view'), async (r
     }
 });
 
+// GET /api/admin/events/:id/addons-summary
+router.get('/:id/addons-summary', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { rows: eventRows } = await pool.query(
+            `
+            SELECT id, settings
+            FROM events
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [eventId]
+        );
+
+        if (!eventRows.length) {
+            throw new AppError('Event not found', 404, 'NOT_FOUND');
+        }
+
+        const event = eventRows[0];
+        const settings = safeJson(event.settings, {});
+        const addIns = Array.isArray(settings.addIns) ? settings.addIns : [];
+        const invitationSetup = safeJson(settings.invitation_setup, {});
+        const tabs = Array.isArray(invitationSetup.tabs) ? invitationSetup.tabs : [];
+
+        const normalizedTabs = tabs.map((tab, index) => ({
+            type: typeof tab?.type === 'string' ? tab.type : '',
+            addonId: tab?.addon_id || tab?.addonId || null,
+            title: tab?.title || '',
+            titleAr: tab?.title_ar || tab?.titleAr || '',
+            sortOrder: Number.isFinite(Number(tab?.sort_order))
+                ? Number.parseInt(tab.sort_order, 10)
+                : Number.isFinite(Number(tab?.sortOrder))
+                    ? Number.parseInt(tab.sortOrder, 10)
+                    : index
+        }));
+
+        const pollAddonEnabled = addIns.includes('poll');
+        const pollTabIds = normalizedTabs
+            .filter((tab) => tab.type === 'poll' && tab.addonId)
+            .map((tab) => tab.addonId);
+
+        let pollDetails = [];
+        if (pollTabIds.length) {
+            const { rows } = await pool.query(
+                `
+                SELECT id, title, title_ar, status
+                FROM polls
+                WHERE id = ANY($1::uuid[])
+                ORDER BY created_at DESC
+                `,
+                [pollTabIds]
+            );
+            pollDetails = rows;
+        }
+
+        res.json({
+            data: {
+                eventId: event.id,
+                addInsEnabled: addIns,
+                invitationTabs: normalizedTabs.sort((a, b) => a.sortOrder - b.sortOrder),
+                addons: {
+                    poll: {
+                        enabled: pollAddonEnabled,
+                        tabCount: pollTabIds.length,
+                        polls: pollDetails
+                    }
+                },
+                lastUpdatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Failed to fetch event addons summary:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    }
+});
+
 // PATCH /api/admin/events/:id/status - Activate or deactivate event
 router.patch('/:id/status', requirePermission('events.edit'), async (req, res, next) => {
     try {
