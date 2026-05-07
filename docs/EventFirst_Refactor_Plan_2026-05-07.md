@@ -484,3 +484,4 @@ System is done when:
 - 2026-05-07: Implemented Questionnaire scanner read-only state in scan response and scanner mobile result UI.
 - 2026-05-07: Completed event-level send trace in Invitation Operations and closed all plan phases as implemented.
 - 2026-05-07: Hardening pass (Step 1): fixed questionnaire route order so `GET /api/admin/questionnaires/overview-stats` is resolved before `/:id`.
+- 2026-05-07: Hardening pass (Step 2): wired `/addons` Questionnaire tab to live questionnaire APIs instead of placeholder "Coming soon".

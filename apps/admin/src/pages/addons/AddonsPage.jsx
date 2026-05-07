@@ -47,6 +47,8 @@ export default function AddonsPage() {
     const [stats, setStats] = useState(null);
     const [clients, setClients] = useState([]);
     const [polls, setPolls] = useState([]);
+    const [questionnaires, setQuestionnaires] = useState([]);
+    const [questionnaireStats, setQuestionnaireStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0, totalPages: 0 });
     const [filters, setFilters] = useState({
@@ -67,6 +69,10 @@ export default function AddonsPage() {
     useEffect(() => {
         if (activeTab === 'poll') {
             fetchPolls();
+            return;
+        }
+        if (activeTab === 'questionnaire') {
+            fetchQuestionnaires();
         }
     }, [activeTab, filters, pagination.page]);
 
@@ -105,6 +111,31 @@ export default function AddonsPage() {
             setSelectedIds([]);
         } catch (error) {
             console.error('Failed to fetch polls:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function fetchQuestionnaires() {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams({
+                page: pagination.page,
+                pageSize: pagination.pageSize,
+                ...(filters.search && { search: filters.search }),
+                ...(filters.status !== 'all' && { status: filters.status }),
+                ...(filters.clientId !== 'all' && { clientId: filters.clientId })
+            });
+            const [listResponse, statsResponse] = await Promise.all([
+                api.get(`/admin/questionnaires?${params}`),
+                api.get('/admin/questionnaires/overview-stats')
+            ]);
+            setQuestionnaires(listResponse.data.data || []);
+            setQuestionnaireStats(statsResponse.data.data || null);
+            setPagination(prev => ({ ...prev, ...listResponse.data.pagination }));
+            setSelectedIds([]);
+        } catch (error) {
+            console.error('Failed to fetch questionnaires:', error);
         } finally {
             setLoading(false);
         }
@@ -185,11 +216,19 @@ export default function AddonsPage() {
     const isArabic = i18n.language?.startsWith('ar');
 
     const addonStats = useMemo(() => [
-        { title: t('addons.polls.total'), value: stats?.total_polls || 0, tone: 'primary' },
-        { title: t('addons.polls.published'), value: stats?.published_polls || 0, tone: 'success' },
-        { title: t('addons.polls.draft'), value: stats?.draft_polls || 0, tone: 'warning' },
-        { title: t('addons.polls.participants'), value: stats?.total_participants || 0, tone: 'accent' }
-    ], [stats, t]);
+        activeTab === 'questionnaire'
+            ? { title: t('addons.questionnaireTab'), value: questionnaireStats?.total_questionnaires || 0, tone: 'primary' }
+            : { title: t('addons.polls.total'), value: stats?.total_polls || 0, tone: 'primary' },
+        activeTab === 'questionnaire'
+            ? { title: t('addons.polls.published'), value: questionnaireStats?.published_questionnaires || 0, tone: 'success' }
+            : { title: t('addons.polls.published'), value: stats?.published_polls || 0, tone: 'success' },
+        activeTab === 'questionnaire'
+            ? { title: t('addons.polls.draft'), value: questionnaireStats?.draft_questionnaires || 0, tone: 'warning' }
+            : { title: t('addons.polls.draft'), value: stats?.draft_polls || 0, tone: 'warning' },
+        activeTab === 'questionnaire'
+            ? { title: 'Submissions', value: questionnaires.reduce((sum, item) => sum + (item.submission_count || 0), 0), tone: 'accent' }
+            : { title: t('addons.polls.participants'), value: stats?.total_participants || 0, tone: 'accent' }
+    ], [activeTab, questionnaireStats, questionnaires, stats, t]);
 
     return (
         <div className="addons-page">
@@ -373,6 +412,115 @@ export default function AddonsPage() {
                                                             <Trash2 size={16} />
                                                         </button>
                                                     </RoleGuard>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {pagination.totalPages > 1 && (
+                        <div className="pagination">
+                            <button
+                                type="button"
+                                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                                disabled={pagination.page <= 1}
+                            >
+                                {t('common.previous')}
+                            </button>
+                            <span>{t('common.pageOf', { page: pagination.page, totalPages: pagination.totalPages })}</span>
+                            <button
+                                type="button"
+                                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages || 1, prev.page + 1) }))}
+                                disabled={pagination.page >= pagination.totalPages}
+                            >
+                                {t('common.next')}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : activeTab === 'questionnaire' ? (
+                <div className="addon-tab-panel">
+                    <div className="filters-bar">
+                        <div className="search-box">
+                            <Search size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search questionnaires..."
+                                value={filters.search}
+                                onChange={handleSearch}
+                            />
+                        </div>
+
+                        <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
+                            <option value="all">{t('addons.polls.allStatuses')}</option>
+                            <option value="draft">{t('addons.polls.status.draft')}</option>
+                            <option value="published">{t('addons.polls.status.published')}</option>
+                            <option value="archived">Archived</option>
+                        </select>
+
+                        <select value={filters.clientId} onChange={(e) => handleFilterChange('clientId', e.target.value)}>
+                            <option value="all">{t('clients.form.client')}</option>
+                            {clients.map((client) => (
+                                <option key={client.id} value={client.id}>
+                                    {client.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="table-container">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Questionnaire</th>
+                                    <th>{t('addons.polls.table.client')}</th>
+                                    <th>{t('addons.polls.table.event')}</th>
+                                    <th>Questions</th>
+                                    <th>Submissions</th>
+                                    <th>{t('addons.polls.table.created')}</th>
+                                    <th>{t('addons.polls.table.status')}</th>
+                                    <th>{t('addons.polls.table.actions')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="8" className="loading-cell">{t('common.loading')}</td>
+                                    </tr>
+                                ) : questionnaires.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="8" className="empty-cell">No questionnaires found</td>
+                                    </tr>
+                                ) : (
+                                    questionnaires.map((questionnaire) => (
+                                        <tr key={questionnaire.id}>
+                                            <td>
+                                                <div className="poll-name-cell">
+                                                    <strong>{localizedText(i18n, questionnaire.title, questionnaire.title_ar)}</strong>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <strong>{localizedText(i18n, questionnaire.client_name, questionnaire.client_name_ar)}</strong>
+                                            </td>
+                                            <td>
+                                                <strong>{localizedText(i18n, questionnaire.event_name, questionnaire.event_name_ar)}</strong>
+                                            </td>
+                                            <td>{questionnaire.question_count || 0}</td>
+                                            <td>{questionnaire.submission_count || 0}</td>
+                                            <td>{formatDate(i18n, questionnaire.created_at)}</td>
+                                            <td>
+                                                <span className={`status-badge status-${questionnaire.status}`}>
+                                                    {questionnaire.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="row-actions">
+                                                    <Link to={`/events/${questionnaire.event_id}`} className="action-btn" title={t('common.view')}>
+                                                        <Eye size={16} />
+                                                    </Link>
                                                 </div>
                                             </td>
                                         </tr>
