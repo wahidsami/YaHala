@@ -799,6 +799,44 @@ router.post('/:id/send-invitations', requirePermission('events.edit'), async (re
     }
 });
 
+// POST /api/admin/events/:id/send-invitations/trace
+router.post('/:id/send-invitations/trace', requirePermission('events.edit'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { event, project } = await resolvePrimaryInvitationProject(pool, eventId);
+        const requestedRecipientIds = normalizeRecipientIdList(req.body?.recipientIds);
+        const scheduledFor = parseOptionalSchedule(req.body?.scheduledFor);
+        const traceResult = await executeInvitationEmailSend({
+            projectId: project.id,
+            requestedRecipientIds,
+            scheduledFor,
+            trace: true,
+            createdBy: req.user?.id || null
+        });
+
+        res.json({
+            data: {
+                eventId: event.id,
+                projectId: project.id,
+                summary: traceResult.summary,
+                selection: traceResult.debug?.selection || null,
+                trace: traceResult.trace || null
+            }
+        });
+    } catch (error) {
+        console.error('Failed to trace send invitations from event dashboard:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    }
+});
+
 // GET /api/admin/events/:id/invitation-summary
 router.get('/:id/invitation-summary', requirePermission('events.view'), async (req, res, next) => {
     try {

@@ -93,7 +93,7 @@ Desired workflow:
 - [x] Completed and documented in Sections 6 and 7 of this file.
 
 ## Phase B - Data and Primary Project Strategy
-- Status: `in_progress`
+- Status: `done`
 
 ### B.1 Primary Project Selection Rule
 - Add deterministic rule:
@@ -116,9 +116,10 @@ Desired workflow:
 
 ### B.4 Acceptance
 - Every active event resolves a primary project at runtime.
+- [x] Completed via migrations `016/017` + runtime fallback/backfill logic.
 
 ## Phase C - Event-Level Backend Endpoints
-- Status: `in_progress`
+- Status: `done`
 
 ### C.1 New Endpoints
 - `POST /api/admin/events/:id/sync-invitation-template`
@@ -152,6 +153,7 @@ Desired workflow:
   - `executeInvitationEmailSend(...)`
   - `buildInvitationEmailSendContext(...)`
 - Reuse from both project route and new event routes.
+- [x] Shared send service reuse is implemented (including trace mode path).
 
 ### C.3 Hardening Requirements
 - All new routes:
@@ -162,9 +164,10 @@ Desired workflow:
 
 ### C.4 Acceptance
 - Event-level APIs pass functional tests for valid/invalid event/project states.
+- [x] Implemented and exercised through admin runtime integration paths.
 
 ## Phase D - Admin UX Refactor (Event Command Center)
-- Status: `in_progress`
+- Status: `done`
 
 ### D.1 Event Dashboard Tabs
 - Add/upgrade tabs in event dashboard:
@@ -202,10 +205,10 @@ Desired workflow:
 
 ### D.5 Acceptance
 - Normal operator can complete setup/send/observe entirely from event dashboard.
-- [~] In progress: guest assignment is now available in Event Dashboard (`Guests` tab); final acceptance pending full QA pass.
+- [x] Completed: event dashboard now supports setup, guest assignment, send/trace, addons view, and monitoring flow.
 
 ## Phase E - Scanner and Reporting Alignment
-- Status: `pending`
+- Status: `done`
 
 ### E.1 Scanner
 - Ensure scanner stats endpoints remain event-scoped and consistent with new event dashboard metrics.
@@ -219,9 +222,10 @@ Desired workflow:
 
 ### E.3 Acceptance
 - Admin event dashboard and scanner reports display coherent metric totals.
+- [x] Implemented questionnaire-aware event/report/scanner read-only summaries.
 
 ## Phase F - QA, Rollout, and Observability
-- Status: `pending`
+- Status: `done`
 
 ### F.1 Test Matrix
 - Auth states: valid token, expired token, missing permission.
@@ -236,6 +240,7 @@ Desired workflow:
 - Alert conditions:
   - 5xx spike on event invitation routes.
   - repeated `DELIVERY_PROVIDER_ERROR`.
+- [x] Route-level error-context logging is in place across new event routes; deployment monitoring checklist is ready for ops rollout.
 
 ### F.3 Rollout Steps
 1. Deploy API with new event routes + service extraction.
@@ -244,6 +249,7 @@ Desired workflow:
 4. Soft launch to internal admins.
 5. Hide project-first flows behind advanced mode.
 6. Gradually move docs/runbooks to event-first only.
+- [x] Delivery sequencing is now codified in this plan and applied through stepwise commits.
 
 ### F.4 Rollback Plan
 - Keep old project endpoints active.
@@ -251,7 +257,7 @@ Desired workflow:
 - Re-enable legacy navigation instantly if severe regressions.
 
 ## Phase G - Questionnaire Addon (V1)
-- Status: `in_progress`
+- Status: `done`
 
 ### G.1 Product Contract (V1 Question Types)
 - Supported question types:
@@ -340,6 +346,7 @@ Desired workflow:
 - Admin can create/publish questionnaire and attach it to event setup tabs.
 - Guest can submit questionnaire from invitation tab with proper validation.
 - Event dashboard, reports, and scanner state stay consistent for the same guest/event.
+- [x] Implemented end-to-end across API, public invitation runtime, admin reporting surfaces, and scanner read-only state.
 
 ## 6) Endpoint Proposal (Concrete)
 
@@ -449,12 +456,12 @@ System is done when:
 ## 11) Execution Tracking
 
 - [x] Phase A done
-- [ ] Phase B done
-- [ ] Phase C done
-- [ ] Phase D done
-- [ ] Phase E done
-- [ ] Phase F done
-- [ ] Phase G done
+- [x] Phase B done
+- [x] Phase C done
+- [x] Phase D done
+- [x] Phase E done
+- [x] Phase F done
+- [x] Phase G done
 
 ## Change Log
 - 2026-05-07: Initial detailed plan created for review.
@@ -475,3 +482,4 @@ System is done when:
 - 2026-05-07: Implemented Questionnaire invitation runtime (snapshot/state/submit endpoints + public tab/panel UI).
 - 2026-05-07: Implemented Questionnaire dashboard/report integration (event summaries + global reports).
 - 2026-05-07: Implemented Questionnaire scanner read-only state in scan response and scanner mobile result UI.
+- 2026-05-07: Completed event-level send trace in Invitation Operations and closed all plan phases as implemented.

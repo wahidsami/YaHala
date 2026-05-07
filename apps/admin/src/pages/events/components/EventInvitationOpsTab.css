@@ -125,6 +125,12 @@
     padding-top: 0.8rem;
 }
 
+.ops-trace-result {
+    margin-top: 0.8rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.8rem;
+}
+
 .ops-send-result p {
     margin: 0 0 0.35rem;
     color: var(--text-secondary);
@@ -135,6 +141,18 @@
     flex-wrap: wrap;
     gap: 0.6rem;
     font-size: 0.9rem;
+}
+
+.ops-trace-json {
+    margin-top: 0.5rem;
+    max-height: 240px;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.6rem;
+    background: #0b1220;
+    color: #dbe7ff;
+    font-size: 0.78rem;
 }
 
 @media (max-width: 900px) {

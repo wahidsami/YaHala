@@ -32,6 +32,8 @@ export default function EventInvitationOpsTab({ event }) {
     const [addons, setAddons] = useState(null);
     const [questionnaires, setQuestionnaires] = useState(null);
     const [sendResult, setSendResult] = useState(null);
+    const [traceResult, setTraceResult] = useState(null);
+    const [tracing, setTracing] = useState(false);
     const [scheduleMode, setScheduleMode] = useState('now');
     const [scheduledFor, setScheduledFor] = useState('');
 
@@ -114,6 +116,31 @@ export default function EventInvitationOpsTab({ event }) {
             setError(sendError.response?.data?.message || t('events.invitationOps.sendFailed'));
         } finally {
             setSending(false);
+        }
+    }
+
+    async function handleTraceInvitations() {
+        if (!event?.id) {
+            return;
+        }
+        setTracing(true);
+        setError('');
+        setSuccess('');
+        setTraceResult(null);
+        try {
+            const payload = {};
+            if (scheduleMode === 'scheduled' && scheduledFor) {
+                payload.scheduledFor = new Date(scheduledFor).toISOString();
+            }
+            const response = await api.post(`/admin/events/${event.id}/send-invitations/trace`, payload);
+            setTraceResult(response.data?.data || null);
+            setSuccess(t('invitationProjects.traceSendTitle'));
+            await loadData();
+        } catch (traceError) {
+            console.error('Failed to trace invitations from event operations tab:', traceError);
+            setError(traceError.response?.data?.message || t('invitationProjects.traceFailed'));
+        } finally {
+            setTracing(false);
         }
     }
 
@@ -200,6 +227,10 @@ export default function EventInvitationOpsTab({ event }) {
                                 <Send size={16} />
                                 <span>{sending ? t('common.loading') : t('events.invitationOps.send')}</span>
                             </button>
+                            <button type="button" className="btn btn-secondary" onClick={handleTraceInvitations} disabled={tracing || !readiness.hasRecipients}>
+                                <Send size={16} />
+                                <span>{tracing ? t('common.loading') : t('invitationProjects.traceSend')}</span>
+                            </button>
                         </div>
                     </RoleGuard>
 
@@ -211,6 +242,22 @@ export default function EventInvitationOpsTab({ event }) {
                                 <span>{t('reports.sent')}: {sendResult.summary.sent || 0}</span>
                                 <span>{t('reports.failed')}: {sendResult.summary.failed || 0}</span>
                             </div>
+                        </div>
+                    )}
+
+                    {traceResult && (
+                        <div className="ops-trace-result">
+                            <p>{t('invitationProjects.traceSendTitle')}</p>
+                            <div className="ops-send-result-grid">
+                                <span>{t('invitationProjects.traceQueuedJobs')}: {traceResult.trace?.summary?.queuedJobs || 0}</span>
+                                <span>{t('invitationProjects.traceClaimedJobs')}: {traceResult.trace?.summary?.claimedJobs || 0}</span>
+                                <span>{t('invitationProjects.traceSentJobs')}: {traceResult.trace?.summary?.sentJobs || 0}</span>
+                                <span>{t('invitationProjects.traceFailedJobs')}: {traceResult.trace?.summary?.failedJobs || 0}</span>
+                            </div>
+                            <details>
+                                <summary>{t('invitationProjects.traceRawJson')}</summary>
+                                <pre className="ops-trace-json">{JSON.stringify(traceResult.trace || traceResult, null, 2)}</pre>
+                            </details>
                         </div>
                     )}
                 </section>
