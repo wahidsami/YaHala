@@ -144,6 +144,16 @@ function parseOptionalSchedule(value) {
     return parsed;
 }
 
+function normalizeGuestIdList(value) {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean);
+}
+
 async function resolvePrimaryInvitationProject(db, eventId) {
     const { rows: eventRows } = await db.query(
         `
@@ -1028,6 +1038,239 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
             stack: error?.stack
         });
         next(error);
+    }
+});
+
+// GET /api/admin/events/:id/guest-directory
+router.get('/:id/guest-directory', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { event, project } = await resolvePrimaryInvitationProject(pool, eventId);
+        const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+        const status = typeof req.query.status === 'string' ? req.query.status.trim() : 'active';
+        const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+        const pageSize = Math.min(Math.max(Number.parseInt(req.query.pageSize, 10) || 25, 1), 200);
+        const offset = (page - 1) * pageSize;
+
+        let whereClause = 'cg.client_id = $1';
+        const params = [event.client_id];
+        let paramIndex = 2;
+
+        if (status !== 'all') {
+            whereClause += ` AND cg.status = $${paramIndex}`;
+            params.push(status);
+            paramIndex += 1;
+        }
+
+        if (search) {
+            whereClause += ` AND (
+                cg.name ILIKE $${paramIndex}
+                OR cg.email ILIKE $${paramIndex}
+                OR cg.mobile_number ILIKE $${paramIndex}
+                OR cg.organization ILIKE $${paramIndex}
+            )`;
+            params.push(`%${search}%`);
+            paramIndex += 1;
+        }
+
+        const { rows: countRows } = await pool.query(
+            `
+            SELECT COUNT(*)::int AS total
+            FROM client_guests cg
+            WHERE ${whereClause}
+            `,
+            params
+        );
+
+        const total = countRows[0]?.total || 0;
+        const { rows: guests } = await pool.query(
+            `
+            SELECT
+                cg.id,
+                cg.name,
+                cg.position,
+                cg.organization,
+                cg.email,
+                cg.mobile_number,
+                cg.status,
+                cg.gender,
+                cg.created_at,
+                ir.id AS recipient_id,
+                ir.overall_status AS recipient_status
+            FROM client_guests cg
+            LEFT JOIN invitation_recipients ir
+              ON ir.project_id = $${paramIndex}
+             AND ir.client_guest_id = cg.id
+            WHERE ${whereClause}
+            ORDER BY cg.created_at DESC
+            LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
+            `,
+            [...params, project.id, pageSize, offset]
+        );
+
+        res.json({
+            data: guests.map((guest) => ({
+                ...guest,
+                is_assigned: Boolean(guest.recipient_id)
+            })),
+            pagination: {
+                total,
+                page,
+                pageSize,
+                totalPages: Math.ceil(total / pageSize)
+            },
+            meta: {
+                eventId: event.id,
+                projectId: project.id
+            }
+        });
+    } catch (error) {
+        console.error('Failed to fetch event guest directory:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    }
+});
+
+// POST /api/admin/events/:id/guest-directory/assign
+router.post('/:id/guest-directory/assign', requirePermission('events.edit'), async (req, res, next) => {
+    const db = await pool.connect();
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const guestIds = normalizeGuestIdList(req.body?.guestIds);
+        if (!guestIds.length) {
+            throw new AppError('guestIds are required', 400, 'VALIDATION_ERROR');
+        }
+
+        await db.query('BEGIN');
+        const { event, project } = await resolvePrimaryInvitationProject(db, eventId);
+
+        const { rows: guests } = await db.query(
+            `
+            SELECT id, name, position, email, mobile_number
+            FROM client_guests
+            WHERE client_id = $1
+              AND id = ANY($2::uuid[])
+            `,
+            [event.client_id, guestIds]
+        );
+
+        if (!guests.length) {
+            throw new AppError('No matching guests found for this event client', 404, 'GUEST_NOT_FOUND');
+        }
+
+        const guestMap = new Map(guests.map((guest) => [guest.id, guest]));
+        let createdCount = 0;
+        let updatedCount = 0;
+
+        for (const guestId of guestIds) {
+            const guest = guestMap.get(guestId);
+            if (!guest) {
+                continue;
+            }
+
+            const { rows: existingRows } = await db.query(
+                `
+                SELECT id
+                FROM invitation_recipients
+                WHERE project_id = $1
+                  AND client_guest_id = $2
+                LIMIT 1
+                `,
+                [project.id, guest.id]
+            );
+
+            const metadata = guest.position ? { position: guest.position } : {};
+            if (existingRows.length) {
+                await db.query(
+                    `
+                    UPDATE invitation_recipients
+                    SET
+                        display_name = $1,
+                        email = $2,
+                        phone = $3,
+                        metadata = $4::jsonb,
+                        updated_at = NOW()
+                    WHERE id = $5
+                    `,
+                    [
+                        guest.name,
+                        guest.email || null,
+                        guest.mobile_number || null,
+                        JSON.stringify(metadata),
+                        existingRows[0].id
+                    ]
+                );
+                updatedCount += 1;
+                continue;
+            }
+
+            await db.query(
+                `
+                INSERT INTO invitation_recipients (
+                    id,
+                    project_id,
+                    client_guest_id,
+                    invite_code,
+                    public_token,
+                    display_name,
+                    email,
+                    phone,
+                    preferred_language,
+                    preferred_channel,
+                    metadata,
+                    overall_status
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, 'ar', 'all', $9::jsonb, 'draft'
+                )
+                `,
+                [
+                    uuidv4(),
+                    project.id,
+                    guest.id,
+                    crypto.randomBytes(5).toString('hex').toUpperCase(),
+                    crypto.randomBytes(24).toString('hex'),
+                    guest.name,
+                    guest.email || null,
+                    guest.mobile_number || null,
+                    JSON.stringify(metadata)
+                ]
+            );
+            createdCount += 1;
+        }
+
+        await db.query('UPDATE invitation_projects SET updated_at = NOW() WHERE id = $1', [project.id]);
+        await db.query('COMMIT');
+
+        res.status(201).json({
+            data: {
+                eventId: event.id,
+                projectId: project.id,
+                requested: guestIds.length,
+                created: createdCount,
+                updated: updatedCount
+            }
+        });
+    } catch (error) {
+        await db.query('ROLLBACK').catch(() => {});
+        console.error('Failed to assign event guests:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    } finally {
+        db.release();
     }
 });
 

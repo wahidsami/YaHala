@@ -7,6 +7,7 @@ import RoleGuard from '../../components/auth/RoleGuard';
 import EventInvitationSetupTab from './components/EventInvitationSetupTab';
 import EventInvitationOpsTab from './components/EventInvitationOpsTab';
 import EventAddonsTab from './components/EventAddonsTab';
+import EventGuestsTab from './components/EventGuestsTab';
 import EventPollsTab from './components/EventPollsTab';
 import SubmissionsViewer from './components/SubmissionsViewer';
 import MemoryBookPage from './components/MemoryBookPage';
@@ -196,6 +197,9 @@ export default function EventDashboardPage() {
                 </button>
                 <button className={activeTab === 'invitation-ops' ? 'active' : ''} onClick={() => setActiveTab('invitation-ops')}>
                     <Mail size={16} /> {t('events.dashboardInvitationOps')}
+                </button>
+                <button className={activeTab === 'guests' ? 'active' : ''} onClick={() => setActiveTab('guests')}>
+                    <Users size={16} /> {t('events.dashboardGuests')}
                 </button>
                 <button className={activeTab === 'addons' ? 'active' : ''} onClick={() => setActiveTab('addons')}>
                     <Layers3 size={16} /> {t('events.dashboardAddons')}
@@ -412,10 +416,10 @@ export default function EventDashboardPage() {
                             <div className="detail-card">
                                 <h3>{t('events.dashboardQuickActions')}</h3>
                                 <div className="action-list">
-                                    <Link to={`/events/${id}/guests`} className="action-item">
+                                    <button type="button" className="action-item" onClick={() => setActiveTab('guests')}>
                                         <Users size={18} />
-                                        <span>{t('events.dashboardManageGuests')}</span>
-                                    </Link>
+                                        <span>{t('events.dashboardManageGuestsInEvent')}</span>
+                                    </button>
                                     <RoleGuard permission="events.edit">
                                         <button className="action-item" type="button">
                                             <Send size={18} />
@@ -441,6 +445,8 @@ export default function EventDashboardPage() {
                 {activeTab === 'invitation-ops' && (
                     <EventInvitationOpsTab event={event} />
                 )}
+
+                {activeTab === 'guests' && <EventGuestsTab event={event} />}
 
                 {activeTab === 'addons' && <EventAddonsTab eventId={id} />}
 

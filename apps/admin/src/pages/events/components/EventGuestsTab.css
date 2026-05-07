@@ -1,0 +1,133 @@
+.event-guests-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.event-guests-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.event-guests-header h3 {
+    margin: 0;
+}
+
+.event-guests-header p {
+    margin: 0.25rem 0 0;
+    color: var(--text-secondary);
+}
+
+.event-guests-summary-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.35rem 0.6rem;
+    background: var(--bg-secondary);
+}
+
+.event-guests-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px auto;
+    gap: 0.6rem;
+}
+
+.event-guests-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    padding: 0 0.65rem;
+    background: #fff;
+}
+
+.event-guests-search input {
+    border: none;
+    outline: none;
+    width: 100%;
+    padding: 0.6rem 0;
+}
+
+.event-guests-toolbar select {
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    padding: 0.6rem;
+}
+
+.event-guests-table-wrap {
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    overflow: auto;
+    background: var(--bg-primary);
+}
+
+.event-guests-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 740px;
+}
+
+.event-guests-table th,
+.event-guests-table td {
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.event-guests-table th {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
+.event-guest-state {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.event-guest-state.assigned {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.event-guest-state.available {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.event-guests-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.event-guests-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+@media (max-width: 920px) {
+    .event-guests-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .event-guests-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .event-guests-footer-actions {
+        flex-wrap: wrap;
+    }
+}
