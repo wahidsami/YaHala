@@ -112,6 +112,7 @@ Desired workflow:
 - One-time script:
   - sets `primary_invitation_project_id` for events with exactly one project.
   - logs unresolved events (zero or multiple projects).
+- [x] Added migration `017_backfill_events_primary_invitation_project.sql` to auto-select best candidate per event.
 
 ### B.4 Acceptance
 - Every active event resolves a primary project at runtime.
@@ -356,3 +357,4 @@ System is done when:
 - 2026-05-07: Initial detailed plan created for review.
 - 2026-05-07: Phase A completed (current-state mapping + endpoint contract draft + UI target mapping).
 - 2026-05-07: Phase B started with schema migration `016` for event primary invitation project pointer.
+- 2026-05-07: Added migration `017` to backfill `events.primary_invitation_project_id` for existing events.
