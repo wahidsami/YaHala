@@ -279,6 +279,44 @@ router.get('/', requirePermission('events.view'), async (req, res, next) => {
     }
 });
 
+// GET /api/admin/questionnaires/overview-stats
+router.get('/overview-stats', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const { clientId, eventId } = req.query;
+        let whereClause = '1=1';
+        const params = [];
+        let paramIndex = 1;
+
+        if (clientId) {
+            whereClause += ` AND q.client_id = $${paramIndex}`;
+            params.push(clientId);
+            paramIndex += 1;
+        }
+        if (eventId) {
+            whereClause += ` AND q.event_id = $${paramIndex}`;
+            params.push(eventId);
+            paramIndex += 1;
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT
+                COUNT(*)::int AS total_questionnaires,
+                COUNT(*) FILTER (WHERE q.status = 'published')::int AS published_questionnaires,
+                COUNT(*) FILTER (WHERE q.status = 'draft')::int AS draft_questionnaires,
+                COUNT(*) FILTER (WHERE q.status = 'archived')::int AS archived_questionnaires
+            FROM questionnaires q
+            WHERE ${whereClause}
+            `,
+            params
+        );
+
+        res.json({ data: rows[0] || {} });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // GET /api/admin/questionnaires/:id
 router.get('/:id', requirePermission('events.view'), async (req, res, next) => {
     try {
@@ -590,44 +628,6 @@ router.delete('/:id', requirePermission('events.edit'), async (req, res, next) =
             throw new AppError('Questionnaire not found', 404, 'NOT_FOUND');
         }
         res.json({ message: 'Questionnaire deleted successfully' });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// GET /api/admin/questionnaires/overview-stats
-router.get('/overview-stats', requirePermission('events.view'), async (req, res, next) => {
-    try {
-        const { clientId, eventId } = req.query;
-        let whereClause = '1=1';
-        const params = [];
-        let paramIndex = 1;
-
-        if (clientId) {
-            whereClause += ` AND q.client_id = $${paramIndex}`;
-            params.push(clientId);
-            paramIndex += 1;
-        }
-        if (eventId) {
-            whereClause += ` AND q.event_id = $${paramIndex}`;
-            params.push(eventId);
-            paramIndex += 1;
-        }
-
-        const { rows } = await pool.query(
-            `
-            SELECT
-                COUNT(*)::int AS total_questionnaires,
-                COUNT(*) FILTER (WHERE q.status = 'published')::int AS published_questionnaires,
-                COUNT(*) FILTER (WHERE q.status = 'draft')::int AS draft_questionnaires,
-                COUNT(*) FILTER (WHERE q.status = 'archived')::int AS archived_questionnaires
-            FROM questionnaires q
-            WHERE ${whereClause}
-            `,
-            params
-        );
-
-        res.json({ data: rows[0] || {} });
     } catch (error) {
         next(error);
     }

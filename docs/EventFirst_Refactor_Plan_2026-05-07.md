@@ -189,7 +189,7 @@ Desired workflow:
   - last send attempts
   - failed recipient reasons (grouped)
 - [x] Implemented controls for sync/send (now or scheduled) and delivery/attendance/addons summaries in `EventInvitationOpsTab`.
-- [ ] Debug/Trace drawer deferred to next step.
+- [x] Debug/Trace panel implemented in Invitation Operations (event-level send trace endpoint + UI panel).
 
 ### D.3 Addons Tab Behavior
 - Show addon cards only when enabled in event settings.
@@ -483,3 +483,4 @@ System is done when:
 - 2026-05-07: Implemented Questionnaire dashboard/report integration (event summaries + global reports).
 - 2026-05-07: Implemented Questionnaire scanner read-only state in scan response and scanner mobile result UI.
 - 2026-05-07: Completed event-level send trace in Invitation Operations and closed all plan phases as implemented.
+- 2026-05-07: Hardening pass (Step 1): fixed questionnaire route order so `GET /api/admin/questionnaires/overview-stats` is resolved before `/:id`.
