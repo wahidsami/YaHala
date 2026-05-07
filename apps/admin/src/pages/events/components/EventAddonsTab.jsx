@@ -87,6 +87,27 @@ export default function EventAddonsTab({ eventId }) {
                         <p className="event-addons-empty">{t('events.addons.noPollTabs')}</p>
                     )}
                 </section>
+
+                <section className="event-addons-card">
+                    <div className="event-addons-card-header">
+                        <h4>{t('addons.questionnaireTab')}</h4>
+                        <MessageSquare size={16} />
+                    </div>
+                    {addons?.addons?.questionnaire?.questionnaires?.length ? (
+                        <div className="event-addons-polls">
+                            {addons.addons.questionnaire.questionnaires.map((questionnaire) => (
+                                <div key={questionnaire.id} className="event-addon-poll-item">
+                                    <div>
+                                        <strong>{localizedText(i18n, questionnaire.title, questionnaire.title_ar)}</strong>
+                                        <small>{questionnaire.status} · {questionnaire.question_count || 0} questions · {questionnaire.submission_count || 0} submissions</small>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="event-addons-empty">{t('events.addons.noQuestionnaireTabs')}</p>
+                    )}
+                </section>
             </div>
         </div>
     );

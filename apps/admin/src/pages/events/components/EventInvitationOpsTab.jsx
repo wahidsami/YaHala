@@ -30,6 +30,7 @@ export default function EventInvitationOpsTab({ event }) {
     const [summary, setSummary] = useState(null);
     const [attendance, setAttendance] = useState(null);
     const [addons, setAddons] = useState(null);
+    const [questionnaires, setQuestionnaires] = useState(null);
     const [sendResult, setSendResult] = useState(null);
     const [scheduleMode, setScheduleMode] = useState('now');
     const [scheduledFor, setScheduledFor] = useState('');
@@ -43,15 +44,17 @@ export default function EventInvitationOpsTab({ event }) {
         setError('');
 
         try {
-            const [summaryResponse, attendanceResponse, addonsResponse] = await Promise.all([
+            const [summaryResponse, attendanceResponse, addonsResponse, questionnaireResponse] = await Promise.all([
                 api.get(`/admin/events/${event.id}/invitation-summary`),
                 api.get(`/admin/events/${event.id}/attendance-summary`),
-                api.get(`/admin/events/${event.id}/addons-summary`)
+                api.get(`/admin/events/${event.id}/addons-summary`),
+                api.get(`/admin/events/${event.id}/questionnaire-summary`)
             ]);
 
             setSummary(summaryResponse.data?.data || null);
             setAttendance(attendanceResponse.data?.data || null);
             setAddons(addonsResponse.data?.data || null);
+            setQuestionnaires(questionnaireResponse.data?.data || null);
         } catch (loadError) {
             console.error('Failed to load invitation operations summary:', loadError);
             setError(loadError.response?.data?.message || t('events.invitationOps.loadFailed'));
@@ -255,6 +258,14 @@ export default function EventInvitationOpsTab({ event }) {
                         <div>
                             <span>{t('events.invitationOps.pollTabs')}</span>
                             <strong>{addons?.addons?.poll?.tabCount || 0}</strong>
+                        </div>
+                        <div>
+                            <span>{t('addons.questionnaireTab')}</span>
+                            <strong>{questionnaires?.totals?.totalQuestionnaires || 0}</strong>
+                        </div>
+                        <div>
+                            <span>Questionnaire submissions</span>
+                            <strong>{questionnaires?.totals?.totalSubmissions || 0}</strong>
                         </div>
                     </div>
                 </section>

@@ -53,6 +53,16 @@ router.get('/overview', requirePermission('reports.view'), async (req, res, next
             FROM polls
         `);
 
+        const { rows: questionnaireRows } = await pool.query(`
+            SELECT
+                COUNT(*)::int AS total_questionnaires,
+                COUNT(*) FILTER (WHERE status = 'published')::int AS published_questionnaires,
+                COUNT(*) FILTER (WHERE status = 'draft')::int AS draft_questionnaires,
+                COUNT(*) FILTER (WHERE status = 'archived')::int AS archived_questionnaires,
+                COALESCE((SELECT COUNT(*)::int FROM questionnaire_submissions), 0) AS total_submissions
+            FROM questionnaires
+        `);
+
         const { rows: recentResponses } = await pool.query(`
             SELECT
                 ir.id,
@@ -124,6 +134,25 @@ router.get('/overview', requirePermission('reports.view'), async (req, res, next
             LIMIT 10
         `);
 
+        const { rows: topQuestionnaires } = await pool.query(`
+            SELECT
+                q.id,
+                q.title,
+                q.title_ar,
+                q.status,
+                c.name AS client_name,
+                c.name_ar AS client_name_ar,
+                e.name AS event_name,
+                e.name_ar AS event_name_ar,
+                COALESCE((SELECT COUNT(*)::int FROM questionnaire_questions qq WHERE qq.questionnaire_id = q.id), 0) AS question_count,
+                COALESCE((SELECT COUNT(*)::int FROM questionnaire_submissions qs WHERE qs.questionnaire_id = q.id), 0) AS submission_count
+            FROM questionnaires q
+            JOIN clients c ON c.id = q.client_id
+            JOIN events e ON e.id = q.event_id
+            ORDER BY submission_count DESC, question_count DESC, q.created_at DESC
+            LIMIT 10
+        `);
+
         const { rows: recentActivity } = await pool.query(`
             SELECT
                 al.id,
@@ -149,9 +178,11 @@ router.get('/overview', requirePermission('reports.view'), async (req, res, next
                 invitations: invitationRows[0] || {},
                 rsvp: rsvpRows[0] || {},
                 polls: pollRows[0] || {},
+                questionnaires: questionnaireRows[0] || {},
                 recentResponses,
                 topProjects,
                 topPolls,
+                topQuestionnaires,
                 recentActivity
             }
         });

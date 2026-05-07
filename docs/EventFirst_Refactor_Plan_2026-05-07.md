@@ -330,6 +330,8 @@ Desired workflow:
     - `POST /api/public/invitations/:token/pages/:pageKey/questionnaire-submit`
   - [x] Added public invitation card tab rendering and questionnaire interactive panel.
 - G.6.4 Event dashboard + reports integration.
+  - [x] Event dashboard addon/ops views now include questionnaire counts and submissions.
+  - [x] Reports overview now includes questionnaire totals and top questionnaires table.
 - G.6.5 Scanner read-only state integration.
 
 ### G.7 Acceptance
@@ -469,3 +471,4 @@ System is done when:
 - 2026-05-07: Added migration `018_questionnaire_addon.sql` (questionnaires, questions, options, submissions, answers).
 - 2026-05-07: Implemented Questionnaire admin CRUD/report routes and event-level questionnaire summary endpoint.
 - 2026-05-07: Implemented Questionnaire invitation runtime (snapshot/state/submit endpoints + public tab/panel UI).
+- 2026-05-07: Implemented Questionnaire dashboard/report integration (event summaries + global reports).

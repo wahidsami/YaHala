@@ -1001,6 +1001,10 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
         const pollTabIds = normalizedTabs
             .filter((tab) => tab.type === 'poll' && tab.addonId)
             .map((tab) => tab.addonId);
+        const questionnaireAddonEnabled = addIns.includes('questionnaire');
+        const questionnaireTabIds = normalizedTabs
+            .filter((tab) => tab.type === 'questionnaire' && tab.addonId)
+            .map((tab) => tab.addonId);
 
         let pollDetails = [];
         if (pollTabIds.length) {
@@ -1016,6 +1020,26 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
             pollDetails = rows;
         }
 
+        let questionnaireDetails = [];
+        if (questionnaireTabIds.length) {
+            const { rows } = await pool.query(
+                `
+                SELECT
+                    q.id,
+                    q.title,
+                    q.title_ar,
+                    q.status,
+                    COALESCE((SELECT COUNT(*)::int FROM questionnaire_questions qq WHERE qq.questionnaire_id = q.id), 0) AS question_count,
+                    COALESCE((SELECT COUNT(*)::int FROM questionnaire_submissions qs WHERE qs.questionnaire_id = q.id), 0) AS submission_count
+                FROM questionnaires q
+                WHERE q.id = ANY($1::uuid[])
+                ORDER BY q.created_at DESC
+                `,
+                [questionnaireTabIds]
+            );
+            questionnaireDetails = rows;
+        }
+
         res.json({
             data: {
                 eventId: event.id,
@@ -1026,6 +1050,11 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
                         enabled: pollAddonEnabled,
                         tabCount: pollTabIds.length,
                         polls: pollDetails
+                    },
+                    questionnaire: {
+                        enabled: questionnaireAddonEnabled,
+                        tabCount: questionnaireTabIds.length,
+                        questionnaires: questionnaireDetails
                     }
                 },
                 lastUpdatedAt: new Date().toISOString()

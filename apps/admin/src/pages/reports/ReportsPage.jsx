@@ -208,9 +208,11 @@ export default function ReportsPage() {
     const invitations = data?.invitations || {};
     const rsvp = data?.rsvp || {};
     const polls = data?.polls || {};
+    const questionnaires = data?.questionnaires || {};
     const recentResponses = data?.recentResponses || [];
     const topProjects = data?.topProjects || [];
     const topPolls = data?.topPolls || [];
+    const topQuestionnaires = data?.topQuestionnaires || [];
     const recentActivity = data?.recentActivity || [];
 
     const responseRate = useMemo(() => percent(rsvp.total_submissions, invitations.total_recipients), [invitations.total_recipients, rsvp.total_submissions]);
@@ -374,6 +376,7 @@ export default function ReportsPage() {
                     <OverviewCard title={t('reports.recipients')} value={formatNumber(invitations.total_recipients)} subtitle={t('reports.responseRate', { rate: responseRate })} icon={Send} tone="dark" />
                     <OverviewCard title={t('reports.responses')} value={formatNumber(rsvp.total_submissions)} subtitle={t('reports.attendingCount', { count: formatNumber(rsvp.attending_count) })} icon={Reply} tone="neutral" />
                     <OverviewCard title={t('reports.pollVotes')} value={formatNumber(polls.total_votes)} subtitle={t('reports.publishedPolls', { count: formatNumber(polls.published_polls) })} icon={BarChart3} tone="accent" />
+                    <OverviewCard title="Questionnaire submissions" value={formatNumber(questionnaires.total_submissions)} subtitle={`Published: ${formatNumber(questionnaires.published_questionnaires)}`} icon={FileText} tone="dark" />
                 </div>
             </section>
 
@@ -596,6 +599,61 @@ export default function ReportsPage() {
                                                     <ChevronRight size={16} />
                                                 </Link>
                                             </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section className="report-section">
+                <SectionHeader
+                    title="Top questionnaires"
+                    subtitle="Questionnaires ranked by submission volume."
+                />
+                <div className="report-table-wrap">
+                    <table className="data-table report-table">
+                        <thead>
+                            <tr>
+                                <th>Questionnaire</th>
+                                <th>{t('reports.client')}</th>
+                                <th>{t('reports.event')}</th>
+                                <th>{t('reports.status')}</th>
+                                <th>Questions</th>
+                                <th>Submissions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="6" className="loading-cell">{t('common.loading')}</td>
+                                </tr>
+                            ) : topQuestionnaires.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="empty-cell">No questionnaires found</td>
+                                </tr>
+                            ) : (
+                                topQuestionnaires.map((questionnaire) => {
+                                    const questionnaireTitle = isArabic
+                                        ? (questionnaire.title_ar || questionnaire.title || '—')
+                                        : (questionnaire.title || questionnaire.title_ar || '—');
+                                    const clientName = isArabic
+                                        ? (questionnaire.client_name_ar || questionnaire.client_name || '—')
+                                        : (questionnaire.client_name || questionnaire.client_name_ar || '—');
+                                    const eventName = isArabic
+                                        ? (questionnaire.event_name_ar || questionnaire.event_name || '—')
+                                        : (questionnaire.event_name || questionnaire.event_name_ar || '—');
+
+                                    return (
+                                        <tr key={questionnaire.id}>
+                                            <td>{questionnaireTitle}</td>
+                                            <td>{clientName}</td>
+                                            <td>{eventName}</td>
+                                            <td><span className="report-status-pill">{labelize(questionnaire.status)}</span></td>
+                                            <td>{formatNumber(questionnaire.question_count)}</td>
+                                            <td>{formatNumber(questionnaire.submission_count)}</td>
                                         </tr>
                                     );
                                 })
