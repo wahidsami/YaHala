@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import pool from '../db/connection.js';
 import { authenticate, requirePermission } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -92,6 +93,94 @@ async function fetchPollSnapshot(db, pollId, clientId, eventId) {
         poll: polls[0],
         options
     };
+}
+
+function stableStringify(value) {
+    if (value === null || value === undefined) {
+        return 'null';
+    }
+
+    if (Array.isArray(value)) {
+        return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+    }
+
+    if (typeof value === 'object') {
+        const keys = Object.keys(value).sort();
+        return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+    }
+
+    return JSON.stringify(value);
+}
+
+function computeDesignDataHash(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+
+    return crypto.createHash('sha256').update(stableStringify(value)).digest('hex');
+}
+
+async function resolvePrimaryInvitationProject(db, eventId) {
+    const { rows: eventRows } = await db.query(
+        `
+        SELECT id, client_id, template_id, settings, primary_invitation_project_id
+        FROM events
+        WHERE id = $1
+        LIMIT 1
+        `,
+        [eventId]
+    );
+
+    if (!eventRows.length) {
+        throw new AppError('Event not found', 404, 'NOT_FOUND');
+    }
+
+    const event = eventRows[0];
+    if (event.primary_invitation_project_id) {
+        const { rows: projectRows } = await db.query(
+            `
+            SELECT id, event_id, settings
+            FROM invitation_projects
+            WHERE id = $1 AND event_id = $2
+            LIMIT 1
+            `,
+            [event.primary_invitation_project_id, event.id]
+        );
+
+        if (projectRows.length) {
+            return { event, project: projectRows[0] };
+        }
+    }
+
+    const { rows: fallbackRows } = await db.query(
+        `
+        SELECT id, event_id, settings
+        FROM invitation_projects
+        WHERE event_id = $1
+        ORDER BY
+            CASE WHEN status IN ('active', 'draft', 'paused') THEN 0 ELSE 1 END,
+            updated_at DESC NULLS LAST,
+            created_at DESC NULLS LAST
+        LIMIT 1
+        `,
+        [event.id]
+    );
+
+    if (!fallbackRows.length) {
+        throw new AppError('No invitation project is available for this event', 404, 'NO_INVITATION_PROJECT');
+    }
+
+    const project = fallbackRows[0];
+    await db.query(
+        `
+        UPDATE events
+        SET primary_invitation_project_id = $1, updated_at = NOW()
+        WHERE id = $2
+        `,
+        [project.id, event.id]
+    );
+
+    return { event, project };
 }
 
 // GET /api/admin/events - List events with filters
@@ -543,6 +632,99 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
         res.json({ data: updated[0] });
     } catch (error) {
         next(error);
+    }
+});
+
+// POST /api/admin/events/:id/sync-invitation-template
+router.post('/:id/sync-invitation-template', requirePermission('events.edit'), async (req, res, next) => {
+    const db = await pool.connect();
+
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        await db.query('BEGIN');
+        const { event, project } = await resolvePrimaryInvitationProject(db, eventId);
+
+        const eventTemplateId = event.template_id || null;
+        let coverTemplateSnapshot = null;
+        let coverTemplateHash = null;
+
+        if (eventTemplateId) {
+            const { rows: templates } = await db.query(
+                'SELECT design_data FROM templates WHERE id = $1 LIMIT 1',
+                [eventTemplateId]
+            );
+            if (!templates.length) {
+                throw new AppError('Event template not found', 404, 'NOT_FOUND');
+            }
+            coverTemplateSnapshot = templates[0].design_data;
+            coverTemplateHash = computeDesignDataHash(coverTemplateSnapshot);
+        }
+
+        const nextSettings = safeJson(project.settings, {});
+        nextSettings.cover_template_id = eventTemplateId;
+        nextSettings.cover_template_hash = coverTemplateHash;
+
+        await db.query(
+            `
+            UPDATE invitation_projects
+            SET
+                cover_template_id = $1,
+                cover_template_snapshot = $2::jsonb,
+                settings = $3::jsonb,
+                updated_at = NOW()
+            WHERE id = $4
+            `,
+            [
+                eventTemplateId,
+                coverTemplateSnapshot === null ? null : JSON.stringify(coverTemplateSnapshot),
+                JSON.stringify(nextSettings),
+                project.id
+            ]
+        );
+
+        await db.query(
+            `
+            UPDATE invitation_project_pages
+            SET
+                settings = $1::jsonb,
+                updated_at = NOW()
+            WHERE project_id = $2
+              AND page_type = 'cover'
+            `,
+            [
+                JSON.stringify({
+                    coverTemplateId: eventTemplateId,
+                    coverTemplateSnapshot,
+                    coverTemplateHash
+                }),
+                project.id
+            ]
+        );
+
+        await db.query('COMMIT');
+
+        res.json({
+            data: {
+                eventId,
+                projectId: project.id,
+                synced: true,
+                coverTemplateHash
+            }
+        });
+    } catch (error) {
+        await db.query('ROLLBACK').catch(() => {});
+        console.error('Failed to sync invitation template from event dashboard:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    } finally {
+        db.release();
     }
 });
 

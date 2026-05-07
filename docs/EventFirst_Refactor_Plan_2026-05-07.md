@@ -118,13 +118,14 @@ Desired workflow:
 - Every active event resolves a primary project at runtime.
 
 ## Phase C - Event-Level Backend Endpoints
-- Status: `pending`
+- Status: `in_progress`
 
 ### C.1 New Endpoints
 - `POST /api/admin/events/:id/sync-invitation-template`
   - resolves primary project
   - performs sync logic currently in project route
   - returns lightweight payload `{ eventId, projectId, synced, coverTemplateHash }`
+- [x] Implemented in `apps/api/src/routes/events.js`.
 
 - `POST /api/admin/events/:id/send-invitations`
   - request: `{ scheduledFor?: string | null, recipientIds?: string[] }`
@@ -358,3 +359,4 @@ System is done when:
 - 2026-05-07: Phase A completed (current-state mapping + endpoint contract draft + UI target mapping).
 - 2026-05-07: Phase B started with schema migration `016` for event primary invitation project pointer.
 - 2026-05-07: Added migration `017` to backfill `events.primary_invitation_project_id` for existing events.
+- 2026-05-07: Phase C started with event-level endpoint `POST /api/admin/events/:id/sync-invitation-template`.
