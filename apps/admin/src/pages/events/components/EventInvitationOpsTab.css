@@ -1,0 +1,144 @@
+.invitation-ops-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.invitation-ops-loading {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.invitation-ops-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.invitation-ops-header h3 {
+    margin: 0;
+}
+
+.invitation-ops-header p {
+    margin: 0.25rem 0 0;
+    color: var(--text-secondary);
+}
+
+.invitation-ops-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.ops-kpi-card,
+.ops-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.ops-kpi-card span {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.ops-kpi-card strong {
+    display: block;
+    font-size: 1.5rem;
+    margin-top: 0.4rem;
+}
+
+.invitation-ops-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.ops-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.ops-card-header h4 {
+    margin: 0;
+}
+
+.ops-readiness-list,
+.ops-metrics-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ops-readiness-list > div,
+.ops-metrics-list > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.ops-readiness-list > div {
+    justify-content: flex-start;
+}
+
+.ops-readiness-list .ready {
+    color: #15803d;
+}
+
+.ops-readiness-list .pending {
+    color: #b45309;
+}
+
+.ops-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+}
+
+.send-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.send-controls label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.send-controls select,
+.send-controls input {
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    padding: 0.55rem 0.65rem;
+}
+
+.ops-send-result {
+    margin-top: 0.8rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.8rem;
+}
+
+.ops-send-result p {
+    margin: 0 0 0.35rem;
+    color: var(--text-secondary);
+}
+
+.ops-send-result-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+    .invitation-ops-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,89 @@
+.event-addons-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.event-addons-loading {
+    text-align: center;
+    padding: 1rem;
+}
+
+.event-addons-header h3 {
+    margin: 0;
+}
+
+.event-addons-header p {
+    margin: 0.25rem 0 0;
+    color: var(--text-secondary);
+}
+
+.event-addons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.event-addons-card {
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 1rem;
+    background: var(--bg-primary);
+}
+
+.event-addons-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.event-addons-card-header h4 {
+    margin: 0;
+}
+
+.event-addons-empty {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.addon-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.addon-chip {
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    padding: 0.3rem 0.65rem;
+    font-size: 0.82rem;
+}
+
+.event-addons-polls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.event-addon-poll-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.75rem;
+}
+
+.event-addon-poll-item small {
+    display: block;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+@media (max-width: 900px) {
+    .event-addons-grid {
+        grid-template-columns: 1fr;
+    }
+}

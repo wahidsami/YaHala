@@ -5,6 +5,8 @@ import { ArrowLeft, Edit, Users, Send, CheckCircle, Clock, Clock3, MessageSquare
 import api from '../../services/api';
 import RoleGuard from '../../components/auth/RoleGuard';
 import EventInvitationSetupTab from './components/EventInvitationSetupTab';
+import EventInvitationOpsTab from './components/EventInvitationOpsTab';
+import EventAddonsTab from './components/EventAddonsTab';
 import EventPollsTab from './components/EventPollsTab';
 import SubmissionsViewer from './components/SubmissionsViewer';
 import MemoryBookPage from './components/MemoryBookPage';
@@ -191,6 +193,12 @@ export default function EventDashboardPage() {
                 </button>
                 <button className={activeTab === 'invitation-setup' ? 'active' : ''} onClick={() => setActiveTab('invitation-setup')}>
                     <Layers3 size={16} /> {t('events.dashboardInvitationSetup')}
+                </button>
+                <button className={activeTab === 'invitation-ops' ? 'active' : ''} onClick={() => setActiveTab('invitation-ops')}>
+                    <Mail size={16} /> {t('events.dashboardInvitationOps')}
+                </button>
+                <button className={activeTab === 'addons' ? 'active' : ''} onClick={() => setActiveTab('addons')}>
+                    <Layers3 size={16} /> {t('events.dashboardAddons')}
                 </button>
                 <button className={activeTab === 'polls' ? 'active' : ''} onClick={() => setActiveTab('polls')}>
                     <MessageSquare size={16} /> {t('events.dashboardPolls')}
@@ -417,7 +425,7 @@ export default function EventDashboardPage() {
                                     <RoleGuard permission="events.create">
                                         <Link to={`/invitation-projects/new?eventId=${id}`} className="action-item">
                                             <Mail size={18} />
-                                            <span>{t('events.dashboardCreateInvitationProject')}</span>
+                                            <span>{t('events.dashboardCreateInvitationProjectAdvanced')}</span>
                                         </Link>
                                     </RoleGuard>
                                 </div>
@@ -429,6 +437,12 @@ export default function EventDashboardPage() {
                 {activeTab === 'invitation-setup' && (
                     <EventInvitationSetupTab event={event} onUpdated={fetchEvent} />
                 )}
+
+                {activeTab === 'invitation-ops' && (
+                    <EventInvitationOpsTab event={event} />
+                )}
+
+                {activeTab === 'addons' && <EventAddonsTab eventId={id} />}
 
                 {activeTab === 'polls' && (
                     <EventPollsTab

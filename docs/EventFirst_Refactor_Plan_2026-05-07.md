@@ -164,7 +164,7 @@ Desired workflow:
 - Event-level APIs pass functional tests for valid/invalid event/project states.
 
 ## Phase D - Admin UX Refactor (Event Command Center)
-- Status: `pending`
+- Status: `in_progress`
 
 ### D.1 Event Dashboard Tabs
 - Add/upgrade tabs in event dashboard:
@@ -174,6 +174,7 @@ Desired workflow:
   - Polls
   - Submissions
   - Memory Book
+- [x] Implemented in `EventDashboardPage` with new `Invitation Operations` and `Addons` tabs.
 
 ### D.2 Invitation Operations Tab
 - Controls:
@@ -184,16 +185,20 @@ Desired workflow:
   - delivery funnel cards
   - last send attempts
   - failed recipient reasons (grouped)
+- [x] Implemented controls for sync/send (now or scheduled) and delivery/attendance/addons summaries in `EventInvitationOpsTab`.
+- [ ] Debug/Trace drawer deferred to next step.
 
 ### D.3 Addons Tab Behavior
 - Show addon cards only when enabled in event settings.
 - For poll addon:
   - show attached poll tabs summary
   - quick link to poll management
+- [x] Implemented in `EventAddonsTab`.
 
 ### D.4 De-Emphasize Project Pages
 - Keep invitation-project pages accessible via “Advanced”.
 - Remove project-first CTAs from default event flow.
+- [x] Primary event flow now exposed through event-level tabs; project CTA relabeled as advanced in overview actions.
 
 ### D.5 Acceptance
 - Normal operator can complete setup/send/observe entirely from event dashboard.
@@ -368,3 +373,4 @@ System is done when:
 - 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/invitation-summary`.
 - 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/attendance-summary`.
 - 2026-05-07: Added event-level endpoint `GET /api/admin/events/:id/addons-summary`.
+- 2026-05-07: Phase D started with Event Dashboard invitation operations + addons tabs wired to new event-level endpoints.
