@@ -250,6 +250,86 @@ Desired workflow:
 - Feature flag event-level invitation controls.
 - Re-enable legacy navigation instantly if severe regressions.
 
+## Phase G - Questionnaire Addon (V1)
+- Status: `in_progress`
+
+### G.1 Product Contract (V1 Question Types)
+- Supported question types:
+  - `yes_no`
+  - `single_choice`
+  - `multiple_choice`
+  - `short_text`
+  - `rating` (configurable range)
+- Shared per-question properties:
+  - `title`, `title_ar`
+  - `description`, `description_ar`
+  - `required`
+  - `sort_order`
+  - `settings` (type-specific constraints)
+- Deferred to V1.1:
+  - `number`, `date`, `long_text`, advanced conditional branching.
+
+### G.2 Wiring Matrix (Where It Must Work)
+1. Invitation card:
+- If event enables questionnaire tab, render top tab from `invitation_setup.tabs`.
+- Submission must be bound to invitation guest context (`event_id`, `project_id`, `recipient_id`, `client_guest_id`).
+
+2. Event Dashboard:
+- Addon summary card shows questionnaire enabled + submissions count.
+- Event-level questionnaire report endpoint feeds dashboard metrics.
+
+3. Mobile Scanner:
+- Guest event profile exposes questionnaire state (`not_started`, `submitted`) for operator awareness.
+- Detailed answers are read-only and permission-controlled.
+
+4. Reports:
+- Event and global reports include submission count, completion rate, per-question aggregates.
+
+### G.3 Backend Data Model
+- `questionnaires`
+  - ownership/scope (`client_id`, `event_id`)
+  - `status` (`draft`, `published`, `archived`)
+  - scheduling (`start_date`, `end_date`)
+  - `settings`
+- `questionnaire_questions`
+  - question text + type + required + ordering + settings
+- `questionnaire_options`
+  - options for `single_choice`/`multiple_choice` and optional `yes_no` labels
+- `questionnaire_submissions`
+  - one logical submission per guest/session
+- `questionnaire_answers`
+  - normalized answer rows (one or many per question depending on type)
+
+### G.4 API Surface (Planned)
+- Admin CRUD:
+  - `GET/POST/PUT /api/admin/questionnaires`
+  - `GET /api/admin/questionnaires/:id`
+  - `GET /api/admin/questionnaires/:id/report`
+- Event-level:
+  - `GET /api/admin/events/:id/questionnaire-summary`
+- Public invitation:
+  - `GET /api/public/invitations/:token/pages/:pageKey/questionnaire-state`
+  - `POST /api/public/invitations/:token/pages/:pageKey/questionnaire-submit`
+
+### G.5 Guardrails
+- Enforce event/project/recipient scoping on every write.
+- Enforce status/time window (`published`, `start_date`, `end_date`) for submission.
+- Transactional writes for submission + answers.
+- Audit log entry per submission event.
+
+### G.6 Phase Steps
+- G.6.1 Schema migration for questionnaire tables.
+  - [x] Added `018_questionnaire_addon.sql`.
+- G.6.2 Admin questionnaire CRUD APIs.
+- G.6.3 Invitation-card questionnaire tab runtime + submit API.
+- G.6.4 Event dashboard + reports integration.
+- G.6.5 Scanner read-only state integration.
+
+### G.7 Acceptance
+- Admin can create/publish questionnaire and attach it to event setup tabs.
+- Guest can submit questionnaire from invitation tab with proper validation.
+- Event dashboard, reports, and scanner state stay consistent for the same guest/event.
+
 ## 6) Endpoint Proposal (Concrete)
 
 ## POST `/api/admin/events/:id/sync-invitation-template`
@@ -363,6 +443,7 @@ System is done when:
 - [ ] Phase D done
 - [ ] Phase E done
 - [ ] Phase F done
+- [ ] Phase G done
 
 ## Change Log
 - 2026-05-07: Initial detailed plan created for review.
@@ -377,3 +458,5 @@ System is done when:
 - 2026-05-07: Phase D started with Event Dashboard invitation operations + addons tabs wired to new event-level endpoints.
 - 2026-05-07: Added event-level guest assignment flow (`GET /events/:id/guest-directory`, `POST /events/:id/guest-directory/assign`) and Event Dashboard `Guests` tab.
 - 2026-05-07: Poll hardening pass: enforced publish/start/end checks on vote endpoint and aligned public invitation UI voting guard.
+- 2026-05-07: Added Phase G Questionnaire plan with V1 question-type contract and wiring matrix (card/dashboard/scanner/reports).
+- 2026-05-07: Added migration `018_questionnaire_addon.sql` (questionnaires, questions, options, submissions, answers).
