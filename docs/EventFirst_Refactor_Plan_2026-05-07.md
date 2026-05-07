@@ -321,6 +321,8 @@ Desired workflow:
 - G.6.1 Schema migration for questionnaire tables.
   - [x] Added `018_questionnaire_addon.sql`.
 - G.6.2 Admin questionnaire CRUD APIs.
+  - [x] Added `apps/api/src/routes/questionnaires.js` and mounted `/api/admin/questionnaires`.
+  - [x] Added event-level summary endpoint `GET /api/admin/events/:id/questionnaire-summary`.
 - G.6.3 Invitation-card questionnaire tab runtime + submit API.
 - G.6.4 Event dashboard + reports integration.
 - G.6.5 Scanner read-only state integration.
@@ -460,3 +462,4 @@ System is done when:
 - 2026-05-07: Poll hardening pass: enforced publish/start/end checks on vote endpoint and aligned public invitation UI voting guard.
 - 2026-05-07: Added Phase G Questionnaire plan with V1 question-type contract and wiring matrix (card/dashboard/scanner/reports).
 - 2026-05-07: Added migration `018_questionnaire_addon.sql` (questionnaires, questions, options, submissions, answers).
+- 2026-05-07: Implemented Questionnaire admin CRUD/report routes and event-level questionnaire summary endpoint.

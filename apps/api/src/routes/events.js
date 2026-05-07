@@ -1274,6 +1274,93 @@ router.post('/:id/guest-directory/assign', requirePermission('events.edit'), asy
     }
 });
 
+// GET /api/admin/events/:id/questionnaire-summary
+router.get('/:id/questionnaire-summary', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { rows: eventRows } = await pool.query(
+            `
+            SELECT id, settings
+            FROM events
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [eventId]
+        );
+
+        if (!eventRows.length) {
+            throw new AppError('Event not found', 404, 'NOT_FOUND');
+        }
+
+        const { rows: questionnaireRows } = await pool.query(
+            `
+            SELECT
+                q.id,
+                q.title,
+                q.title_ar,
+                q.status,
+                q.start_date,
+                q.end_date,
+                q.updated_at,
+                COALESCE((SELECT COUNT(*)::int FROM questionnaire_questions qq WHERE qq.questionnaire_id = q.id), 0) AS question_count,
+                COALESCE((SELECT COUNT(*)::int FROM questionnaire_submissions qs WHERE qs.questionnaire_id = q.id), 0) AS submission_count
+            FROM questionnaires q
+            WHERE q.event_id = $1
+            ORDER BY
+                CASE WHEN q.status = 'published' THEN 0 WHEN q.status = 'draft' THEN 1 ELSE 2 END,
+                q.updated_at DESC
+            `,
+            [eventId]
+        );
+
+        const now = Date.now();
+        const activeCount = questionnaireRows.filter((row) => {
+            if (row.status !== 'published') {
+                return false;
+            }
+            const start = row.start_date ? new Date(row.start_date).getTime() : null;
+            const end = row.end_date ? new Date(row.end_date).getTime() : null;
+            const afterStart = start === null || Number.isNaN(start) || start <= now;
+            const beforeEnd = end === null || Number.isNaN(end) || end >= now;
+            return afterStart && beforeEnd;
+        }).length;
+
+        const totalSubmissions = questionnaireRows.reduce(
+            (sum, row) => sum + (Number.parseInt(row.submission_count, 10) || 0),
+            0
+        );
+        const totalQuestions = questionnaireRows.reduce(
+            (sum, row) => sum + (Number.parseInt(row.question_count, 10) || 0),
+            0
+        );
+
+        res.json({
+            data: {
+                eventId,
+                totals: {
+                    totalQuestionnaires: questionnaireRows.length,
+                    activeQuestionnaires: activeCount,
+                    totalQuestions,
+                    totalSubmissions
+                },
+                questionnaires: questionnaireRows,
+                lastUpdatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Failed to fetch event questionnaire summary:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    }
+});
+
 // PATCH /api/admin/events/:id/status - Activate or deactivate event
 router.patch('/:id/status', requirePermission('events.edit'), async (req, res, next) => {
     try {
