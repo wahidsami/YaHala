@@ -498,6 +498,16 @@
     background: #10b981;
 }
 
+.instructions-icon-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Debug Summary Tiny List */
 .debug-summary {
     margin-top: 2rem;

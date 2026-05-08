@@ -1155,6 +1155,7 @@ export default function PublicInvitationPage() {
     const [rsvpCompleted, setRsvpCompleted] = useState(false);
     const [gateDecision, setGateDecision] = useState(null);
     const [showGate, setShowGate] = useState(false);
+    const [showInstructionsModal, setShowInstructionsModal] = useState(false);
     const [completedAddonPages, setCompletedAddonPages] = useState({});
     const [sessionToken, setSessionToken] = useState(() => {
         if (typeof window === 'undefined') {
@@ -1325,6 +1326,9 @@ export default function PublicInvitationPage() {
             _runtime: evaluatePageRuntimeFallback(page, invitation?.recipient || {})
         }))
         .filter((page) => {
+            if (page.page_type === 'instructions') {
+                return true;
+            }
             const runtime = page?._runtime || {};
             const forceCompleted = Boolean(completedAddonPages[page.page_key]);
             const disableAfterSubmission = runtime.disableAfterSubmission !== false;
@@ -1401,6 +1405,16 @@ export default function PublicInvitationPage() {
         setCompletedAddonPages((prev) => ({ ...prev, [pageKey]: true }));
     }
 
+    function openAddonPage(pageKey) {
+        const target = interactivePages.find((page) => page.page_key === pageKey);
+        if (target?.page_type === 'instructions') {
+            setShowInstructionsModal(true);
+        } else {
+            setShowInstructionsModal(false);
+        }
+        setActivePageKey(pageKey);
+    }
+
     useEffect(() => {
         if (!invitationReady || !gateEnabled) {
             setShowGate(false);
@@ -1467,7 +1481,7 @@ export default function PublicInvitationPage() {
                             language={activeLanguage}
                             hasRsvpPage={hasRsvpPage}
                             rsvpCompleted={rsvpCompleted}
-                            onOpenAddon={(pageKey) => setActivePageKey(pageKey)}
+                            onOpenAddon={openAddonPage}
                             addonLaunchTargets={addonLaunchTargets}
                             qrSlotActions={qrSlotPages.map((page) => {
                                 const runtime = page?._runtime || {};
@@ -1492,7 +1506,7 @@ export default function PublicInvitationPage() {
                             const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
                             const disabled = runtime.disableAfterSubmission !== false && completed;
                             return (
-                                <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} disabled={disabled} onClick={() => setActivePageKey(page.page_key)}>
+                                <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} disabled={disabled} onClick={() => openAddonPage(page.page_key)}>
                                     {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
                                 </button>
                             );
@@ -1513,7 +1527,7 @@ export default function PublicInvitationPage() {
                                     type="button"
                                     className={activePageKey === page.page_key ? 'active' : ''}
                                     disabled={isDisabled}
-                                    onClick={() => setActivePageKey(page.page_key)}
+                                    onClick={() => openAddonPage(page.page_key)}
                                 >
                                     {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
                                 </button>
@@ -1554,13 +1568,7 @@ export default function PublicInvitationPage() {
                         );
                     }
                     if (activePage.page_type === 'instructions') {
-                        return (
-                            <InstructionsPanel
-                                language={activeLanguage}
-                                page={activePage}
-                                onBack={() => setActivePageKey('cover')}
-                            />
-                        );
+                        return null;
                     }
                     return <PlaceholderPanel language={activeLanguage} page={activePage} />;
                 })()}
@@ -1573,7 +1581,7 @@ export default function PublicInvitationPage() {
                             const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
                             const isDisabled = disableAfterSubmission && completed;
                             return (
-                                <button key={page.page_key} type="button" className={activePageKey === page.page_key ? 'active' : ''} disabled={isDisabled} onClick={() => setActivePageKey(page.page_key)}>
+                                <button key={page.page_key} type="button" className={activePageKey === page.page_key ? 'active' : ''} disabled={isDisabled} onClick={() => openAddonPage(page.page_key)}>
                                     {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
                                 </button>
                             );
@@ -1586,7 +1594,7 @@ export default function PublicInvitationPage() {
                         {leftIconPages.length > 0 && (
                             <div className="addon-icons addon-icons-left">
                                 {leftIconPages.map((page) => (
-                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => setActivePageKey(page.page_key)}>
+                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => openAddonPage(page.page_key)}>
                                         {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
                                     </button>
                                 ))}
@@ -1595,7 +1603,7 @@ export default function PublicInvitationPage() {
                         {rightIconPages.length > 0 && (
                             <div className="addon-icons addon-icons-right">
                                 {rightIconPages.map((page) => (
-                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => setActivePageKey(page.page_key)}>
+                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => openAddonPage(page.page_key)}>
                                         {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
                                     </button>
                                 ))}
@@ -1604,7 +1612,7 @@ export default function PublicInvitationPage() {
                         {bottomIconPages.length > 0 && (
                             <div className="addon-icons addon-icons-bottom">
                                 {bottomIconPages.map((page) => (
-                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => setActivePageKey(page.page_key)}>
+                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => openAddonPage(page.page_key)}>
                                         {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
                                     </button>
                                 ))}
@@ -1612,6 +1620,30 @@ export default function PublicInvitationPage() {
                         )}
                     </div>
                 )}
+
+                {showInstructionsModal && (() => {
+                    const activeInstructionsPage = interactivePages.find((page) => page.page_key === activePageKey && page.page_type === 'instructions');
+                    if (!activeInstructionsPage) {
+                        return null;
+                    }
+                    return (
+                        <div className="rsvp-modal-overlay" role="presentation" onClick={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }}>
+                            <div className="rsvp-modal instructions-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                                <div className="rsvp-modal-header">
+                                    <div>
+                                        <h3>{localizedText(activeLanguage, activeInstructionsPage.title || 'Instructions', activeInstructionsPage.title_ar || 'تعليمات')}</h3>
+                                    </div>
+                                    <button type="button" className="rsvp-modal-close" onClick={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }}>
+                                        <X size={18} />
+                                    </button>
+                                </div>
+                                <div className="instructions-modal-body">
+                                    <InstructionsPanel language={activeLanguage} page={activeInstructionsPage} onBack={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }} />
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
 
             {cardLockedByDecline && (
                 <div className="module-panel">

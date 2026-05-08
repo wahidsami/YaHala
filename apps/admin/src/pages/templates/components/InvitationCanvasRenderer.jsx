@@ -445,12 +445,12 @@ export function InvitationWidgetPreview({
             const isPublic = mode === 'public';
             const hasTarget = Boolean(target?.pageKey);
             const disabled = isPublic ? (!hasTarget || target?.disabled) : true;
-            const label = content.label || localizedText(language, 'Instructions', 'التعليمات');
+            const iconSize = Number(widget?.style?.iconSize || 28);
 
             return (
                 <div style={style} className="preview-widget map-widget">
                     <button
-                        className="map-btn"
+                        className="instructions-icon-btn"
                         type="button"
                         disabled={disabled}
                         onClick={() => {
@@ -459,7 +459,11 @@ export function InvitationWidgetPreview({
                             }
                         }}
                     >
-                        📘 {label}
+                        {content.iconUrl ? (
+                            <img src={resolveStorageUrl(content.iconUrl)} alt="instructions" style={{ width: `${iconSize}px`, height: `${iconSize}px`, objectFit: 'contain' }} />
+                        ) : (
+                            <span style={{ fontSize: `${iconSize}px`, lineHeight: 1 }}>📘</span>
+                        )}
                     </button>
                 </div>
             );

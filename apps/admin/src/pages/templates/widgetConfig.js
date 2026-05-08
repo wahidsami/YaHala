@@ -30,8 +30,8 @@ export const DEFAULT_WIDGET_CONTENT = {
         en: { alt: 'Logo' }
     },
     instructions_link: {
-        ar: { label: 'التعليمات', icon: 'info', addonType: 'instructions' },
-        en: { label: 'Instructions', icon: 'info', addonType: 'instructions' }
+        ar: { label: '', iconUrl: '', addonType: 'instructions' },
+        en: { label: '', iconUrl: '', addonType: 'instructions' }
     },
     event_details: {
         ar: { showDate: true, showTime: true, showVenue: true },

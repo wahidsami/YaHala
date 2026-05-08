@@ -641,7 +641,13 @@ function PreviewWidget({ widget, context, eventData }) {
         case 'instructions_link':
             return (
                 <div style={style} className="preview-widget map-widget">
-                    <button className="map-btn">📘 {content.label || 'Instructions'}</button>
+                    <button className="instructions-icon-btn">
+                        {content.iconUrl ? (
+                            <img src={resolvePreviewAssetUrl(content.iconUrl)} alt="instructions" style={{ width: `${Number(widget.style?.iconSize || 28)}px`, height: `${Number(widget.style?.iconSize || 28)}px`, objectFit: 'contain' }} />
+                        ) : (
+                            <span style={{ fontSize: `${Number(widget.style?.iconSize || 28)}px`, lineHeight: 1 }}>📘</span>
+                        )}
+                    </button>
                 </div>
             );
 

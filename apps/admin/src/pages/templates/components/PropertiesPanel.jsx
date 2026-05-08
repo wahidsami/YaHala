@@ -925,6 +925,52 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                 <p className="info-text">Logo size is locked to the imported aspect ratio.</p>
                             </>
                         )}
+                        {widget.type === 'instructions_link' && (
+                            <>
+                                <div className="form-group">
+                                    <label>Icon URL</label>
+                                    <input
+                                        type="url"
+                                        value={content.iconUrl || ''}
+                                        onChange={(e) => updateContent('iconUrl', e.target.value)}
+                                        placeholder="https://example.com/icon.png"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Or Upload Icon</label>
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (event) => {
+                                                    updateContent('iconUrl', event.target.result);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                {content.iconUrl && (
+                                    <div className="image-preview logo-preview">
+                                        <img src={content.iconUrl} alt="Instructions icon preview" />
+                                    </div>
+                                )}
+                                <div className="form-group">
+                                    <label>Icon Size (px)</label>
+                                    <input
+                                        type="number"
+                                        min="12"
+                                        max="160"
+                                        value={widget.style?.iconSize || 28}
+                                        onChange={(e) => updateStyle('iconSize', Math.max(12, Math.min(160, parseInt(e.target.value, 10) || 28)))}
+                                    />
+                                </div>
+                                <p className="info-text">This icon auto-links to the event Instructions addon and opens it in public invitation.</p>
+                            </>
+                        )}
                         {widget.type === 'event_details' && (
                             <>
                                 <label className="checkbox-option">
