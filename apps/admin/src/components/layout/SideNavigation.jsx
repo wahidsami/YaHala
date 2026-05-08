@@ -38,6 +38,7 @@ const ADDON_SUB_ITEMS = [
     { id: 'polls', label: 'Polls', path: '/addons/polls' },
     { id: 'questionnaires', label: 'Questionnaires', path: '/addons/questionnaires' },
     { id: 'instructions', label: 'Instructions', path: '/addons/instructions' },
+    { id: 'guestbook', label: 'Guestbook', path: '/addons/guestbook' },
     { id: 'quiz', label: 'Quiz', path: '/addons/quiz' },
     { id: 'files-downloads', label: 'Files & Downloads', path: '/addons/files-downloads' }
 ];

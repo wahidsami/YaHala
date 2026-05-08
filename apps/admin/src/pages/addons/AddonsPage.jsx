@@ -1,42 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BookText, ClipboardList, Download, Eye, HelpCircle, MessageSquare, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, Plus, Search, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import RoleGuard from '../../components/auth/RoleGuard';
 import './AddonsPage.css';
 
-const ADDON_TYPES = [
-    { id: 'polls', label: 'Polls', icon: MessageSquare },
-    { id: 'questionnaires', label: 'Questionnaires', icon: ClipboardList },
-    { id: 'instructions', label: 'Instructions', icon: BookText },
-    { id: 'quiz', label: 'Quiz', icon: HelpCircle },
-    { id: 'files-downloads', label: 'Files & Downloads', icon: Download }
-];
+const ADDON_LABELS = {
+    polls: 'Polls',
+    questionnaires: 'Questionnaires',
+    instructions: 'Instructions',
+    quiz: 'Quiz',
+    'files-downloads': 'Files & Downloads',
+    guestbook: 'Guestbook'
+};
 
 function formatDate(value, lang = 'en') {
     if (!value) return '';
     const locale = lang?.startsWith('ar') ? 'ar-SA' : 'en-US';
     return new Date(value).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function AddonTypeTabs() {
-    const { addonType = 'polls' } = useParams();
-    return (
-        <div className="addons-subnav" role="tablist" aria-label="Addon types">
-            {ADDON_TYPES.map((type) => {
-                const Icon = type.icon;
-                const active = addonType === type.id;
-                return (
-                    <Link key={type.id} to={`/addons/${type.id}`} className={`addons-subnav-btn ${active ? 'active' : ''}`}>
-                        <Icon size={16} />
-                        <span>{type.label}</span>
-                    </Link>
-                );
-            })}
-        </div>
-    );
 }
 
 function AddonListPage() {
@@ -121,21 +104,16 @@ function AddonListPage() {
         });
     }
 
-    const pageTitle = useMemo(() => {
-        const match = ADDON_TYPES.find((type) => type.id === addonType);
-        return match?.label || 'Addons';
-    }, [addonType]);
+    const pageTitle = useMemo(() => ADDON_LABELS[addonType] || 'Addons', [addonType]);
 
     return (
         <div className="addons-page">
             <div className="page-header">
                 <div>
-                    <h1>Add-ons</h1>
-                    <p>Select addon type, then manage records for that type.</p>
+                    <h1>{pageTitle}</h1>
+                    <p>Manage {pageTitle.toLowerCase()} records for this addon only.</p>
                 </div>
             </div>
-
-            <AddonTypeTabs />
 
             <section className="addon-list-shell">
                 <div className="addon-list-header">
@@ -273,12 +251,10 @@ function AddonEditorShell() {
             <div className="page-header addon-editor-top">
                 <div>
                     <button type="button" className="back-link" onClick={() => navigate(`/addons/${addonType}`)}>Back</button>
-                    <h1>{isNew ? `New ${addonType}` : `Edit ${addonType}`}</h1>
+                    <h1>{isNew ? `New ${ADDON_LABELS[addonType] || addonType}` : `Edit ${ADDON_LABELS[addonType] || addonType}`}</h1>
                 </div>
                 <button type="button" className="btn btn-primary">Save</button>
             </div>
-
-            <AddonTypeTabs />
 
             <section className="addon-editor-shell">
                 <div className="addon-editor-form-grid">
