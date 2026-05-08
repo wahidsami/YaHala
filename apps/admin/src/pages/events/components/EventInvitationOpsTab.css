@@ -50,6 +50,10 @@
     margin-top: 0.4rem;
 }
 
+.ops-card--wide {
+    grid-column: span 2;
+}
+
 .invitation-ops-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -155,8 +159,45 @@
     font-size: 0.78rem;
 }
 
+.ops-rsvp-table-wrap {
+    margin-top: 0.75rem;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+}
+
+.ops-rsvp-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+
+.ops-rsvp-table th,
+.ops-rsvp-table td {
+    text-align: left;
+    padding: 0.6rem 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.ops-rsvp-table thead th {
+    background: color-mix(in srgb, var(--color-primary) 6%, #fff);
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.ops-rsvp-sub {
+    margin-top: 0.2rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
 @media (max-width: 900px) {
     .invitation-ops-grid {
         grid-template-columns: 1fr;
+    }
+
+    .ops-card--wide {
+        grid-column: auto;
     }
 }

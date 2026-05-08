@@ -1012,6 +1012,86 @@ router.post('/:id/send-invitations/trace', requirePermission('events.edit'), asy
     }
 });
 
+// GET /api/admin/events/:id/rsvp-responses
+router.get('/:id/rsvp-responses', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { rows: eventRows } = await pool.query(
+            `
+            SELECT id, primary_invitation_project_id
+            FROM events
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [eventId]
+        );
+
+        if (!eventRows.length) {
+            throw new AppError('Event not found', 404, 'NOT_FOUND');
+        }
+
+        const projectId = eventRows[0].primary_invitation_project_id || null;
+        if (!projectId) {
+            return res.json({ data: { rows: [], totals: { total: 0, attending: 0, maybe: 0, notAttending: 0 } } });
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT
+                r.id AS recipient_id,
+                COALESCE(r.display_name, cg.name, '') AS guest_name,
+                r.email,
+                r.phone,
+                r.whatsapp_number,
+                r.responded_at,
+                ir.response_data
+            FROM invitation_recipients r
+            LEFT JOIN client_guests cg ON cg.id = r.client_guest_id
+            LEFT JOIN invitation_module_responses ir
+                ON ir.recipient_id = r.id
+               AND ir.project_id = r.project_id
+               AND ir.response_status = 'submitted'
+            LEFT JOIN invitation_modules m
+                ON m.id = ir.module_id
+               AND m.module_type = 'rsvp'
+            WHERE r.project_id = $1
+            ORDER BY COALESCE(r.responded_at, r.updated_at, r.created_at) DESC
+            `,
+            [projectId]
+        );
+
+        const normalized = rows.map((row) => {
+            const responseData = safeJson(row.response_data, {});
+            return {
+                recipientId: row.recipient_id,
+                guestName: row.guest_name || '-',
+                email: row.email || '',
+                phone: row.phone || row.whatsapp_number || '',
+                attendance: responseData.attendance || null,
+                notes: responseData.notes || '',
+                respondedAt: row.responded_at
+            };
+        });
+
+        const totals = normalized.reduce((accumulator, row) => {
+            if (!row.attendance) return accumulator;
+            accumulator.total += 1;
+            if (row.attendance === 'attending') accumulator.attending += 1;
+            if (row.attendance === 'maybe') accumulator.maybe += 1;
+            if (row.attendance === 'not_attending') accumulator.notAttending += 1;
+            return accumulator;
+        }, { total: 0, attending: 0, maybe: 0, notAttending: 0 });
+
+        res.json({ data: { rows: normalized, totals } });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // GET /api/admin/events/:id/invitation-summary
 router.get('/:id/invitation-summary', requirePermission('events.view'), async (req, res, next) => {
     try {

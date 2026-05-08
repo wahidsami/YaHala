@@ -32,6 +32,7 @@ export default function EventInvitationOpsTab({ event }) {
     const [addons, setAddons] = useState(null);
     const [questionnaires, setQuestionnaires] = useState(null);
     const [sendResult, setSendResult] = useState(null);
+    const [rsvpResponses, setRsvpResponses] = useState({ rows: [], totals: { total: 0, attending: 0, maybe: 0, notAttending: 0 } });
     const [traceResult, setTraceResult] = useState(null);
     const [tracing, setTracing] = useState(false);
     const [scheduleMode, setScheduleMode] = useState('now');
@@ -46,17 +47,19 @@ export default function EventInvitationOpsTab({ event }) {
         setError('');
 
         try {
-            const [summaryResponse, attendanceResponse, addonsResponse, questionnaireResponse] = await Promise.all([
+            const [summaryResponse, attendanceResponse, addonsResponse, questionnaireResponse, rsvpResponse] = await Promise.all([
                 api.get(`/admin/events/${event.id}/invitation-summary`),
                 api.get(`/admin/events/${event.id}/attendance-summary`),
                 api.get(`/admin/events/${event.id}/addons-summary`),
-                api.get(`/admin/events/${event.id}/questionnaire-summary`)
+                api.get(`/admin/events/${event.id}/questionnaire-summary`),
+                api.get(`/admin/events/${event.id}/rsvp-responses`)
             ]);
 
             setSummary(summaryResponse.data?.data || null);
             setAttendance(attendanceResponse.data?.data || null);
             setAddons(addonsResponse.data?.data || null);
             setQuestionnaires(questionnaireResponse.data?.data || null);
+            setRsvpResponses(rsvpResponse.data?.data || { rows: [], totals: { total: 0, attending: 0, maybe: 0, notAttending: 0 } });
         } catch (loadError) {
             console.error('Failed to load invitation operations summary:', loadError);
             setError(loadError.response?.data?.message || t('events.invitationOps.loadFailed'));
@@ -148,6 +151,10 @@ export default function EventInvitationOpsTab({ event }) {
         return <div className="invitation-ops-loading">{t('common.loading')}</div>;
     }
 
+    const rsvpData = rsvpResponses || { rows: [], totals: {} };
+    const responseRows = Array.isArray(rsvpData.rows) ? rsvpData.rows : [];
+    const responseTotals = rsvpData.totals || {};
+
     return (
         <div className="invitation-ops-tab">
             <div className="invitation-ops-header">
@@ -176,6 +183,10 @@ export default function EventInvitationOpsTab({ event }) {
                 <article className="ops-kpi-card">
                     <span>{t('events.invitationOps.failed')}</span>
                     <strong>{summary?.totals?.failed || 0}</strong>
+                </article>
+                <article className="ops-kpi-card">
+                    <span>RSVP responses</span>
+                    <strong>{responseTotals.total || 0}</strong>
                 </article>
                 <article className="ops-kpi-card">
                     <span>{t('events.invitationOps.checkedIn')}</span>
@@ -314,6 +325,48 @@ export default function EventInvitationOpsTab({ event }) {
                             <span>Questionnaire submissions</span>
                             <strong>{questionnaires?.totals?.totalSubmissions || 0}</strong>
                         </div>
+                    </div>
+                </section>
+
+                <section className="ops-card ops-card--wide">
+                    <div className="ops-card-header">
+                        <h4>RSVP Responses</h4>
+                        <Users size={16} />
+                    </div>
+                    <div className="ops-metrics-list">
+                        <div><span>Attending</span><strong>{responseTotals.attending || 0}</strong></div>
+                        <div><span>Maybe</span><strong>{responseTotals.maybe || 0}</strong></div>
+                        <div><span>Not attending</span><strong>{responseTotals.notAttending || 0}</strong></div>
+                        <div><span>Total responses</span><strong>{responseTotals.total || 0}</strong></div>
+                    </div>
+                    <div className="ops-rsvp-table-wrap">
+                        <table className="ops-rsvp-table">
+                            <thead>
+                                <tr>
+                                    <th>Guest</th>
+                                    <th>Attendance</th>
+                                    <th>Reason/Notes</th>
+                                    <th>Responded at</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {responseRows.length ? responseRows.map((row) => (
+                                    <tr key={row.recipientId}>
+                                        <td>
+                                            <strong>{row.guestName || '-'}</strong>
+                                            <div className="ops-rsvp-sub">{row.email || row.phone || '-'}</div>
+                                        </td>
+                                        <td>{row.attendance || '-'}</td>
+                                        <td>{row.notes || '-'}</td>
+                                        <td>{formatTimestamp(row.respondedAt, locale)}</td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={4}>No RSVP responses yet.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </section>
             </div>
