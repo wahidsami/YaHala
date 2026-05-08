@@ -82,7 +82,7 @@ function resolveStorageUrl(storagePath) {
 }
 
 function getWidgetContent(widget, language) {
-    return widget?.content?.[language] || widget?.content?.ar || widget?.content?.en || {};
+    return widget?.content?.[language] || widget?.content?.ar || widget?.content?.en || widget?.content || {};
 }
 
 function resolveQrTheme(widget, content) {
@@ -259,7 +259,8 @@ export function InvitationWidgetPreview({
     rsvpCompleted = false,
     onOpenRsvp,
     qrSlotActions = [],
-    onOpenAddon
+    onOpenAddon,
+    addonLaunchTargets = {}
 }) {
     const content = getWidgetContent(widget, language);
     const isLogoWidget = widget.type === 'logo';
@@ -438,6 +439,31 @@ export function InvitationWidgetPreview({
                     <button className="map-btn" type="button">📍 Open Location Map</button>
                 </div>
             );
+        case 'instructions_link': {
+            const addonType = `${content.addonType || 'instructions'}`.toLowerCase();
+            const target = addonLaunchTargets?.[addonType] || null;
+            const isPublic = mode === 'public';
+            const hasTarget = Boolean(target?.pageKey);
+            const disabled = isPublic ? (!hasTarget || target?.disabled) : true;
+            const label = content.label || localizedText(language, 'Instructions', 'التعليمات');
+
+            return (
+                <div style={style} className="preview-widget map-widget">
+                    <button
+                        className="map-btn"
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => {
+                            if (isPublic && hasTarget && !target?.disabled) {
+                                onOpenAddon?.(target.pageKey);
+                            }
+                        }}
+                    >
+                        📘 {label}
+                    </button>
+                </div>
+            );
+        }
         default:
             return (
                 <div style={style} className="preview-widget unknown">
@@ -456,6 +482,7 @@ export default function InvitationCanvasRenderer({
     onOpenRsvp,
     onOpenAddon,
     qrSlotActions = [],
+    addonLaunchTargets = {},
     minCanvasHeight = 0
 }) {
     const coverTemplate = project.cover_template_snapshot || project.cover_template?.design_data;
@@ -513,6 +540,7 @@ export default function InvitationCanvasRenderer({
                                 onOpenRsvp={onOpenRsvp}
                                 onOpenAddon={onOpenAddon}
                                 qrSlotActions={qrSlotActions}
+                                addonLaunchTargets={addonLaunchTargets}
                                 mode="public"
                             />
                         </div>

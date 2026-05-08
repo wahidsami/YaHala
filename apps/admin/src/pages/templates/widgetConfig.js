@@ -4,6 +4,7 @@ export const WIDGET_TYPES = [
     { type: 'text', label: 'Text Block', icon: 'Type', category: 'content' },
     { type: 'image', label: 'Image', icon: 'Image', category: 'content' },
     { type: 'logo', label: 'Entity Logo', icon: 'Shield', category: 'content' },
+    { type: 'instructions_link', label: 'Instructions Link', icon: 'BookOpen', category: 'content' },
     { type: 'event_details', label: 'Event Details', icon: 'Calendar', category: 'event' },
     { type: 'qr_code', label: 'QR Code', icon: 'QrCode', category: 'event' },
     { type: 'guest_name', label: 'Guest Name', icon: 'User', category: 'guest' }
@@ -27,6 +28,10 @@ export const DEFAULT_WIDGET_CONTENT = {
     logo: {
         ar: { alt: 'Logo' },
         en: { alt: 'Logo' }
+    },
+    instructions_link: {
+        ar: { label: 'التعليمات', icon: 'info', addonType: 'instructions' },
+        en: { label: 'Instructions', icon: 'info', addonType: 'instructions' }
     },
     event_details: {
         ar: { showDate: true, showTime: true, showVenue: true },

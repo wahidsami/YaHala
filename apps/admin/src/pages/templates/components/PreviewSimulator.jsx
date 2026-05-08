@@ -493,7 +493,7 @@ function getGuestPosition(content) {
 }
 
 function PreviewWidget({ widget, context, eventData }) {
-    const content = widget.content?.[context.language] || widget.content?.ar || {};
+    const content = widget.content?.[context.language] || widget.content?.ar || widget.content?.en || widget.content || {};
     const isLogoWidget = widget.type === 'logo';
     const style = {
         textAlign: widget.style?.textAlign,
@@ -636,6 +636,12 @@ function PreviewWidget({ widget, context, eventData }) {
             return (
                 <div style={style} className="preview-widget map-widget">
                     <button className="map-btn">📍 Open Location Map</button>
+                </div>
+            );
+        case 'instructions_link':
+            return (
+                <div style={style} className="preview-widget map-widget">
+                    <button className="map-btn">📘 {content.label || 'Instructions'}</button>
                 </div>
             );
 

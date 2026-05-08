@@ -1340,6 +1340,22 @@ export default function PublicInvitationPage() {
     const topIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'top');
     const bottomIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'bottom');
     const qrSlotPages = interactivePages.filter((page) => Boolean(page?._runtime?.replaceQrSlot) || page?._runtime?.position === 'qr_slot');
+    const addonLaunchTargets = useMemo(() => {
+        const targets = {};
+        for (const page of interactivePages) {
+            if (!page?.page_type || targets[page.page_type]) {
+                continue;
+            }
+            const runtime = page?._runtime || {};
+            const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
+            const disabled = runtime.disableAfterSubmission !== false && completed;
+            targets[page.page_type] = {
+                pageKey: page.page_key,
+                disabled
+            };
+        }
+        return targets;
+    }, [interactivePages, completedAddonPages]);
     const copy = COPY[activeLanguage];
     const coverLayout = useMemo(() => normalizeLayout(invitation?.project?.cover_template_snapshot?.layout || invitation?.project?.cover_template?.design_data?.layout || {}), [invitation?.project?.cover_template_snapshot?.layout, invitation?.project?.cover_template?.design_data?.layout]);
     const canvasBaseWidth = 360;
@@ -1452,6 +1468,7 @@ export default function PublicInvitationPage() {
                             hasRsvpPage={hasRsvpPage}
                             rsvpCompleted={rsvpCompleted}
                             onOpenAddon={(pageKey) => setActivePageKey(pageKey)}
+                            addonLaunchTargets={addonLaunchTargets}
                             qrSlotActions={qrSlotPages.map((page) => {
                                 const runtime = page?._runtime || {};
                                 const disableAfterSubmission = runtime.disableAfterSubmission !== false;
