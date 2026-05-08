@@ -75,6 +75,50 @@ function normalizeInvitationSetupTabs(tabs) {
     });
 }
 
+function clampText(value, maxLength = 240) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    return value.trim().slice(0, maxLength);
+}
+
+function normalizeRsvpGateConfig(input) {
+    const source = safeJson(input, {});
+    const style = safeJson(source.style, {});
+    const copy = safeJson(source.copy, {});
+    const behavior = safeJson(source.behavior, {});
+    const normalizeCopy = (bucket = {}) => ({
+        attendanceTitle: clampText(bucket.attendanceTitle, 120),
+        attendanceBody: clampText(bucket.attendanceBody, 280),
+        reasonLabel: clampText(bucket.reasonLabel, 120),
+        reasonPlaceholder: clampText(bucket.reasonPlaceholder, 180),
+        positiveTitle: clampText(bucket.positiveTitle, 120),
+        positiveBody: clampText(bucket.positiveBody, 280),
+        positiveButton: clampText(bucket.positiveButton, 60),
+        negativeTitle: clampText(bucket.negativeTitle, 120),
+        negativeBody: clampText(bucket.negativeBody, 280),
+        negativeButton: clampText(bucket.negativeButton, 60)
+    });
+
+    return {
+        enabled: Boolean(source.enabled),
+        style: {
+            variant: ['minimal', 'card', 'brand'].includes(style.variant) ? style.variant : 'brand',
+            primaryColor: typeof style.primaryColor === 'string' ? style.primaryColor : '#946FA7',
+            secondaryColor: typeof style.secondaryColor === 'string' ? style.secondaryColor : '#FF9D00',
+            icon: typeof style.icon === 'string' ? style.icon : 'sparkles'
+        },
+        copy: {
+            en: normalizeCopy(safeJson(copy.en, {})),
+            ar: normalizeCopy(safeJson(copy.ar, {}))
+        },
+        behavior: {
+            showReasonOnNo: behavior.showReasonOnNo !== false,
+            requireReasonOnNo: Boolean(behavior.requireReasonOnNo)
+        }
+    };
+}
+
 async function fetchPollSnapshot(db, pollId, clientId, eventId) {
     const { rows: polls } = await db.query(
         `
@@ -656,6 +700,7 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
         const currentSettings = safeJson(existing.settings, {});
         const hasTemplateId = Object.prototype.hasOwnProperty.call(req.body, 'templateId');
         const hasInvitationSetup = Object.prototype.hasOwnProperty.call(req.body, 'invitationSetup');
+        const hasRsvpGate = Object.prototype.hasOwnProperty.call(req.body, 'rsvpGate');
 
         let nextSettings = { ...currentSettings };
         const hasAddIns = Object.prototype.hasOwnProperty.call(req.body, 'addIns');
@@ -758,6 +803,10 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
                 ...existingSetup,
                 tabs: existingTabs.filter((tab) => enabledAddIns.has(tab?.type))
             };
+        }
+
+        if (hasRsvpGate) {
+            nextSettings.rsvp_gate = normalizeRsvpGateConfig(req.body.rsvpGate);
         }
 
         const nextTemplateId = hasTemplateId

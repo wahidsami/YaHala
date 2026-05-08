@@ -18,9 +18,41 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
     const [success, setSuccess] = useState('');
     const [templateId, setTemplateId] = useState('');
     const [addonsSummary, setAddonsSummary] = useState(null);
+    const [rsvpGate, setRsvpGate] = useState({
+        enabled: false,
+        behavior: { showReasonOnNo: true, requireReasonOnNo: false },
+        copy: {
+            en: { attendanceTitle: '', positiveTitle: '', positiveBody: '', negativeTitle: '', negativeBody: '' },
+            ar: { attendanceTitle: '', positiveTitle: '', positiveBody: '', negativeTitle: '', negativeBody: '' }
+        }
+    });
 
     useEffect(() => {
         setTemplateId(event?.settings?.invitation_setup?.templateId || event?.template_id || '');
+        const existingGate = event?.settings?.rsvp_gate || {};
+        setRsvpGate({
+            enabled: Boolean(existingGate.enabled),
+            behavior: {
+                showReasonOnNo: existingGate?.behavior?.showReasonOnNo !== false,
+                requireReasonOnNo: Boolean(existingGate?.behavior?.requireReasonOnNo)
+            },
+            copy: {
+                en: {
+                    attendanceTitle: existingGate?.copy?.en?.attendanceTitle || '',
+                    positiveTitle: existingGate?.copy?.en?.positiveTitle || '',
+                    positiveBody: existingGate?.copy?.en?.positiveBody || '',
+                    negativeTitle: existingGate?.copy?.en?.negativeTitle || '',
+                    negativeBody: existingGate?.copy?.en?.negativeBody || ''
+                },
+                ar: {
+                    attendanceTitle: existingGate?.copy?.ar?.attendanceTitle || '',
+                    positiveTitle: existingGate?.copy?.ar?.positiveTitle || '',
+                    positiveBody: existingGate?.copy?.ar?.positiveBody || '',
+                    negativeTitle: existingGate?.copy?.ar?.negativeTitle || '',
+                    negativeBody: existingGate?.copy?.ar?.negativeBody || ''
+                }
+            }
+        });
     }, [event?.id, event?.template_id, event?.settings?.invitation_setup?.templateId]);
 
     useEffect(() => {
@@ -63,9 +95,13 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
             {
                 label: 'Card tabs linked',
                 done: tabs.length > 0
+            },
+            {
+                label: 'RSVP gate configured',
+                done: Boolean(rsvpGate.enabled)
             }
         ];
-    }, [addonsSummary, t, templateId]);
+    }, [addonsSummary, rsvpGate.enabled, t, templateId]);
 
     async function saveInvitationSetup() {
         setSaving(true);
@@ -73,7 +109,8 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
         setSuccess('');
         try {
             await api.patch(`/admin/events/${event.id}/invitation-setup`, {
-                templateId: templateId || null
+                templateId: templateId || null,
+                rsvpGate
             });
             setSuccess(t('events.invitationSetup.saved'));
             await onUpdated?.();
@@ -179,6 +216,96 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                             and control which tabs appear on the invitation card.
                         </p>
                         <p className="event-addons-empty">Switch to the Add-ons tab above to manage these links.</p>
+                    </div>
+                </section>
+
+                <section className="setup-card setup-card--wide">
+                    <div className="section-header">
+                        <div>
+                            <h3>RSVP Gate</h3>
+                            <p>Configure the first-open RSVP popup for the public invitation card.</p>
+                        </div>
+                    </div>
+
+                    <label className="addon-toggle-item">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(rsvpGate.enabled)}
+                            onChange={(eventParam) => setRsvpGate((prev) => ({ ...prev, enabled: eventParam.target.checked }))}
+                        />
+                        <span>Enable RSVP gate popup</span>
+                    </label>
+
+                    <div className="rsvp-gate-grid">
+                        <div className="form-group">
+                            <label>EN Attendance title</label>
+                            <input
+                                type="text"
+                                value={rsvpGate.copy.en.attendanceTitle}
+                                onChange={(eventParam) => setRsvpGate((prev) => ({
+                                    ...prev,
+                                    copy: { ...prev.copy, en: { ...prev.copy.en, attendanceTitle: eventParam.target.value } }
+                                }))}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>AR Attendance title</label>
+                            <input
+                                type="text"
+                                value={rsvpGate.copy.ar.attendanceTitle}
+                                onChange={(eventParam) => setRsvpGate((prev) => ({
+                                    ...prev,
+                                    copy: { ...prev.copy, ar: { ...prev.copy.ar, attendanceTitle: eventParam.target.value } }
+                                }))}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>EN Positive message</label>
+                            <textarea
+                                rows={2}
+                                value={rsvpGate.copy.en.positiveBody}
+                                onChange={(eventParam) => setRsvpGate((prev) => ({
+                                    ...prev,
+                                    copy: { ...prev.copy, en: { ...prev.copy.en, positiveBody: eventParam.target.value } }
+                                }))}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>AR Positive message</label>
+                            <textarea
+                                rows={2}
+                                value={rsvpGate.copy.ar.positiveBody}
+                                onChange={(eventParam) => setRsvpGate((prev) => ({
+                                    ...prev,
+                                    copy: { ...prev.copy, ar: { ...prev.copy.ar, positiveBody: eventParam.target.value } }
+                                }))}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="addon-toggle-row">
+                        <label className="addon-toggle-item">
+                            <input
+                                type="checkbox"
+                                checked={Boolean(rsvpGate.behavior.showReasonOnNo)}
+                                onChange={(eventParam) => setRsvpGate((prev) => ({
+                                    ...prev,
+                                    behavior: { ...prev.behavior, showReasonOnNo: eventParam.target.checked }
+                                }))}
+                            />
+                            <span>Ask reason when guest selects No</span>
+                        </label>
+                        <label className="addon-toggle-item">
+                            <input
+                                type="checkbox"
+                                checked={Boolean(rsvpGate.behavior.requireReasonOnNo)}
+                                onChange={(eventParam) => setRsvpGate((prev) => ({
+                                    ...prev,
+                                    behavior: { ...prev.behavior, requireReasonOnNo: eventParam.target.checked }
+                                }))}
+                            />
+                            <span>Require reason on No</span>
+                        </label>
                     </div>
                 </section>
             </div>

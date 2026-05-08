@@ -280,6 +280,13 @@
     justify-content: flex-end;
 }
 
+.rsvp-gate-grid {
+    margin-top: 0.9rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
 @media (max-width: 1100px) {
     .invitation-setup-grid {
         grid-template-columns: 1fr;
@@ -310,6 +317,10 @@
     }
 
     .setup-checklist-list {
+        grid-template-columns: 1fr;
+    }
+
+    .rsvp-gate-grid {
         grid-template-columns: 1fr;
     }
 }
