@@ -217,13 +217,15 @@
     justify-content: center;
     align-items: flex-start;
     padding: 12px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .guest-fit-shell {
     position: relative;
     flex: 0 0 auto;
     overflow: hidden;
+    max-width: 100%;
 }
 
 .guest-fit-stage {
@@ -1165,6 +1167,15 @@
 @media (max-width: 720px) {
     .public-invitation-shell {
         padding: 18px;
+    }
+
+    .public-guest-page {
+        padding: 12px 8px 24px;
+    }
+
+    .guest-invitation-view {
+        min-height: calc(100vh - 24px);
+        padding: 8px 4px;
     }
 
     .public-topbar {

@@ -1236,16 +1236,14 @@ export default function PublicInvitationPage() {
     const canvasHeight = computeEffectiveCanvasHeight(coverLayout, coverWidgets);
     const fitScale = useMemo(() => {
         const viewportWidth = guestViewport.width || 0;
-        const viewportHeight = guestViewport.height || 0;
 
-        if (!viewportWidth || !viewportHeight) {
+        if (!viewportWidth) {
             return 1;
         }
 
         const horizontalScale = (viewportWidth - 16) / canvasBaseWidth;
-        const verticalScale = (viewportHeight - 16) / canvasHeight;
-        return Math.min(1, horizontalScale, verticalScale);
-    }, [canvasHeight, guestViewport.height, guestViewport.width]);
+        return Math.min(1, horizontalScale);
+    }, [guestViewport.width]);
     const scaledWidth = canvasBaseWidth * fitScale;
     const scaledHeight = canvasHeight * fitScale;
 
