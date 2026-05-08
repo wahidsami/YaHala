@@ -53,7 +53,7 @@ export default function EventGuestsTab({ event }) {
     }, [event?.id, filters.status]);
 
     const allSelectableIds = useMemo(
-        () => guests.filter((guest) => !guest.is_assigned).map((guest) => guest.id),
+        () => guests.map((guest) => guest.id),
         [guests]
     );
 
@@ -182,7 +182,6 @@ export default function EventGuestsTab({ event }) {
                                             <input
                                                 type="checkbox"
                                                 checked={checked}
-                                                disabled={isAssigned}
                                                 onChange={(e) => toggleGuest(guest.id, e.target.checked)}
                                             />
                                         </td>

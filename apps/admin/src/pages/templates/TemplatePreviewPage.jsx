@@ -96,7 +96,13 @@ export default function TemplatePreviewPage() {
                 <button
                     type="button"
                     className="template-preview-page__back"
-                    onClick={() => navigate(id && id !== 'new' ? `/templates/${id}` : '/templates/new')}
+                    onClick={() => {
+                        if (window.history.length > 1) {
+                            navigate(-1);
+                            return;
+                        }
+                        navigate(id && id !== 'new' ? `/templates/${id}` : '/templates/new');
+                    }}
                 >
                     <ArrowLeft size={18} />
                     <span>Back to editor</span>
