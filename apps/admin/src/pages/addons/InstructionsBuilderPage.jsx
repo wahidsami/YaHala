@@ -458,7 +458,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         if (widget.type === 'item_block') {
             const text = activeLanguage === 'ar' ? (widget.content.textAr || widget.content.text) : (widget.content.text || widget.content.textAr);
             const dir = direction;
-            const iconRight = dir === 'rtl';
+            const isRTL = dir === 'rtl';
             const showBox = widget.style.blockMode === 'boxed';
             return (
                 <div className="instruction-widget-content item-block" style={{
@@ -471,14 +471,13 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     textDecoration: widget.style.underline ? 'underline' : 'none',
                     color: widget.style.color,
                     direction: dir,
-                    flexDirection: 'row'
+                    flexDirection: isRTL ? 'row-reverse' : 'row'
                 }}>
                     <span
                         className="item-block-icon"
                         style={{
                             color: widget.style.iconColor,
-                            fontSize: `${widget.style.iconSize || 24}px`,
-                            order: iconRight ? 2 : 1
+                            fontSize: `${widget.style.iconSize || 24}px`
                         }}
                     >
                         {widget.content.useIconImage && widget.content.iconImage
@@ -488,7 +487,6 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     <span
                         className="item-block-text"
                         style={{
-                            order: iconRight ? 1 : 2,
                             alignItems:
                                 widget.style.textVerticalAlign === 'top'
                                     ? 'flex-start'
