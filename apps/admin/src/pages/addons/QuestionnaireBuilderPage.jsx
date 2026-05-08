@@ -242,7 +242,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
             } else {
                 await api.post('/admin/questionnaires', payload);
             }
-            navigate('/addons');
+            navigate('/addons/questionnaires');
         } catch (saveError) {
             setError(saveError.response?.data?.message || 'Failed to save questionnaire.');
         } finally {
@@ -256,7 +256,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
         <div className="questionnaire-builder-page">
             <div className="page-header">
                 <div>
-                    <button type="button" className="back-link" onClick={() => navigate('/addons')}>
+                    <button type="button" className="back-link" onClick={() => navigate('/addons/questionnaires')}>
                         <ArrowLeft size={18} />
                         <span>Back to Addons</span>
                     </button>

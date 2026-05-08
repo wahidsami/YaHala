@@ -389,7 +389,7 @@ export default function PollBuilderPage({ mode = 'create', initialData = {} }) {
                 await api.post('/admin/polls', payload);
             }
 
-            navigate('/addons');
+            navigate('/addons/polls');
         } catch (saveError) {
             setError(saveError.response?.data?.message || t('addons.pollBuilder.failedToSave'));
         } finally {
@@ -421,7 +421,7 @@ export default function PollBuilderPage({ mode = 'create', initialData = {} }) {
         <div className="poll-builder-page">
             <div className="page-header">
                 <div>
-                    <button type="button" className="back-link" onClick={() => navigate('/addons')}>
+                    <button type="button" className="back-link" onClick={() => navigate('/addons/polls')}>
                         <ArrowLeft size={18} />
                         <span>{t('addons.pollBuilder.backToAddons')}</span>
                     </button>

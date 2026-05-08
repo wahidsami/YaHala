@@ -1,115 +1,104 @@
 .addons-page {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-}
-
-.addons-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1rem;
 }
 
-.addon-stat-card {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 248, 251, 0.98));
+.addons-subnav {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.addons-subnav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
     border: 1px solid var(--border-color, #d7deea);
-    border-radius: 18px;
-    padding: 1.25rem;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+    background: #fff;
+    color: var(--text-color, #0f172a);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.addons-subnav-btn.active {
+    border-color: rgba(15, 118, 110, 0.45);
+    box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
+    color: #0f766e;
+}
+
+.addon-list-shell,
+.addon-editor-shell {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--border-color, #d7deea);
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.04);
+}
+
+.addon-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.addon-list-header h2 {
+    margin: 0;
+}
+
+.addon-list-header p {
+    margin: 0.2rem 0 0;
+    color: var(--muted-text, #64748b);
+}
+
+.addon-editor-top {
+    align-items: center;
+}
+
+.addon-editor-form-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 1rem;
+}
+
+.addon-editor-form-grid label {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
 }
 
-.addon-stat-card.tone-primary {
-    border-color: rgba(148, 111, 167, 0.25);
-}
-
-.addon-stat-card.tone-success {
-    border-color: rgba(22, 163, 74, 0.2);
-}
-
-.addon-stat-card.tone-warning {
-    border-color: rgba(249, 115, 22, 0.22);
-}
-
-.addon-stat-card.tone-accent {
-    border-color: rgba(59, 130, 246, 0.2);
-}
-
-.addon-stat-value {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--text-color, #0f172a);
-}
-
-.addon-stat-title {
+.addon-editor-form-grid span {
+    font-size: 0.85rem;
     color: var(--muted-text, #64748b);
-    font-size: 0.95rem;
 }
 
-.addons-tabs {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.75rem;
-}
-
-.addons-tabs button {
+.addon-editor-form-grid input,
+.addon-editor-form-grid select {
+    width: 100%;
     border: 1px solid var(--border-color, #d7deea);
-    background: rgba(255, 255, 255, 0.72);
-    color: var(--text-color, #0f172a);
-    border-radius: 16px;
-    min-height: 54px;
-    padding: 0.75rem 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    font-weight: 700;
-    transition: all 0.2s ease;
+    border-radius: 10px;
+    padding: 0.6rem 0.7rem;
 }
 
-.addons-tabs button.active {
-    border-color: rgba(148, 111, 167, 0.45);
-    color: #946fa7;
-    box-shadow: 0 8px 24px rgba(148, 111, 167, 0.12);
-    transform: translateY(-1px);
+.addon-editor-placeholder {
+    border: 1px dashed var(--border-color, #d7deea);
+    border-radius: 12px;
+    padding: 1rem;
+    background: #f8fafc;
 }
 
-.addon-tab-panel {
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid var(--border-color, #d7deea);
-    border-radius: 24px;
-    padding: 1.25rem;
-    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+.addon-editor-placeholder h3 {
+    margin: 0;
 }
 
-.placeholder-panel {
-    min-height: 320px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    text-align: center;
+.addon-editor-placeholder p {
+    margin: 0.5rem 0 0;
     color: var(--muted-text, #64748b);
-}
-
-.poll-name-cell,
-.table-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-}
-
-.poll-name-cell span {
-    color: var(--muted-text, #64748b);
-    font-size: 0.9rem;
-}
-
-.select-column {
-    width: 48px;
-    text-align: center;
 }
 
 .status-badge.status-draft {
@@ -132,23 +121,13 @@
     color: #64748b;
 }
 
-@media (max-width: 1200px) {
-    .addons-stats-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .addons-tabs {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 768px) {
-    .addons-stats-grid,
-    .addons-tabs {
+@media (max-width: 900px) {
+    .addon-editor-form-grid {
         grid-template-columns: 1fr;
     }
 
-    .addon-stat-value {
-        font-size: 1.7rem;
+    .addon-list-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

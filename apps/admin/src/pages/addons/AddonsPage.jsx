@@ -1,562 +1,314 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, Edit, Plus, Power, Search, Trash2, Layers3, MessageSquare, ClipboardList, HelpCircle, BookText, Download } from 'lucide-react';
+import { BookText, ClipboardList, Download, Eye, HelpCircle, MessageSquare, Plus, Search, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import RoleGuard from '../../components/auth/RoleGuard';
 import './AddonsPage.css';
 
-const ADDON_TABS = [
-    { id: 'poll', labelKey: 'addons.pollTab', icon: MessageSquare },
-    { id: 'questionnaire', labelKey: 'addons.questionnaireTab', icon: ClipboardList },
-    { id: 'quiz', labelKey: 'addons.quizTab', icon: HelpCircle },
-    { id: 'instructions', labelKey: 'addons.instructionsTab', icon: BookText },
-    { id: 'files_downloads', labelKey: 'addons.filesDownloadsTab', icon: Download }
+const ADDON_TYPES = [
+    { id: 'polls', label: 'Polls', icon: MessageSquare },
+    { id: 'questionnaires', label: 'Questionnaires', icon: ClipboardList },
+    { id: 'instructions', label: 'Instructions', icon: BookText },
+    { id: 'quiz', label: 'Quiz', icon: HelpCircle },
+    { id: 'files-downloads', label: 'Files & Downloads', icon: Download }
 ];
 
-function localizedText(i18n, primary, secondary) {
-    return i18n.language?.startsWith('ar') ? (secondary || primary || '') : (primary || secondary || '');
+function formatDate(value, lang = 'en') {
+    if (!value) return '';
+    const locale = lang?.startsWith('ar') ? 'ar-SA' : 'en-US';
+    return new Date(value).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function formatDate(i18n, value) {
-    if (!value) {
-        return '';
-    }
-
-    const locale = i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US';
-    return new Date(value).toLocaleDateString(locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function StatCard({ title, value, tone = 'default' }) {
+function AddonTypeTabs() {
+    const { addonType = 'polls' } = useParams();
     return (
-        <div className={`addon-stat-card tone-${tone}`}>
-            <span className="addon-stat-value">{value}</span>
-            <span className="addon-stat-title">{title}</span>
+        <div className="addons-subnav" role="tablist" aria-label="Addon types">
+            {ADDON_TYPES.map((type) => {
+                const Icon = type.icon;
+                const active = addonType === type.id;
+                return (
+                    <Link key={type.id} to={`/addons/${type.id}`} className={`addons-subnav-btn ${active ? 'active' : ''}`}>
+                        <Icon size={16} />
+                        <span>{type.label}</span>
+                    </Link>
+                );
+            })}
         </div>
     );
 }
 
-export default function AddonsPage() {
-    const { t, i18n } = useTranslation();
-    const [activeTab, setActiveTab] = useState('poll');
-    const [stats, setStats] = useState(null);
-    const [clients, setClients] = useState([]);
-    const [polls, setPolls] = useState([]);
-    const [questionnaires, setQuestionnaires] = useState([]);
-    const [questionnaireStats, setQuestionnaireStats] = useState(null);
+function AddonListPage() {
+    const { i18n } = useTranslation();
+    const { addonType = 'polls' } = useParams();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0, totalPages: 0 });
-    const [filters, setFilters] = useState({
-        search: '',
-        status: 'all',
-        mode: 'all',
-        clientId: 'all'
-    });
-    const [selectedIds, setSelectedIds] = useState([]);
+    const [items, setItems] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 0 });
+    const [filters, setFilters] = useState({ search: '', status: 'all', clientId: 'all' });
     const [confirmDialog, setConfirmDialog] = useState(null);
-    const [actionBusy, setActionBusy] = useState(null);
+
+    const supportsApi = addonType === 'polls' || addonType === 'questionnaires';
 
     useEffect(() => {
-        fetchStats();
         fetchClients();
     }, []);
 
     useEffect(() => {
-        if (activeTab === 'poll') {
-            fetchPolls();
+        if (supportsApi) {
+            fetchList();
             return;
         }
-        if (activeTab === 'questionnaire') {
-            fetchQuestionnaires();
-        }
-    }, [activeTab, filters, pagination.page]);
-
-    async function fetchStats() {
-        try {
-            const response = await api.get('/admin/polls/stats');
-            setStats(response.data.data);
-        } catch (error) {
-            console.error('Failed to fetch poll stats:', error);
-        }
-    }
+        setItems([]);
+        setPagination((prev) => ({ ...prev, total: 0, totalPages: 0 }));
+        setLoading(false);
+    }, [addonType, filters, pagination.page]);
 
     async function fetchClients() {
         try {
             const response = await api.get('/admin/clients?pageSize=200&status=active');
             setClients(response.data.data || []);
         } catch (error) {
-            console.error('Failed to fetch clients for addons:', error);
+            console.error('Failed to fetch clients:', error);
         }
     }
 
-    async function fetchPolls() {
+    async function fetchList() {
         setLoading(true);
         try {
             const params = new URLSearchParams({
-                page: pagination.page,
-                pageSize: pagination.pageSize,
-                ...(filters.search && { search: filters.search }),
-                ...(filters.status !== 'all' && { status: filters.status }),
-                ...(filters.mode !== 'all' && { mode: filters.mode }),
-                ...(filters.clientId !== 'all' && { clientId: filters.clientId })
+                page: String(pagination.page),
+                pageSize: String(pagination.pageSize),
+                ...(filters.search ? { search: filters.search } : {}),
+                ...(filters.status !== 'all' ? { status: filters.status } : {}),
+                ...(filters.clientId !== 'all' ? { clientId: filters.clientId } : {})
             });
-            const response = await api.get(`/admin/polls?${params}`);
-            setPolls(response.data.data || []);
-            setPagination(prev => ({ ...prev, ...response.data.pagination }));
-            setSelectedIds([]);
+
+            const endpoint = addonType === 'polls' ? '/admin/polls' : '/admin/questionnaires';
+            const response = await api.get(`${endpoint}?${params.toString()}`);
+            setItems(response.data.data || []);
+            setPagination((prev) => ({ ...prev, ...response.data.pagination }));
         } catch (error) {
-            console.error('Failed to fetch polls:', error);
+            console.error(`Failed to fetch ${addonType}:`, error);
+            setItems([]);
         } finally {
             setLoading(false);
         }
     }
 
-    async function fetchQuestionnaires() {
-        setLoading(true);
+    async function deleteItem(item) {
         try {
-            const params = new URLSearchParams({
-                page: pagination.page,
-                pageSize: pagination.pageSize,
-                ...(filters.search && { search: filters.search }),
-                ...(filters.status !== 'all' && { status: filters.status }),
-                ...(filters.clientId !== 'all' && { clientId: filters.clientId })
-            });
-            const [listResponse, statsResponse] = await Promise.all([
-                api.get(`/admin/questionnaires?${params}`),
-                api.get('/admin/questionnaires/overview-stats')
-            ]);
-            setQuestionnaires(listResponse.data.data || []);
-            setQuestionnaireStats(statsResponse.data.data || null);
-            setPagination(prev => ({ ...prev, ...listResponse.data.pagination }));
-            setSelectedIds([]);
+            if (addonType === 'polls') {
+                await api.delete(`/admin/polls/${item.id}`);
+            } else if (addonType === 'questionnaires') {
+                await api.delete(`/admin/questionnaires/${item.id}`);
+            }
+            await fetchList();
         } catch (error) {
-            console.error('Failed to fetch questionnaires:', error);
-        } finally {
-            setLoading(false);
+            console.error(`Failed to delete ${addonType} item:`, error);
         }
     }
 
-    function handleSearch(event) {
-        setFilters(prev => ({ ...prev, search: event.target.value }));
-        setPagination(prev => ({ ...prev, page: 1 }));
-    }
-
-    function handleFilterChange(key, value) {
-        setFilters(prev => ({ ...prev, [key]: value }));
-        setPagination(prev => ({ ...prev, page: 1 }));
-    }
-
-    function toggleSelected(id) {
-        setSelectedIds((prev) => (
-            prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]
-        ));
-    }
-
-    function toggleSelectAll() {
-        if (selectedIds.length === polls.length) {
-            setSelectedIds([]);
-            return;
-        }
-
-        setSelectedIds(polls.map((poll) => poll.id));
-    }
-
-    async function executeToggleStatus(poll, nextStatus) {
-        setActionBusy({ type: 'status', id: poll.id });
-        try {
-            await api.patch(`/admin/polls/${poll.id}/status`, { status: nextStatus });
-            await fetchPolls();
-            await fetchStats();
-        } catch (error) {
-            console.error('Failed to update poll status:', error);
-        } finally {
-            setActionBusy(null);
-        }
-    }
-
-    function handleToggleStatus(poll) {
-        const nextStatus = poll.status === 'published' ? 'draft' : 'published';
+    function openDeleteDialog(item) {
         setConfirmDialog({
-            title: t('common.confirmAction'),
-            description: poll.status === 'published' ? t('addons.polls.unpublishConfirm') : t('addons.polls.publishConfirm'),
-            confirmLabel: poll.status === 'published' ? t('addons.polls.unpublish') : t('addons.polls.publish'),
-            variant: 'warning',
-            onConfirm: () => executeToggleStatus(poll, nextStatus)
-        });
-    }
-
-    async function executeDeletePoll(poll) {
-        setActionBusy({ type: 'delete', id: poll.id });
-        try {
-            await api.delete(`/admin/polls/${poll.id}`);
-            await fetchPolls();
-            await fetchStats();
-        } catch (error) {
-            console.error('Failed to delete poll:', error);
-        } finally {
-            setActionBusy(null);
-        }
-    }
-
-    function handleDeletePoll(poll) {
-        setConfirmDialog({
-            title: t('common.confirmAction'),
-            description: t('addons.polls.deleteConfirm'),
-            confirmLabel: t('common.delete'),
+            title: 'Delete item',
+            description: `Delete "${item.title || item.name || 'this item'}"?`,
+            confirmLabel: 'Delete',
             variant: 'danger',
-            onConfirm: () => executeDeletePoll(poll)
+            onConfirm: () => deleteItem(item)
         });
     }
 
-    const isArabic = i18n.language?.startsWith('ar');
-
-    const addonStats = useMemo(() => [
-        activeTab === 'questionnaire'
-            ? { title: t('addons.questionnaireTab'), value: questionnaireStats?.total_questionnaires || 0, tone: 'primary' }
-            : { title: t('addons.polls.total'), value: stats?.total_polls || 0, tone: 'primary' },
-        activeTab === 'questionnaire'
-            ? { title: t('addons.polls.published'), value: questionnaireStats?.published_questionnaires || 0, tone: 'success' }
-            : { title: t('addons.polls.published'), value: stats?.published_polls || 0, tone: 'success' },
-        activeTab === 'questionnaire'
-            ? { title: t('addons.polls.draft'), value: questionnaireStats?.draft_questionnaires || 0, tone: 'warning' }
-            : { title: t('addons.polls.draft'), value: stats?.draft_polls || 0, tone: 'warning' },
-        activeTab === 'questionnaire'
-            ? { title: 'Submissions', value: questionnaires.reduce((sum, item) => sum + (item.submission_count || 0), 0), tone: 'accent' }
-            : { title: t('addons.polls.participants'), value: stats?.total_participants || 0, tone: 'accent' }
-    ], [activeTab, questionnaireStats, questionnaires, stats, t]);
+    const pageTitle = useMemo(() => {
+        const match = ADDON_TYPES.find((type) => type.id === addonType);
+        return match?.label || 'Addons';
+    }, [addonType]);
 
     return (
         <div className="addons-page">
             <div className="page-header">
                 <div>
-                    <h1>{t('addons.title')}</h1>
-                    <p>{t('addons.subtitle')}</p>
+                    <h1>Add-ons</h1>
+                    <p>Select addon type, then manage records for that type.</p>
                 </div>
-                <RoleGuard permission="events.edit">
-                    <Link to={activeTab === 'questionnaire' ? '/addons/questionnaires/new' : '/addons/polls/new'} className="btn btn-primary">
-                        <Plus size={18} />
-                        <span>{activeTab === 'questionnaire' ? 'Create Questionnaire' : t('addons.polls.create')}</span>
-                    </Link>
-                </RoleGuard>
             </div>
+
+            <AddonTypeTabs />
+
+            <section className="addon-list-shell">
+                <div className="addon-list-header">
+                    <div>
+                        <h2>{pageTitle}</h2>
+                        <p>Search, filter, and manage all {pageTitle.toLowerCase()}.</p>
+                    </div>
+                    <RoleGuard permission="events.edit">
+                        <button type="button" className="btn btn-primary" onClick={() => navigate(`/addons/${addonType}/new`)}>
+                            <Plus size={16} />
+                            <span>Add New</span>
+                        </button>
+                    </RoleGuard>
+                </div>
+
+                <div className="filters-bar">
+                    <div className="search-box">
+                        <Search size={18} />
+                        <input
+                            type="text"
+                            placeholder={`Search ${pageTitle.toLowerCase()}...`}
+                            value={filters.search}
+                            onChange={(event) => {
+                                setFilters((prev) => ({ ...prev, search: event.target.value }));
+                                setPagination((prev) => ({ ...prev, page: 1 }));
+                            }}
+                        />
+                    </div>
+
+                    <select value={filters.status} onChange={(event) => {
+                        setFilters((prev) => ({ ...prev, status: event.target.value }));
+                        setPagination((prev) => ({ ...prev, page: 1 }));
+                    }}>
+                        <option value="all">All statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="archived">Archived</option>
+                        {addonType === 'polls' && <option value="ended">Ended</option>}
+                    </select>
+
+                    <select value={filters.clientId} onChange={(event) => {
+                        setFilters((prev) => ({ ...prev, clientId: event.target.value }));
+                        setPagination((prev) => ({ ...prev, page: 1 }));
+                    }}>
+                        <option value="all">All clients</option>
+                        {clients.map((client) => (
+                            <option key={client.id} value={client.id}>{client.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="table-container">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Client</th>
+                                <th>Event</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan="6" className="loading-cell">Loading...</td></tr>
+                            ) : !supportsApi ? (
+                                <tr><td colSpan="6" className="empty-cell">No data source connected yet for this addon type.</td></tr>
+                            ) : items.length === 0 ? (
+                                <tr><td colSpan="6" className="empty-cell">No records found.</td></tr>
+                            ) : (
+                                items.map((item) => (
+                                    <tr key={item.id}>
+                                        <td><strong>{item.title || item.name || 'Untitled'}</strong></td>
+                                        <td>{item.client_name || '-'}</td>
+                                        <td>{item.event_name || '-'}</td>
+                                        <td>{formatDate(item.created_at, i18n.language)}</td>
+                                        <td><span className={`status-badge status-${item.status || 'draft'}`}>{item.status || 'draft'}</span></td>
+                                        <td>
+                                            <div className="row-actions">
+                                                <Link to={`/addons/${addonType}/${item.id}`} className="action-btn" title="View"><Eye size={16} /></Link>
+                                                <Link to={`/addons/${addonType}/${item.id}`} className="action-btn" title="Edit">Edit</Link>
+                                                <RoleGuard permission="events.edit">
+                                                    <button type="button" className="action-btn danger" title="Delete" onClick={() => openDeleteDialog(item)}>
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </RoleGuard>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {pagination.totalPages > 1 && (
+                    <div className="pagination">
+                        <button type="button" onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))} disabled={pagination.page <= 1}>Previous</button>
+                        <span>Page {pagination.page} of {pagination.totalPages}</span>
+                        <button type="button" onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.totalPages || 1, prev.page + 1) }))} disabled={pagination.page >= pagination.totalPages}>Next</button>
+                    </div>
+                )}
+            </section>
 
             <ConfirmDialog
                 open={Boolean(confirmDialog)}
                 title={confirmDialog?.title || ''}
                 description={confirmDialog?.description || ''}
-                confirmLabel={confirmDialog?.confirmLabel || t('common.confirm')}
-                cancelLabel={t('common.cancel')}
+                confirmLabel={confirmDialog?.confirmLabel || 'Confirm'}
+                cancelLabel="Cancel"
                 variant={confirmDialog?.variant || 'danger'}
                 onConfirm={confirmDialog?.onConfirm}
                 onCancel={() => setConfirmDialog(null)}
             />
-
-            <div className="addons-stats-grid">
-                {addonStats.map((card) => (
-                    <StatCard key={card.title} {...card} />
-                ))}
-            </div>
-
-            <div className="addons-tabs">
-                {ADDON_TABS.map((tab) => {
-                    const Icon = tab.icon;
-                    return (
-                        <button
-                            type="button"
-                            key={tab.id}
-                            className={activeTab === tab.id ? 'active' : ''}
-                            onClick={() => setActiveTab(tab.id)}
-                        >
-                            <Icon size={16} />
-                            <span>{t(tab.labelKey)}</span>
-                        </button>
-                    );
-                })}
-            </div>
-
-            {activeTab === 'poll' ? (
-                <div className="addon-tab-panel">
-                    <div className="filters-bar">
-                        <div className="search-box">
-                            <Search size={18} />
-                            <input
-                                type="text"
-                                placeholder={t('addons.polls.searchPlaceholder')}
-                                value={filters.search}
-                                onChange={handleSearch}
-                            />
-                        </div>
-
-                        <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
-                            <option value="all">{t('addons.polls.allStatuses')}</option>
-                            <option value="draft">{t('addons.polls.status.draft')}</option>
-                            <option value="published">{t('addons.polls.status.published')}</option>
-                            <option value="ended">{t('addons.polls.status.ended')}</option>
-                            <option value="archived">{t('addons.polls.status.archived')}</option>
-                        </select>
-
-                        <select value={filters.mode} onChange={(e) => handleFilterChange('mode', e.target.value)}>
-                            <option value="all">{t('addons.polls.allModes')}</option>
-                            <option value="named">{t('addons.polls.mode.named')}</option>
-                            <option value="anonymous">{t('addons.polls.mode.anonymous')}</option>
-                        </select>
-
-                        <select value={filters.clientId} onChange={(e) => handleFilterChange('clientId', e.target.value)}>
-                            <option value="all">{t('clients.form.client')}</option>
-                            {clients.map((client) => (
-                                <option key={client.id} value={client.id}>
-                                    {client.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="table-container">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th className="select-column">
-                                        <input
-                                            type="checkbox"
-                                            checked={polls.length > 0 && selectedIds.length === polls.length}
-                                            onChange={toggleSelectAll}
-                                            aria-label={t('addons.polls.selectAll')}
-                                        />
-                                    </th>
-                                    <th>{t('addons.polls.table.poll')}</th>
-                                    <th>{t('addons.polls.table.client')}</th>
-                                    <th>{t('addons.polls.table.event')}</th>
-                                    <th>{t('addons.polls.table.participants')}</th>
-                                    <th>{t('addons.polls.table.created')}</th>
-                                    <th>{t('addons.polls.table.status')}</th>
-                                    <th>{t('addons.polls.table.actions')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="8" className="loading-cell">{t('common.loading')}</td>
-                                    </tr>
-                                ) : polls.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="8" className="empty-cell">{t('addons.polls.noPolls')}</td>
-                                    </tr>
-                                ) : (
-                                    polls.map((poll) => (
-                                        <tr key={poll.id}>
-                                            <td className="select-column">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedIds.includes(poll.id)}
-                                                    onChange={() => toggleSelected(poll.id)}
-                                                    aria-label={poll.title}
-                                                />
-                                            </td>
-                                            <td>
-                                                <div className="poll-name-cell">
-                                                    <strong>{localizedText(i18n, poll.title, poll.title_ar)}</strong>
-                                                    <span>{poll.option_count || 0} options</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="table-stack">
-                                                    <strong>{localizedText(i18n, poll.client_name, poll.client_name_ar)}</strong>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="table-stack">
-                                                    <strong>{localizedText(i18n, poll.event_name, poll.event_name_ar)}</strong>
-                                                </div>
-                                            </td>
-                                            <td>{poll.participants_count || 0}</td>
-                                            <td>{formatDate(i18n, poll.created_at)}</td>
-                                            <td>
-                                                <span className={`status-badge status-${poll.status}`}>
-                                                    {t(`addons.polls.status.${poll.status}`) || poll.status}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="row-actions">
-                                                    <Link to={`/addons/polls/${poll.id}`} className="action-btn" title={t('common.view')}>
-                                                        <Eye size={16} />
-                                                    </Link>
-                                                    <RoleGuard permission="events.edit">
-                                                        <button
-                                                            type="button"
-                                                            className="action-btn"
-                                                            title={poll.status === 'published' ? t('addons.polls.unpublish') : t('addons.polls.publish')}
-                                                            onClick={() => handleToggleStatus(poll)}
-                                                            disabled={actionBusy?.id === poll.id && actionBusy?.type === 'status'}
-                                                        >
-                                                            <Power size={16} />
-                                                        </button>
-                                                    </RoleGuard>
-                                                    <RoleGuard permission="events.edit">
-                                                        <Link to={`/addons/polls/${poll.id}`} className="action-btn" title={t('common.edit')}>
-                                                            <Edit size={16} />
-                                                        </Link>
-                                                    </RoleGuard>
-                                                    <RoleGuard permission="events.edit">
-                                                        <button
-                                                            type="button"
-                                                            className="action-btn danger"
-                                                            title={t('common.delete')}
-                                                            onClick={() => handleDeletePoll(poll)}
-                                                            disabled={actionBusy?.id === poll.id && actionBusy?.type === 'delete'}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </RoleGuard>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {pagination.totalPages > 1 && (
-                        <div className="pagination">
-                            <button
-                                type="button"
-                                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                                disabled={pagination.page <= 1}
-                            >
-                                {t('common.previous')}
-                            </button>
-                            <span>{t('common.pageOf', { page: pagination.page, totalPages: pagination.totalPages })}</span>
-                            <button
-                                type="button"
-                                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages || 1, prev.page + 1) }))}
-                                disabled={pagination.page >= pagination.totalPages}
-                            >
-                                {t('common.next')}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            ) : activeTab === 'questionnaire' ? (
-                <div className="addon-tab-panel">
-                    <div className="filters-bar">
-                        <div className="search-box">
-                            <Search size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search questionnaires..."
-                                value={filters.search}
-                                onChange={handleSearch}
-                            />
-                        </div>
-
-                        <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
-                            <option value="all">{t('addons.polls.allStatuses')}</option>
-                            <option value="draft">{t('addons.polls.status.draft')}</option>
-                            <option value="published">{t('addons.polls.status.published')}</option>
-                            <option value="archived">Archived</option>
-                        </select>
-
-                        <select value={filters.clientId} onChange={(e) => handleFilterChange('clientId', e.target.value)}>
-                            <option value="all">{t('clients.form.client')}</option>
-                            {clients.map((client) => (
-                                <option key={client.id} value={client.id}>
-                                    {client.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="table-container">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Questionnaire</th>
-                                    <th>{t('addons.polls.table.client')}</th>
-                                    <th>{t('addons.polls.table.event')}</th>
-                                    <th>Questions</th>
-                                    <th>Submissions</th>
-                                    <th>{t('addons.polls.table.created')}</th>
-                                    <th>{t('addons.polls.table.status')}</th>
-                                    <th>{t('addons.polls.table.actions')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="8" className="loading-cell">{t('common.loading')}</td>
-                                    </tr>
-                                ) : questionnaires.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="8" className="empty-cell">No questionnaires found</td>
-                                    </tr>
-                                ) : (
-                                    questionnaires.map((questionnaire) => (
-                                        <tr key={questionnaire.id}>
-                                            <td>
-                                                <div className="poll-name-cell">
-                                                    <strong>{localizedText(i18n, questionnaire.title, questionnaire.title_ar)}</strong>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <strong>{localizedText(i18n, questionnaire.client_name, questionnaire.client_name_ar)}</strong>
-                                            </td>
-                                            <td>
-                                                <strong>{localizedText(i18n, questionnaire.event_name, questionnaire.event_name_ar)}</strong>
-                                            </td>
-                                            <td>{questionnaire.question_count || 0}</td>
-                                            <td>{questionnaire.submission_count || 0}</td>
-                                            <td>{formatDate(i18n, questionnaire.created_at)}</td>
-                                            <td>
-                                                <span className={`status-badge status-${questionnaire.status}`}>
-                                                    {questionnaire.status}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="row-actions">
-                                                    <Link to={`/addons/questionnaires/${questionnaire.id}`} className="action-btn" title={t('common.view')}>
-                                                        <Eye size={16} />
-                                                    </Link>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {pagination.totalPages > 1 && (
-                        <div className="pagination">
-                            <button
-                                type="button"
-                                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                                disabled={pagination.page <= 1}
-                            >
-                                {t('common.previous')}
-                            </button>
-                            <span>{t('common.pageOf', { page: pagination.page, totalPages: pagination.totalPages })}</span>
-                            <button
-                                type="button"
-                                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages || 1, prev.page + 1) }))}
-                                disabled={pagination.page >= pagination.totalPages}
-                            >
-                                {t('common.next')}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="addon-tab-panel placeholder-panel">
-                    <Layers3 size={42} />
-                    <h3>{t('addons.polls.emptyTabTitle')}</h3>
-                    <p>{t('addons.polls.emptyTabDescription')}</p>
-                </div>
-            )}
         </div>
     );
 }
+
+function AddonEditorShell() {
+    const { addonType = 'polls', id } = useParams();
+    const navigate = useNavigate();
+    const isNew = id === 'new';
+
+    if (addonType === 'polls' && isNew) {
+        return <Navigate to="/addons/polls/new-builder" replace />;
+    }
+
+    if (addonType === 'questionnaires' && isNew) {
+        return <Navigate to="/addons/questionnaires/new-builder" replace />;
+    }
+
+    return (
+        <div className="addons-page">
+            <div className="page-header addon-editor-top">
+                <div>
+                    <button type="button" className="back-link" onClick={() => navigate(`/addons/${addonType}`)}>Back</button>
+                    <h1>{isNew ? `New ${addonType}` : `Edit ${addonType}`}</h1>
+                </div>
+                <button type="button" className="btn btn-primary">Save</button>
+            </div>
+
+            <AddonTypeTabs />
+
+            <section className="addon-editor-shell">
+                <div className="addon-editor-form-grid">
+                    <label>
+                        <span>Addon Name</span>
+                        <input type="text" placeholder="Enter addon name" />
+                    </label>
+                    <label>
+                        <span>Client</span>
+                        <select defaultValue="">
+                            <option value="">Select client</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div className="addon-editor-placeholder">
+                    <h3>Editor Area</h3>
+                    <p>This is the dedicated editor container for {addonType}. We can now plug the full builder here.</p>
+                </div>
+            </section>
+        </div>
+    );
+}
+
+export default function AddonsPageRouter() {
+    const location = useLocation();
+    if (location.pathname === '/addons' || location.pathname === '/addons/') {
+        return <Navigate to="/addons/polls" replace />;
+    }
+    return <AddonListPage />;
+}
+
+export { AddonEditorShell };

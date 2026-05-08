@@ -22,7 +22,7 @@ import EventDashboardPage from './pages/events/EventDashboardPage';
 import TemplateListPage from './pages/templates/TemplateListPage';
 import TemplateBuilderPage from './pages/templates/TemplateBuilderPage';
 import TemplatePreviewPage from './pages/templates/TemplatePreviewPage';
-import AddonsPage from './pages/addons/AddonsPage';
+import AddonsPage, { AddonEditorShell } from './pages/addons/AddonsPage';
 import PollBuilderPage from './pages/addons/PollBuilderPage';
 import QuestionnaireBuilderPage from './pages/addons/QuestionnaireBuilderPage';
 import InvitationProjectListPage from './pages/invitation-projects/InvitationProjectListPage';
@@ -69,9 +69,15 @@ function App() {
 
                     {/* Addons */}
                     <Route path="/addons" element={<AddonsPage />} />
+                    <Route path="/addons/:addonType" element={<AddonsPage />} />
+                    <Route path="/addons/:addonType/:id" element={<AddonEditorShell />} />
+                    <Route path="/addons/polls/new-builder" element={<PollBuilderPage mode="create" />} />
                     <Route path="/addons/polls/new" element={<PollBuilderPage mode="create" />} />
+                    <Route path="/addons/polls/:id/edit" element={<PollEditWrapper />} />
                     <Route path="/addons/polls/:id" element={<PollEditWrapper />} />
+                    <Route path="/addons/questionnaires/new-builder" element={<QuestionnaireBuilderPage mode="create" />} />
                     <Route path="/addons/questionnaires/new" element={<QuestionnaireBuilderPage mode="create" />} />
+                    <Route path="/addons/questionnaires/:id/edit" element={<QuestionnaireEditWrapper />} />
                     <Route path="/addons/questionnaires/:id" element={<QuestionnaireEditWrapper />} />
 
                     {/* Invitation Projects */}
