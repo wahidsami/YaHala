@@ -1484,25 +1484,23 @@ export default function PublicInvitationPage() {
 
                 {cardUnlocked && topTabPages.length > 0 && (
                     <div className="card-tabs">
-                        {topTabPages.map((page) => (
-                            (() => {
-                                const runtime = page?._runtime || {};
-                                const disableAfterSubmission = runtime.disableAfterSubmission !== false;
-                                const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
-                                const isDisabled = disableAfterSubmission && completed;
-                                return (
-                            <button
-                                key={page.page_key}
-                                type="button"
-                                className={activePageKey === page.page_key ? 'active' : ''}
-                                disabled={isDisabled}
-                                onClick={() => setActivePageKey(page.page_key)}
-                            >
-                                {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
-                            </button>
-                                );
-                            })()
-                        )}
+                        {topTabPages.map((page) => {
+                            const runtime = page?._runtime || {};
+                            const disableAfterSubmission = runtime.disableAfterSubmission !== false;
+                            const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
+                            const isDisabled = disableAfterSubmission && completed;
+                            return (
+                                <button
+                                    key={page.page_key}
+                                    type="button"
+                                    className={activePageKey === page.page_key ? 'active' : ''}
+                                    disabled={isDisabled}
+                                    onClick={() => setActivePageKey(page.page_key)}
+                                >
+                                    {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
 
