@@ -248,6 +248,28 @@ function getWidgetContent(widget, language) {
     return widget?.content?.[language] || widget?.content?.ar || widget?.content?.en || {};
 }
 
+function resolveQrTheme(widget, content) {
+    const contentAr = widget?.content?.ar || {};
+    const contentEn = widget?.content?.en || {};
+    const contentRoot = widget?.content || {};
+
+    const qrColor = content?.qrColor
+        || contentAr.qrColor
+        || contentEn.qrColor
+        || contentRoot.qrColor
+        || widget?.style?.color
+        || '#111827';
+
+    const qrBackground = content?.qrBackground
+        || contentAr.qrBackground
+        || contentEn.qrBackground
+        || contentRoot.qrBackground
+        || widget?.style?.backgroundColor
+        || '#ffffff';
+
+    return { qrColor, qrBackground };
+}
+
 function getGuestPosition(recipient, content) {
     return (
         content.position ||
@@ -402,8 +424,7 @@ function WidgetPreview({ widget, language, project, recipient }) {
         }
         case 'qr_code': {
             const invitationUrl = buildInvitationUrl(recipient.public_token);
-            const qrColor = content?.qrColor || widget?.style?.color || '#111827';
-            const qrBackground = content?.qrBackground || widget?.style?.backgroundColor || '#ffffff';
+            const { qrColor, qrBackground } = resolveQrTheme(widget, content);
 
             return (
                 <div style={style} className="preview-widget qr-widget">
