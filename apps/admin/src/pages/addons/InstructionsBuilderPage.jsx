@@ -68,6 +68,7 @@ function extractSimpleInstructionData(schema, settings) {
         bulletsEn,
         bulletsAr,
         popupBackground: popupStyle.backgroundColor || style.backgroundColor || '#FFFFFF',
+        popupBodyColor: popupStyle.bodyColor || '#FFFFFF',
         popupTextColor: popupStyle.textColor || style.textColor || widgetStyle.color || '#0F172A'
     };
 }
@@ -190,6 +191,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             bulletsEn: extracted.bulletsEn.join('\n'),
             bulletsAr: extracted.bulletsAr.join('\n'),
             popupBackground: extracted.popupBackground,
+            popupBodyColor: extracted.popupBodyColor,
             popupTextColor: extracted.popupTextColor
         };
     });
@@ -413,6 +415,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             const bulletsEn = toBulletArray(simpleInstructions.bulletsEn);
             const bulletsAr = toBulletArray(simpleInstructions.bulletsAr);
             const popupBackground = simpleInstructions.popupBackground || '#FFFFFF';
+            const popupBodyColor = simpleInstructions.popupBodyColor || '#FFFFFF';
             const popupTextColor = simpleInstructions.popupTextColor || '#0F172A';
             const payload = {
                 name,
@@ -425,7 +428,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         ar: { bullets: bulletsAr }
                     },
                     style: {
-                        backgroundColor: popupBackground,
+                        backgroundColor: popupBodyColor,
                         textColor: popupTextColor
                     }
                 },
@@ -433,6 +436,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     ...formData.editorSettings,
                     popupStyle: {
                         backgroundColor: popupBackground,
+                        bodyColor: popupBodyColor,
                         textColor: popupTextColor
                     }
                 }
@@ -629,6 +633,14 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                                 type="color"
                                 value={simpleInstructions.popupTextColor}
                                 onChange={(e) => setSimpleInstructions((prev) => ({ ...prev, popupTextColor: e.target.value }))}
+                            />
+                        </label>
+                        <label>
+                            <span>Popup body color</span>
+                            <input
+                                type="color"
+                                value={simpleInstructions.popupBodyColor}
+                                onChange={(e) => setSimpleInstructions((prev) => ({ ...prev, popupBodyColor: e.target.value }))}
                             />
                         </label>
                     </div>

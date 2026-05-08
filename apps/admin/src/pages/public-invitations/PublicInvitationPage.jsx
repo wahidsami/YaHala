@@ -1625,9 +1625,18 @@ export default function PublicInvitationPage() {
                     if (!activeInstructionsPage) {
                         return null;
                     }
+                    const popupPayload = activeInstructionsPage?.settings?.addon_snapshot || activeInstructionsPage?.settings?.instructions || {};
+                    const popupStyle = popupPayload?.popupStyle || popupPayload?.editor_settings?.popupStyle || {};
+                    const popupBackgroundColor = popupStyle.backgroundColor || '#F8FAFC';
                     return (
                         <div className="rsvp-modal-overlay" role="presentation" onClick={() => setShowInstructionsModal(false)}>
-                            <div className="rsvp-modal instructions-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                            <div
+                                className="rsvp-modal instructions-modal"
+                                role="dialog"
+                                aria-modal="true"
+                                style={{ backgroundColor: popupBackgroundColor }}
+                                onClick={(event) => event.stopPropagation()}
+                            >
                                 <div className="rsvp-modal-header">
                                     <div>
                                         <h3>{localizedText(activeLanguage, activeInstructionsPage.title || 'Instructions', activeInstructionsPage.title_ar || 'تعليمات')}</h3>
@@ -1736,7 +1745,7 @@ function InstructionsPanel({ language, page, onBack }) {
         : (Array.isArray(textWidgetContent.bullets) ? textWidgetContent.bullets.filter(Boolean) : []);
     const bullets = bulletsFromContent.length ? bulletsFromContent : bulletsFromWidget;
     const title = localizedText(language, page.title || PAGE_LABELS.instructions.en, page.title_ar || PAGE_LABELS.instructions.ar);
-    const panelBackground = popupStyle.backgroundColor || style.backgroundColor || '#FFFFFF';
+    const panelBackground = popupStyle.bodyColor || style.backgroundColor || '#FFFFFF';
     const panelText = popupStyle.textColor || style.textColor || '#0F172A';
 
     return (

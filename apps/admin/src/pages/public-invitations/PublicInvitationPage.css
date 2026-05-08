@@ -1037,6 +1037,9 @@
 .instructions-modal {
     width: min(520px, 95vw);
     max-height: min(85vh, 760px);
+    margin: 0 auto;
+    align-self: center;
+    justify-self: center;
 }
 
 .instructions-modal-body {
