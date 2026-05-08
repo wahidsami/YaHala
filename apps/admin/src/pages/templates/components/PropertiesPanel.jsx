@@ -932,7 +932,15 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                     <input
                                         type="url"
                                         value={content.iconUrl || ''}
-                                        onChange={(e) => updateContent('iconUrl', e.target.value)}
+                                        onChange={(e) => {
+                                            const iconUrl = e.target.value;
+                                            const sharedContent = {
+                                                ...(widget.content || {}),
+                                                ar: { ...(widget.content?.ar || {}), iconUrl, addonType: 'instructions' },
+                                                en: { ...(widget.content?.en || {}), iconUrl, addonType: 'instructions' }
+                                            };
+                                            onUpdate({ content: sharedContent });
+                                        }}
                                         placeholder="https://example.com/icon.png"
                                     />
                                 </div>
@@ -946,7 +954,13 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                             if (file) {
                                                 const reader = new FileReader();
                                                 reader.onload = (event) => {
-                                                    updateContent('iconUrl', event.target.result);
+                                                    const iconUrl = typeof event.target.result === 'string' ? event.target.result : '';
+                                                    const sharedContent = {
+                                                        ...(widget.content || {}),
+                                                        ar: { ...(widget.content?.ar || {}), iconUrl, addonType: 'instructions' },
+                                                        en: { ...(widget.content?.en || {}), iconUrl, addonType: 'instructions' }
+                                                    };
+                                                    onUpdate({ content: sharedContent });
                                                 };
                                                 reader.readAsDataURL(file);
                                             }

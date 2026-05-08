@@ -1175,7 +1175,7 @@ export default function PublicInvitationPage() {
         setGateDecision(attendance);
 
         if (syncLanguage) {
-            const resolvedLanguage = payload.language || payload.project?.default_language || 'ar';
+            const resolvedLanguage = 'ar';
             setActiveLanguage(resolvedLanguage);
             setLanguage(resolvedLanguage);
         }
@@ -1337,12 +1337,13 @@ export default function PublicInvitationPage() {
             }
             return runtime.unlocked !== false;
         });
-    const topTabPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'top');
-    const bottomTabPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'bottom');
-    const leftIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'left');
-    const rightIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'right');
-    const topIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'top');
-    const bottomIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'bottom');
+    const navInteractivePages = interactivePages.filter((page) => page.page_type !== 'instructions');
+    const topTabPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'top');
+    const bottomTabPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'bottom');
+    const leftIconPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'left');
+    const rightIconPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'right');
+    const topIconPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'top');
+    const bottomIconPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'bottom');
     const qrSlotPages = interactivePages.filter((page) => Boolean(page?._runtime?.replaceQrSlot) || page?._runtime?.position === 'qr_slot');
     const addonLaunchTargets = useMemo(() => {
         const targets = {};
@@ -1724,6 +1725,84 @@ function InstructionsPanel({ language, page, onBack }) {
     const copy = COPY[language];
     const settings = page?.settings || {};
     const payload = settings.instructions || settings.addon_snapshot || {};
+    const hasSchemaWidgets = Array.isArray(payload?.widgets) && payload.widgets.length > 0;
+    const isArabic = language === 'ar';
+
+    if (hasSchemaWidgets) {
+        const schemaWidgets = payload.widgets;
+        const pageConfig = payload.page || {};
+        const pageBg = pageConfig.background || {};
+        return (
+            <div className="module-panel instructions-panel" style={{ backgroundColor: '#fff', color: '#0f172a', borderColor: '#0A7EA4' }}>
+                <div
+                    className="instructions-schema-canvas"
+                    dir={isArabic ? 'rtl' : 'ltr'}
+                    style={{
+                        position: 'relative',
+                        width: '100%',
+                        minHeight: `${Math.max(600, Number(pageConfig.height) || 1200)}px`,
+                        backgroundColor: pageBg.color || '#ffffff',
+                        backgroundImage: pageBg.image ? `url(${resolveStorageUrl(pageBg.image)})` : undefined,
+                        backgroundSize: pageBg.size || 'cover',
+                        backgroundRepeat: pageBg.repeat || 'no-repeat',
+                        backgroundPosition: pageBg.position || 'center center'
+                    }}
+                >
+                    {schemaWidgets.map((widget) => {
+                        const x = Number(widget?.x) || 0;
+                        const y = Number(widget?.y) || 0;
+                        const w = Number(widget?.w) || 300;
+                        const h = Number(widget?.h) || 80;
+                        const z = Number(widget?.z) || 1;
+                        const style = widget?.style || {};
+                        const content = widget?.content || {};
+                        const text = isArabic ? (content.textAr || content.text || '') : (content.text || content.textAr || '');
+                        const blockText = isArabic ? (content.textAr || content.text || '') : (content.text || content.textAr || '');
+                        return (
+                            <div
+                                key={widget.id}
+                                style={{
+                                    position: 'absolute',
+                                    left: `${x}px`,
+                                    top: `${y}px`,
+                                    width: `${w}px`,
+                                    height: `${h}px`,
+                                    zIndex: z,
+                                    color: style.color || '#0f172a',
+                                    fontFamily: style.fontFamily || 'Cairo',
+                                    fontSize: `${Number(style.fontSize) || 24}px`,
+                                    fontWeight: style.fontWeight || 500,
+                                    textAlign: style.textAlign || 'start',
+                                    lineHeight: style.lineHeight || 1.4
+                                }}
+                            >
+                                {widget.type === 'image' ? (
+                                    content.src ? <img src={resolveStorageUrl(content.src)} alt={content.alt || 'Instruction'} style={{ width: '100%', height: '100%', objectFit: style.objectFit || 'cover', borderRadius: `${Number(style.borderRadius) || 0}px` }} /> : null
+                                ) : widget.type === 'item_block' ? (
+                                    <div style={{ display: 'flex', flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: '10px', width: '100%', height: '100%', padding: '10px', background: style.blockMode === 'boxed' ? (style.blockColor || '#e2e8f0') : 'transparent', borderRadius: `${Number(style.borderRadius) || 0}px` }}>
+                                        {content.useIconImage && content.iconImage ? (
+                                            <img src={resolveStorageUrl(content.iconImage)} alt="icon" style={{ width: `${Number(style.iconSize) || 24}px`, height: `${Number(style.iconSize) || 24}px`, objectFit: 'contain' }} />
+                                        ) : (
+                                            <span style={{ color: style.iconColor || '#0f766e', fontSize: `${Number(style.iconSize) || 24}px` }}>{content.icon || '•'}</span>
+                                        )}
+                                        <span>{blockText}</span>
+                                    </div>
+                                ) : (
+                                    <div>{text}</div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                {page?._runtime?.showBackButton !== false && (
+                    <button type="button" className="ghost-link" onClick={onBack}>
+                        {copy.close}
+                    </button>
+                )}
+            </div>
+        );
+    }
+
     const content = payload.content || {};
     const style = payload.style || {};
     const bucket = language === 'ar' ? (content.ar || content.en || {}) : (content.en || content.ar || {});
