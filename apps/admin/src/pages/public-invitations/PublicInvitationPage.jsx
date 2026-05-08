@@ -1337,7 +1337,16 @@ export default function PublicInvitationPage() {
             }
             return runtime.unlocked !== false;
         });
-    const navInteractivePages = interactivePages.filter((page) => page.page_type !== 'instructions');
+    const navInteractivePages = interactivePages.filter((page) => {
+        if (page.page_type === 'instructions') {
+            return false;
+        }
+        const runtime = page?._runtime || {};
+        if (Boolean(runtime.replaceQrSlot) || runtime.position === 'qr_slot') {
+            return false;
+        }
+        return true;
+    });
     const topTabPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'top');
     const bottomTabPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'bottom');
     const leftIconPages = navInteractivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'left');
