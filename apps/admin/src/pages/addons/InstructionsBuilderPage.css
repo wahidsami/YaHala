@@ -84,11 +84,44 @@
     color: #0f766e;
 }
 
+.preview-toggle,
+.zoom-controls {
+    margin-top: 0.7rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.preview-toggle button,
+.zoom-controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.preview-toggle button.active {
+    border-color: #0f766e;
+    color: #0f766e;
+}
+
+.zoom-controls {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+}
+
+.zoom-controls span {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
 .instructions-canvas-wrap {
     border: 1px solid var(--border-color, #d7deea);
     border-radius: 14px;
     background: #f8fafc;
     padding: 0.8rem;
+    overflow: auto;
 }
 
 .instructions-canvas {
@@ -96,6 +129,7 @@
     border: 1px dashed #bfd0e2;
     border-radius: 12px;
     overflow: hidden;
+    margin: 0 auto;
 }
 
 .canvas-empty {
@@ -243,6 +277,13 @@
     gap: 0.35rem;
 }
 
+.layer-controls {
+    margin-top: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
 @media (max-width: 1250px) {
     .instructions-editor-layout {
         grid-template-columns: 1fr;
@@ -257,4 +298,3 @@
         align-items: stretch;
     }
 }
-

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Monitor, MoveDown, MoveUp, Save, Smartphone, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import api from '../../services/api';
 import './InstructionsBuilderPage.css';
 
@@ -146,6 +146,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
     const [error, setError] = useState('');
     const [activeLanguage, setActiveLanguage] = useState('en');
     const [selectedWidgetId, setSelectedWidgetId] = useState(null);
+    const [canvasZoom, setCanvasZoom] = useState(1);
+    const [previewMode, setPreviewMode] = useState('desktop');
 
     const [formData, setFormData] = useState(() => {
         const schema = initialData?.content_schema || DEFAULT_SCHEMA;
@@ -232,6 +234,26 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         setSelectedWidgetId(null);
     }
 
+    function normalizeWidgetLayers(items) {
+        const sorted = [...items].sort((a, b) => (a.z || 0) - (b.z || 0));
+        return sorted.map((item, index) => ({ ...item, z: (index + 1) * 10 }));
+    }
+
+    function moveSelectedLayer(directionName) {
+        if (!selectedWidgetId) return;
+        const ordered = [...(formData.contentSchema.widgets || [])].sort((a, b) => (a.z || 0) - (b.z || 0));
+        const index = ordered.findIndex((item) => item.id === selectedWidgetId);
+        if (index < 0) return;
+        const swapIndex = directionName === 'up' ? index + 1 : index - 1;
+        if (swapIndex < 0 || swapIndex >= ordered.length) return;
+
+        const copy = [...ordered];
+        const temp = copy[index];
+        copy[index] = copy[swapIndex];
+        copy[swapIndex] = temp;
+        updateWidgets(normalizeWidgetLayers(copy));
+    }
+
     function beginWidgetDrag(event, widget, modeName) {
         event.preventDefault();
         event.stopPropagation();
@@ -240,6 +262,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         const canvas = canvasRef.current;
         if (!canvas) return;
         const rect = canvas.getBoundingClientRect();
+        const unscaledWidth = (previewMode === 'mobile' ? 420 : 1080);
         const startX = event.clientX;
         const startY = event.clientY;
         const start = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
@@ -252,14 +275,18 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             const dy = moveEvent.clientY - startY;
 
             if (modeName === 'move') {
-                const nextX = clamp(snap(start.x + dx, grid, snapping), 0, rect.width - widget.w);
-                const nextY = clamp(snap(start.y + dy, grid, snapping), 0, (formData.editorSettings.pageHeight || 1600) - widget.h);
+                const normalizedDx = dx / (canvasZoom || 1);
+                const normalizedDy = dy / (canvasZoom || 1);
+                const nextX = clamp(snap(start.x + normalizedDx, grid, snapping), 0, unscaledWidth - widget.w);
+                const nextY = clamp(snap(start.y + normalizedDy, grid, snapping), 0, (formData.editorSettings.pageHeight || 1600) - widget.h);
                 updateWidget(widget.id, { x: nextX, y: nextY });
                 return;
             }
 
-            let nextW = clamp(snap(start.w + dx, grid, snapping), 80, rect.width - widget.x);
-            let nextH = clamp(snap(start.h + dy, grid, snapping), 50, (formData.editorSettings.pageHeight || 1600) - widget.y);
+            const normalizedDx = dx / (canvasZoom || 1);
+            const normalizedDy = dy / (canvasZoom || 1);
+            let nextW = clamp(snap(start.w + normalizedDx, grid, snapping), 80, unscaledWidth - widget.x);
+            let nextH = clamp(snap(start.h + normalizedDy, grid, snapping), 50, (formData.editorSettings.pageHeight || 1600) - widget.y);
             if (widget.type === 'image' && widget.style?.lockRatio) {
                 nextH = Math.max(50, Math.round(nextW / ratio));
             }
@@ -353,6 +380,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
     const canvasHeight = formData.editorSettings.pageHeight || 1600;
     const canvasGrid = clamp(Number(formData.editorSettings.gridSize) || 16, GRID_MIN, GRID_MAX);
     const direction = localeDirection(activeLanguage);
+    const canvasWidth = previewMode === 'mobile' ? 420 : 1080;
 
     function renderWidget(widget) {
         if (widget.type === 'title') {
@@ -362,6 +390,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     fontFamily: widget.style.fontFamily,
                     fontSize: `${widget.style.fontSize}px`,
                     fontWeight: widget.style.fontWeight,
+                    fontStyle: widget.style.italic ? 'italic' : 'normal',
+                    textDecoration: widget.style.underline ? 'underline' : 'none',
                     textAlign: widget.style.textAlign,
                     color: widget.style.color,
                     direction: widget.style.direction === 'auto' ? direction : widget.style.direction
@@ -377,6 +407,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     fontFamily: widget.style.fontFamily,
                     fontSize: `${widget.style.fontSize}px`,
                     fontWeight: widget.style.fontWeight,
+                    fontStyle: widget.style.italic ? 'italic' : 'normal',
+                    textDecoration: widget.style.underline ? 'underline' : 'none',
                     textAlign: widget.style.textAlign,
                     color: widget.style.color,
                     lineHeight: widget.style.lineHeight,
@@ -416,6 +448,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     fontFamily: widget.style.fontFamily,
                     fontSize: `${widget.style.fontSize}px`,
                     fontWeight: widget.style.fontWeight,
+                    fontStyle: widget.style.italic ? 'italic' : 'normal',
+                    textDecoration: widget.style.underline ? 'underline' : 'none',
                     color: widget.style.color,
                     direction: dir,
                     justifyContent: iconRight ? 'flex-end' : 'flex-start'
@@ -480,6 +514,19 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         <button type="button" className={activeLanguage === 'en' ? 'active' : ''} onClick={() => setActiveLanguage('en')}>EN</button>
                         <button type="button" className={activeLanguage === 'ar' ? 'active' : ''} onClick={() => setActiveLanguage('ar')}>AR</button>
                     </div>
+                    <div className="preview-toggle">
+                        <button type="button" className={previewMode === 'desktop' ? 'active' : ''} onClick={() => setPreviewMode('desktop')}>
+                            <Monitor size={14} /> Desktop
+                        </button>
+                        <button type="button" className={previewMode === 'mobile' ? 'active' : ''} onClick={() => setPreviewMode('mobile')}>
+                            <Smartphone size={14} /> Mobile
+                        </button>
+                    </div>
+                    <div className="zoom-controls">
+                        <button type="button" onClick={() => setCanvasZoom((prev) => clamp(Number((prev - 0.1).toFixed(2)), 0.4, 1.6))}><ZoomOut size={14} /></button>
+                        <span>{Math.round(canvasZoom * 100)}%</span>
+                        <button type="button" onClick={() => setCanvasZoom((prev) => clamp(Number((prev + 0.1).toFixed(2)), 0.4, 1.6))}><ZoomIn size={14} /></button>
+                    </div>
                 </aside>
 
                 <div className="instructions-canvas-wrap">
@@ -488,6 +535,9 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         className="instructions-canvas"
                         onMouseDown={() => setSelectedWidgetId(null)}
                         style={{
+                            width: `${canvasWidth}px`,
+                            transform: `scale(${canvasZoom})`,
+                            transformOrigin: 'top center',
                             minHeight: `${canvasHeight}px`,
                             height: `${canvasHeight}px`,
                             backgroundColor: formData.contentSchema.page.background.color,
@@ -616,6 +666,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                                     <label><span>Alignment</span><select value={selectedWidget.style.textAlign || 'start'} onChange={(e) => updateWidget(selectedWidget.id, { style: { textAlign: e.target.value } })}><option value="start">start</option><option value="center">center</option><option value="end">end</option></select></label>
                                     <label><span>Font size</span><input type="number" value={selectedWidget.style.fontSize || 24} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontSize: Number.parseInt(e.target.value, 10) || 24 } })} /></label>
                                     <label><span>Font weight</span><select value={selectedWidget.style.fontWeight || '400'} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontWeight: e.target.value } })}><option value="300">300</option><option value="400">400</option><option value="500">500</option><option value="600">600</option><option value="700">700</option><option value="800">800</option></select></label>
+                                    <label><span>Italic</span><input type="checkbox" checked={Boolean(selectedWidget.style.italic)} onChange={(e) => updateWidget(selectedWidget.id, { style: { italic: e.target.checked } })} /></label>
+                                    <label><span>Underline</span><input type="checkbox" checked={Boolean(selectedWidget.style.underline)} onChange={(e) => updateWidget(selectedWidget.id, { style: { underline: e.target.checked } })} /></label>
                                     <label><span>Text color</span><input type="color" value={selectedWidget.style.color || '#0f172a'} onChange={(e) => updateWidget(selectedWidget.id, { style: { color: e.target.value } })} /></label>
                                     <label><span>Direction</span><select value={selectedWidget.style.direction || 'auto'} onChange={(e) => updateWidget(selectedWidget.id, { style: { direction: e.target.value } })}><option value="auto">Auto</option><option value="ltr">LTR</option><option value="rtl">RTL</option></select></label>
                                 </>
@@ -623,6 +675,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
                             {selectedWidget.type === 'text' && (
                                 <>
+                                    <label><span>Line height</span><input type="number" step="0.05" min="1" max="2.4" value={selectedWidget.style.lineHeight || 1.45} onChange={(e) => updateWidget(selectedWidget.id, { style: { lineHeight: Number.parseFloat(e.target.value) || 1.45 } })} /></label>
                                     <label><span>Bullet list mode</span><input type="checkbox" checked={Boolean(selectedWidget.content.asBullets)} onChange={(e) => updateWidget(selectedWidget.id, { content: { asBullets: e.target.checked } })} /></label>
                                     <label><span>Bullets (EN)</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bullets) ? selectedWidget.content.bullets.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bullets: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} /></label>
                                     <label><span>Bullets (AR)</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bulletsAr) ? selectedWidget.content.bulletsAr.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bulletsAr: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} dir="rtl" /></label>
@@ -649,6 +702,17 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                                 </>
                             )}
 
+                            <div className="layer-controls">
+                                <button type="button" className="btn btn-secondary" onClick={() => moveSelectedLayer('down')}>
+                                    <MoveDown size={14} />
+                                    <span>Send Backward</span>
+                                </button>
+                                <button type="button" className="btn btn-secondary" onClick={() => moveSelectedLayer('up')}>
+                                    <MoveUp size={14} />
+                                    <span>Bring Forward</span>
+                                </button>
+                            </div>
+
                             <button type="button" className="btn btn-danger btn-delete-widget" onClick={removeSelectedWidget}>
                                 <Trash2 size={14} />
                                 <span>Delete Widget</span>
@@ -660,4 +724,3 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         </div>
     );
 }
-
