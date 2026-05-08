@@ -1867,6 +1867,19 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
             ]
         );
 
+        await db.query(
+            `
+            UPDATE invitation_recipients
+            SET
+                invitation_snapshot = NULL,
+                invitation_snapshot_hash = NULL,
+                invitation_snapshot_at = NULL,
+                updated_at = NOW()
+            WHERE project_id = $1
+            `,
+            [projectId]
+        );
+
         await db.query('COMMIT');
 
         res.json({

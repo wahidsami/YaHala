@@ -1118,6 +1118,18 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
         if (selectedTabsForSync) {
             const { project } = await resolvePrimaryInvitationProject(pool, req.params.id);
             await syncProjectAddonPagesFromEventSetup(pool, project.id, selectedTabsForSync);
+            await pool.query(
+                `
+                UPDATE invitation_recipients
+                SET
+                    invitation_snapshot = NULL,
+                    invitation_snapshot_hash = NULL,
+                    invitation_snapshot_at = NULL,
+                    updated_at = NOW()
+                WHERE project_id = $1
+                `,
+                [project.id]
+            );
         }
 
         const nextTemplateId = hasTemplateId
