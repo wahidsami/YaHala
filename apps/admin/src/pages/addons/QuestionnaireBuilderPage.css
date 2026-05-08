@@ -4,6 +4,12 @@
     gap: 1rem;
 }
 
+.builder-header-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+}
+
 .builder-steps {
     display: flex;
     gap: 0.5rem;
@@ -118,6 +124,15 @@
 
 .theme-settings-block h4 {
     margin: 0 0 0.65rem;
+}
+
+.theme-bg-preview {
+    margin-top: 0.45rem;
+    width: min(100%, 220px);
+    height: 100px;
+    object-fit: cover;
+    border-radius: 0.65rem;
+    border: 1px solid var(--border-color);
 }
 
 @media (max-width: 760px) {

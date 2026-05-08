@@ -72,6 +72,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [activeStep, setActiveStep] = useState(1);
+    const [saveNotice, setSaveNotice] = useState('');
 
     const [formData, setFormData] = useState({
         clientId: initialData.client_id || searchParams.get('clientId') || '',
@@ -246,13 +247,15 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
         return Boolean(formData.clientId && formData.eventId && formData.title.trim() && formData.questions.length > 0);
     }, [formData]);
 
-    async function saveQuestionnaire(nextStatus = formData.status) {
+    async function saveQuestionnaire(nextStatus = formData.status, options = {}) {
+        const { stayOnPage = false } = options;
         if (!canSave) {
             setError('Please complete details and add at least one question.');
             return;
         }
         setSaving(true);
         setError('');
+        setSaveNotice('');
         try {
             const payload = {
                 clientId: formData.clientId,
@@ -288,7 +291,11 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
             } else {
                 await api.post('/admin/questionnaires', payload);
             }
-            navigate('/addons/questionnaires');
+            if (stayOnPage) {
+                setSaveNotice('Progress saved.');
+            } else {
+                navigate('/addons/questionnaires');
+            }
         } catch (saveError) {
             setError(saveError.response?.data?.message || 'Failed to save questionnaire.');
         } finally {
@@ -309,9 +316,21 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                     <h1>{mode === 'edit' ? 'Edit Questionnaire' : 'Create Questionnaire'}</h1>
                     <p>Step 1: Details, Step 2: Questions and types, Step 3: Save.</p>
                 </div>
+                <div className="builder-header-actions">
+                    <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => saveQuestionnaire(formData.status, { stayOnPage: true })}
+                        disabled={saving || !canSave}
+                    >
+                        <Save size={16} />
+                        <span>{saving ? 'Saving...' : 'Save Progress'}</span>
+                    </button>
+                </div>
             </div>
 
             {error && <div className="form-error">{error}</div>}
+            {saveNotice && <div className="form-success">{saveNotice}</div>}
 
             <div className="builder-steps">
                 <button type="button" className={activeStep === 1 ? 'active' : ''} onClick={() => setActiveStep(1)}>1. Details</button>
@@ -413,6 +432,18 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                             <div className="form-group">
                                 <label>Upload Background Image</label>
                                 <input type="file" accept="image/*" onChange={uploadThemeBackgroundImage} />
+                                <small className="info-text">
+                                    {formData.settings?.theme?.backgroundImage
+                                        ? 'Background image is set.'
+                                        : 'No background image selected.'}
+                                </small>
+                                {formData.settings?.theme?.backgroundImage && (
+                                    <img
+                                        src={formData.settings.theme.backgroundImage}
+                                        alt="Questionnaire background preview"
+                                        className="theme-bg-preview"
+                                    />
+                                )}
                             </div>
                             <div className="form-group">
                                 <label>Background Size</label>
