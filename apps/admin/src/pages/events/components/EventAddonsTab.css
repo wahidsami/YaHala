@@ -147,6 +147,25 @@
     gap: 0.6rem;
 }
 
+.event-addon-selection-card label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.event-addon-selection-card label span {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.event-addon-selection-card select {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 0.55rem;
+    padding: 0.45rem 0.55rem;
+    background: var(--bg-primary);
+}
+
 .event-addon-poll-item {
     display: flex;
     justify-content: space-between;
