@@ -25,6 +25,7 @@ import TemplatePreviewPage from './pages/templates/TemplatePreviewPage';
 import AddonsPage, { AddonEditorShell } from './pages/addons/AddonsPage';
 import PollBuilderPage from './pages/addons/PollBuilderPage';
 import QuestionnaireBuilderPage from './pages/addons/QuestionnaireBuilderPage';
+import InstructionsBuilderPage from './pages/addons/InstructionsBuilderPage';
 import InvitationProjectListPage from './pages/invitation-projects/InvitationProjectListPage';
 import InvitationProjectFormPage from './pages/invitation-projects/InvitationProjectFormPage';
 import InvitationProjectDetailPage from './pages/invitation-projects/InvitationProjectDetailPage';
@@ -79,6 +80,9 @@ function App() {
                     <Route path="/addons/questionnaires/new" element={<QuestionnaireBuilderPage mode="create" />} />
                     <Route path="/addons/questionnaires/:id/edit" element={<QuestionnaireEditWrapper />} />
                     <Route path="/addons/questionnaires/:id" element={<QuestionnaireEditWrapper />} />
+                    <Route path="/addons/instructions/new-builder" element={<InstructionsBuilderPage mode="create" />} />
+                    <Route path="/addons/instructions/new" element={<InstructionsBuilderPage mode="create" />} />
+                    <Route path="/addons/instructions/:id/edit" element={<InstructionsEditWrapper />} />
 
                     {/* Invitation Projects */}
                     <Route path="/invitation-projects" element={<InvitationProjectListPage />} />
@@ -245,6 +249,51 @@ function QuestionnaireEditWrapper() {
     }
 
     return <QuestionnaireBuilderPage mode="edit" initialData={questionnaire} />;
+}
+
+function InstructionsEditWrapper() {
+    const { t } = useTranslation();
+    const { id } = useParams();
+    const [instruction, setInstruction] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let mounted = true;
+
+        async function fetchInstruction() {
+            try {
+                const response = await api.get(`/admin/instructions/${id}`);
+                if (mounted) {
+                    setInstruction(response.data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch instruction:', error);
+                if (mounted) {
+                    setInstruction(null);
+                }
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchInstruction();
+
+        return () => {
+            mounted = false;
+        };
+    }, [id]);
+
+    if (loading) {
+        return <div className="loading">{t('common.loading')}</div>;
+    }
+
+    if (!instruction) {
+        return <div className="error">{t('common.notFound')}</div>;
+    }
+
+    return <InstructionsBuilderPage mode="edit" initialData={instruction} />;
 }
 
 export default App;

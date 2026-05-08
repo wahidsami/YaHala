@@ -21,6 +21,7 @@ import guestRoutes from './routes/guests.js';
 import reportsRoutes from './routes/reports.js';
 import pollRoutes from './routes/polls.js';
 import questionnaireRoutes from './routes/questionnaires.js';
+import instructionsRoutes from './routes/instructions.js';
 import pool from './db/connection.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -71,6 +72,7 @@ app.use('/api/admin/events', submissionRoutes);
 app.use('/api/admin/events', memoryBookRoutes);
 app.use('/api/admin/polls', pollRoutes);
 app.use('/api/admin/questionnaires', questionnaireRoutes);
+app.use('/api/admin/instructions', instructionsRoutes);
 app.use('/api/admin/logs', logsRoutes);
 app.use('/api/admin/reports', reportsRoutes);
 app.use('/api/admin/delivery', deliveryRoutes);

@@ -16,6 +16,12 @@ const ADDON_LABELS = {
     guestbook: 'Guestbook'
 };
 
+const ENDPOINT_MAP = {
+    polls: '/admin/polls',
+    questionnaires: '/admin/questionnaires',
+    instructions: '/admin/instructions'
+};
+
 function formatDate(value, lang = 'en') {
     if (!value) return '';
     const locale = lang?.startsWith('ar') ? 'ar-SA' : 'en-US';
@@ -28,18 +34,20 @@ function AddonListPage() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState([]);
+    const [selectedIds, setSelectedIds] = useState([]);
     const [clients, setClients] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 0 });
     const [filters, setFilters] = useState({ search: '', status: 'all', clientId: 'all' });
     const [confirmDialog, setConfirmDialog] = useState(null);
 
-    const supportsApi = addonType === 'polls' || addonType === 'questionnaires';
+    const supportsApi = Boolean(ENDPOINT_MAP[addonType]);
 
     useEffect(() => {
         fetchClients();
     }, []);
 
     useEffect(() => {
+        setSelectedIds([]);
         if (supportsApi) {
             fetchList();
             return;
@@ -69,7 +77,7 @@ function AddonListPage() {
                 ...(filters.clientId !== 'all' ? { clientId: filters.clientId } : {})
             });
 
-            const endpoint = addonType === 'polls' ? '/admin/polls' : '/admin/questionnaires';
+            const endpoint = ENDPOINT_MAP[addonType];
             const response = await api.get(`${endpoint}?${params.toString()}`);
             setItems(response.data.data || []);
             setPagination((prev) => ({ ...prev, ...response.data.pagination }));
@@ -83,11 +91,8 @@ function AddonListPage() {
 
     async function deleteItem(item) {
         try {
-            if (addonType === 'polls') {
-                await api.delete(`/admin/polls/${item.id}`);
-            } else if (addonType === 'questionnaires') {
-                await api.delete(`/admin/questionnaires/${item.id}`);
-            }
+            const endpoint = ENDPOINT_MAP[addonType];
+            await api.delete(`${endpoint}/${item.id}`);
             await fetchList();
         } catch (error) {
             console.error(`Failed to delete ${addonType} item:`, error);
@@ -102,6 +107,20 @@ function AddonListPage() {
             variant: 'danger',
             onConfirm: () => deleteItem(item)
         });
+    }
+
+    function toggleSelect(id) {
+        setSelectedIds((prev) => (
+            prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]
+        ));
+    }
+
+    function toggleSelectAll() {
+        if (selectedIds.length === items.length) {
+            setSelectedIds([]);
+            return;
+        }
+        setSelectedIds(items.map((item) => item.id));
     }
 
     const pageTitle = useMemo(() => ADDON_LABELS[addonType] || 'Addons', [addonType]);
@@ -169,29 +188,41 @@ function AddonListPage() {
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th className="select-column">
+                                    <input
+                                        type="checkbox"
+                                        checked={items.length > 0 && selectedIds.length === items.length}
+                                        onChange={toggleSelectAll}
+                                        aria-label="Select all"
+                                    />
+                                </th>
+                                <th>Instruction Name</th>
                                 <th>Client</th>
-                                <th>Event</th>
                                 <th>Created</th>
-                                <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="6" className="loading-cell">Loading...</td></tr>
+                                <tr><td colSpan="5" className="loading-cell">Loading...</td></tr>
                             ) : !supportsApi ? (
-                                <tr><td colSpan="6" className="empty-cell">No data source connected yet for this addon type.</td></tr>
+                                <tr><td colSpan="5" className="empty-cell">No data source connected yet for this addon type.</td></tr>
                             ) : items.length === 0 ? (
-                                <tr><td colSpan="6" className="empty-cell">No records found.</td></tr>
+                                <tr><td colSpan="5" className="empty-cell">No records found.</td></tr>
                             ) : (
                                 items.map((item) => (
                                     <tr key={item.id}>
+                                        <td className="select-column">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(item.id)}
+                                                onChange={() => toggleSelect(item.id)}
+                                                aria-label={`Select ${item.title || item.name || item.id}`}
+                                            />
+                                        </td>
                                         <td><strong>{item.title || item.name || 'Untitled'}</strong></td>
                                         <td>{item.client_name || '-'}</td>
-                                        <td>{item.event_name || '-'}</td>
                                         <td>{formatDate(item.created_at, i18n.language)}</td>
-                                        <td><span className={`status-badge status-${item.status || 'draft'}`}>{item.status || 'draft'}</span></td>
                                         <td>
                                             <div className="row-actions">
                                                 <Link to={`/addons/${addonType}/${item.id}`} className="action-btn" title="View"><Eye size={16} /></Link>
@@ -244,6 +275,14 @@ function AddonEditorShell() {
 
     if (addonType === 'questionnaires' && isNew) {
         return <Navigate to="/addons/questionnaires/new-builder" replace />;
+    }
+
+    if (addonType === 'instructions' && isNew) {
+        return <Navigate to="/addons/instructions/new-builder" replace />;
+    }
+
+    if (addonType === 'instructions' && !isNew) {
+        return <Navigate to={`/addons/instructions/${id}/edit`} replace />;
     }
 
     return (
