@@ -69,11 +69,11 @@
 
 ## Phase 3 - State & Persistence Unification
 - Goal: Add-ons tab becomes source-of-truth for enabling and linking.
-- Status: `pending`
+- Status: `done`
 - Tracking:
-  - [ ] Move add-on enable logic fully into Add-ons tab
-  - [ ] Persist `settings.addIns` and tab mappings coherently
-  - [ ] Enforce backend pruning for disabled add-on tabs
+  - [x] Move add-on enable logic fully into Add-ons tab
+  - [x] Persist `settings.addIns` and tab mappings coherently
+  - [x] Enforce backend pruning for disabled add-on tabs
 
 ## Phase 4 - Invitation Setup Simplification
 - Goal: Remove duplicate add-on controls from Invitation Setup.
@@ -104,3 +104,4 @@
 - 2026-05-08: Plan created.
 - 2026-05-08: Phase 1 completed (top-level duplicated tabs removed from Event Dashboard).
 - 2026-05-08: Phase 2 completed (event Add-ons tab converted to left-menu control center with multi-select content linking and save flow).
+- 2026-05-08: Phase 3 completed (deduplicated add-on/tab persistence, deterministic sort ordering, and post-save reload to prevent stale UI state).

@@ -26,39 +26,39 @@ export default function EventAddonsTab({ eventId }) {
 
     const enabledAddonSet = useMemo(() => new Set(formData.addIns), [formData.addIns]);
 
-    useEffect(() => {
-        async function loadAddons() {
-            setLoading(true);
-            setError('');
-            try {
-                const [summaryResponse, pollsResponse, questionnairesResponse] = await Promise.all([
-                    api.get(`/admin/events/${eventId}/addons-summary`),
-                    api.get(`/admin/polls?eventId=${eventId}&pageSize=200`),
-                    api.get(`/admin/questionnaires?eventId=${eventId}&pageSize=200`)
-                ]);
+    async function loadAddons() {
+        setLoading(true);
+        setError('');
+        try {
+            const [summaryResponse, pollsResponse, questionnairesResponse] = await Promise.all([
+                api.get(`/admin/events/${eventId}/addons-summary`),
+                api.get(`/admin/polls?eventId=${eventId}&pageSize=200`),
+                api.get(`/admin/questionnaires?eventId=${eventId}&pageSize=200`)
+            ]);
 
-                const summary = summaryResponse.data?.data || null;
-                const pollList = pollsResponse.data?.data || [];
-                const questionnaireList = questionnairesResponse.data?.data || [];
-                setPolls(pollList);
-                setQuestionnaires(questionnaireList);
-                setFormData({
-                    addIns: Array.isArray(summary?.addInsEnabled) ? summary.addInsEnabled : [],
-                    pollIds: Array.isArray(summary?.addons?.poll?.polls)
-                        ? summary.addons.poll.polls.map((item) => item.id)
-                        : [],
-                    questionnaireIds: Array.isArray(summary?.addons?.questionnaire?.questionnaires)
-                        ? summary.addons.questionnaire.questionnaires.map((item) => item.id)
-                        : []
-                });
-            } catch (loadError) {
-                console.error('Failed to load event addons summary:', loadError);
-                setError(loadError.response?.data?.message || t('events.addons.loadFailed'));
-            } finally {
-                setLoading(false);
-            }
+            const summary = summaryResponse.data?.data || null;
+            const pollList = pollsResponse.data?.data || [];
+            const questionnaireList = questionnairesResponse.data?.data || [];
+            setPolls(pollList);
+            setQuestionnaires(questionnaireList);
+            setFormData({
+                addIns: Array.isArray(summary?.addInsEnabled) ? summary.addInsEnabled : [],
+                pollIds: Array.isArray(summary?.addons?.poll?.polls)
+                    ? summary.addons.poll.polls.map((item) => item.id)
+                    : [],
+                questionnaireIds: Array.isArray(summary?.addons?.questionnaire?.questionnaires)
+                    ? summary.addons.questionnaire.questionnaires.map((item) => item.id)
+                    : []
+            });
+        } catch (loadError) {
+            console.error('Failed to load event addons summary:', loadError);
+            setError(loadError.response?.data?.message || t('events.addons.loadFailed'));
+        } finally {
+            setLoading(false);
         }
+    }
 
+    useEffect(() => {
         if (eventId) {
             loadAddons();
         }
@@ -110,7 +110,7 @@ export default function EventAddonsTab({ eventId }) {
             }
             if (formData.addIns.includes('questionnaire')) {
                 formData.questionnaireIds.forEach((questionnaireId, index) => {
-                    tabs.push({ type: 'questionnaire', addonId: questionnaireId, sortOrder: tabs.length + index });
+                    tabs.push({ type: 'questionnaire', addonId: questionnaireId, sortOrder: formData.pollIds.length + index });
                 });
             }
 
@@ -119,6 +119,7 @@ export default function EventAddonsTab({ eventId }) {
                 invitationSetup: { tabs }
             });
             setSuccess('Add-ons saved successfully.');
+            await loadAddons();
         } catch (saveError) {
             console.error('Failed to save add-ons setup:', saveError);
             setError(saveError.response?.data?.message || 'Failed to save add-ons.');

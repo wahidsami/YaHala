@@ -29,9 +29,11 @@ function normalizeAddIns(addIns) {
         return [];
     }
 
-    return addIns
+    const normalized = addIns
         .map((item) => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
         .filter((item) => EVENT_ADDIN_IDS.has(item));
+
+    return Array.from(new Set(normalized));
 }
 
 function normalizeInvitationSetupTabs(tabs) {
@@ -39,7 +41,7 @@ function normalizeInvitationSetupTabs(tabs) {
         return [];
     }
 
-    return tabs
+    const normalized = tabs
         .map((tab, index) => {
             const type = typeof tab?.type === 'string' ? tab.type.trim() : '';
             const addonId = typeof tab?.addonId === 'string' ? tab.addonId.trim() : typeof tab?.addon_id === 'string' ? tab.addon_id.trim() : '';
@@ -61,6 +63,16 @@ function normalizeInvitationSetupTabs(tabs) {
             };
         })
         .filter(Boolean);
+
+    const seen = new Set();
+    return normalized.filter((tab) => {
+        const key = `${tab.type}:${tab.addon_id}`;
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
 }
 
 async function fetchPollSnapshot(db, pollId, clientId, eventId) {
