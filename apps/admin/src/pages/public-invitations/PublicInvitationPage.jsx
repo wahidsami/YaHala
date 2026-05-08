@@ -68,6 +68,17 @@ const COPY = {
         questionnaireNo: 'No',
         questionnaireRating: 'Rating',
         copied: 'Link copied'
+        ,
+        rsvpGateIntro: 'Will you attend this event?',
+        rsvpGateReasonLabel: 'Reason (optional)',
+        rsvpGateReasonPlaceholder: 'Share your reason',
+        rsvpGateContinue: 'Continue',
+        rsvpGatePositiveTitle: 'Thanks for confirming',
+        rsvpGatePositiveBody: 'Your response has been saved.',
+        rsvpGatePositiveButton: 'Open invitation',
+        rsvpGateNegativeTitle: 'Thank you for your response',
+        rsvpGateNegativeBody: 'We hope to see you in another event.',
+        rsvpGateNegativeButton: 'OK'
     },
     ar: {
         invitation: 'دعوة',
@@ -129,6 +140,17 @@ const COPY = {
         questionnaireNo: 'لا',
         questionnaireRating: 'التقييم',
         copied: 'تم نسخ الرابط'
+        ,
+        rsvpGateIntro: 'هل ستحضر هذه الفعالية؟',
+        rsvpGateReasonLabel: 'السبب (اختياري)',
+        rsvpGateReasonPlaceholder: 'شاركنا السبب',
+        rsvpGateContinue: 'متابعة',
+        rsvpGatePositiveTitle: 'شكراً لتأكيدك',
+        rsvpGatePositiveBody: 'تم حفظ ردك بنجاح.',
+        rsvpGatePositiveButton: 'فتح الدعوة',
+        rsvpGateNegativeTitle: 'شكراً على ردك',
+        rsvpGateNegativeBody: 'نتمنى رؤيتك في فعالية أخرى.',
+        rsvpGateNegativeButton: 'موافق'
     }
 };
 
@@ -1040,6 +1062,8 @@ export default function PublicInvitationPage() {
     const [submittingOpen, setSubmittingOpen] = useState(false);
     const [showRsvpModal, setShowRsvpModal] = useState(false);
     const [rsvpCompleted, setRsvpCompleted] = useState(false);
+    const [gateDecision, setGateDecision] = useState(null);
+    const [showGate, setShowGate] = useState(false);
     const [sessionToken, setSessionToken] = useState(() => {
         if (typeof window === 'undefined') {
             return null;
@@ -1054,6 +1078,8 @@ export default function PublicInvitationPage() {
         setInvitation(payload);
         setPages(payload.pages || []);
         setRsvpCompleted(payload.recipient?.overall_status === 'responded');
+        const attendance = payload.recipient?.rsvp_attendance || null;
+        setGateDecision(attendance);
 
         if (syncLanguage) {
             const resolvedLanguage = payload.language || payload.project?.default_language || 'ar';
@@ -1196,6 +1222,10 @@ export default function PublicInvitationPage() {
     }, [invitation]);
 
     const hasRsvpPage = pages.some((page) => page.page_type === 'rsvp' && page.is_enabled);
+    const gateConfig = invitation?.project?.event?.rsvp_gate || { enabled: false };
+    const gateEnabled = Boolean(gateConfig.enabled) && hasRsvpPage;
+    const cardUnlocked = !gateEnabled || gateDecision === 'attending' || gateDecision === 'maybe';
+    const cardLockedByDecline = gateEnabled && gateDecision === 'not_attending';
     const interactivePages = pages.filter((page) => page.is_enabled && !['cover', 'rsvp'].includes(page.page_type));
     const copy = COPY[activeLanguage];
     const coverLayout = useMemo(() => normalizeLayout(invitation?.project?.cover_template_snapshot?.layout || invitation?.project?.cover_template?.design_data?.layout || {}), [invitation?.project?.cover_template_snapshot?.layout, invitation?.project?.cover_template?.design_data?.layout]);
@@ -1226,6 +1256,20 @@ export default function PublicInvitationPage() {
             setActivePageKey(interactivePages[0].page_key);
         }
     }, [activePageKey, interactivePages]);
+
+    useEffect(() => {
+        if (!invitationReady || !gateEnabled) {
+            setShowGate(false);
+            return;
+        }
+
+        if (!gateDecision) {
+            setShowGate(true);
+            return;
+        }
+
+        setShowGate(false);
+    }, [gateDecision, gateEnabled, invitationReady]);
 
     if (loading) {
         return (
@@ -1274,12 +1318,12 @@ export default function PublicInvitationPage() {
                             language={activeLanguage}
                             hasRsvpPage={hasRsvpPage}
                             rsvpCompleted={rsvpCompleted}
-                            onOpenRsvp={() => setShowRsvpModal(true)}
+                            onOpenRsvp={() => (gateEnabled ? setShowGate(true) : setShowRsvpModal(true))}
                         />
                     </div>
                 </div>
 
-                {interactivePages.length > 0 && (
+                {cardUnlocked && interactivePages.length > 0 && (
                     <div className="card-tabs">
                         {interactivePages.map((page) => (
                             <button
@@ -1294,7 +1338,7 @@ export default function PublicInvitationPage() {
                     </div>
                 )}
 
-                {interactivePages.length > 0 && (() => {
+                {cardUnlocked && interactivePages.length > 0 && (() => {
                     const activePage = interactivePages.find((page) => page.page_key === activePageKey) || interactivePages[0];
                     if (!activePage) {
                         return null;
@@ -1323,6 +1367,38 @@ export default function PublicInvitationPage() {
                     }
                     return <PlaceholderPanel language={activeLanguage} page={activePage} />;
                 })()}
+
+            {cardLockedByDecline && (
+                <div className="module-panel">
+                    <div className="panel-header">
+                        <h2>{copy.rsvpGateNegativeTitle}</h2>
+                        <p>{copy.rsvpGateNegativeBody}</p>
+                    </div>
+                </div>
+            )}
+
+            {showGate && gateEnabled && (
+                <RsvpGateModal
+                    token={token}
+                    language={activeLanguage}
+                    sessionToken={sessionToken}
+                    setSessionToken={setSessionToken}
+                    gateConfig={gateConfig}
+                    onResolved={(attendance) => {
+                        setGateDecision(attendance);
+                        setRsvpCompleted(true);
+                        setInvitation((prev) => (prev ? {
+                            ...prev,
+                            recipient: {
+                                ...prev.recipient,
+                                overall_status: 'responded',
+                                rsvp_attendance: attendance
+                            }
+                        } : prev));
+                        setShowGate(false);
+                    }}
+                />
+            )}
 
             {showRsvpModal && hasRsvpPage && !rsvpCompleted && (
                 <div className="rsvp-modal-overlay" role="presentation" onClick={() => setShowRsvpModal(false)}>
@@ -1363,6 +1439,136 @@ export default function PublicInvitationPage() {
                 </div>
             )}
             </main>
+        </div>
+    );
+}
+
+function getGateCopy(config, language, copy) {
+    const bucket = config?.copy?.[language] || {};
+    return {
+        attendanceTitle: bucket.attendanceTitle || copy.rsvpGateIntro,
+        reasonLabel: bucket.reasonLabel || copy.rsvpGateReasonLabel,
+        reasonPlaceholder: bucket.reasonPlaceholder || copy.rsvpGateReasonPlaceholder,
+        positiveTitle: bucket.positiveTitle || copy.rsvpGatePositiveTitle,
+        positiveBody: bucket.positiveBody || copy.rsvpGatePositiveBody,
+        positiveButton: bucket.positiveButton || copy.rsvpGatePositiveButton,
+        negativeTitle: bucket.negativeTitle || copy.rsvpGateNegativeTitle,
+        negativeBody: bucket.negativeBody || copy.rsvpGateNegativeBody,
+        negativeButton: bucket.negativeButton || copy.rsvpGateNegativeButton
+    };
+}
+
+function RsvpGateModal({ token, language, sessionToken, setSessionToken, gateConfig, onResolved }) {
+    const copy = COPY[language];
+    const gateCopy = getGateCopy(gateConfig, language, copy);
+    const [step, setStep] = useState('choose_attendance');
+    const [attendance, setAttendance] = useState(null);
+    const [notes, setNotes] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const showReasonOnNo = gateConfig?.behavior?.showReasonOnNo !== false;
+    const requireReasonOnNo = Boolean(gateConfig?.behavior?.requireReasonOnNo);
+
+    async function submitDecision(nextAttendance, nextNotes = '') {
+        setSubmitting(true);
+        setError('');
+        try {
+            const response = await api.post(
+                `/public/invitations/${token}/rsvp`,
+                {
+                    sessionToken,
+                    language,
+                    attendance: nextAttendance,
+                    notes: nextNotes
+                },
+                { skipAuthRefresh: true }
+            );
+            const nextSession = response.data?.data?.sessionToken || sessionToken;
+            if (nextSession && nextSession !== sessionToken) {
+                setSessionToken(nextSession);
+                window.localStorage.setItem(`rawaj-public-session:${token}`, nextSession);
+            }
+            setAttendance(nextAttendance);
+            if (nextAttendance === 'not_attending') {
+                setStep('farewell_negative');
+            } else {
+                setStep('thank_you_positive');
+            }
+        } catch (submitError) {
+            setError(submitError.response?.data?.message || 'Failed to submit RSVP');
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <div className="rsvp-modal-overlay" role="presentation">
+            <div className="rsvp-modal" role="dialog" aria-modal="true" aria-label={copy.confirmAttendance}>
+                {step === 'choose_attendance' && (
+                    <>
+                        <div className="rsvp-modal-header">
+                            <div>
+                                <span className="eyebrow">{copy.rsvp}</span>
+                                <h3>{gateCopy.attendanceTitle}</h3>
+                            </div>
+                        </div>
+                        <div className="rsvp-form">
+                            <div className="choice-grid">
+                                <button type="button" className="choice-card" onClick={() => submitDecision('attending')} disabled={submitting}>{copy.attending}</button>
+                                <button type="button" className="choice-card" onClick={() => (showReasonOnNo ? setStep('optional_reason') : submitDecision('not_attending'))} disabled={submitting}>{copy.notAttending}</button>
+                                <button type="button" className="choice-card" onClick={() => submitDecision('maybe')} disabled={submitting}>{copy.maybe}</button>
+                            </div>
+                            {error && <div className="form-error">{error}</div>}
+                        </div>
+                    </>
+                )}
+
+                {step === 'optional_reason' && (
+                    <>
+                        <div className="rsvp-modal-header">
+                            <div>
+                                <span className="eyebrow">{copy.rsvp}</span>
+                                <h3>{gateCopy.reasonLabel}</h3>
+                            </div>
+                        </div>
+                        <div className="rsvp-form">
+                            <textarea rows="4" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={gateCopy.reasonPlaceholder} />
+                            {error && <div className="form-error">{error}</div>}
+                            <button
+                                className="submit-btn"
+                                type="button"
+                                disabled={submitting || (requireReasonOnNo && !notes.trim())}
+                                onClick={() => submitDecision('not_attending', notes.trim())}
+                            >
+                                {submitting ? <Loader2 size={18} className="spinner" /> : <ChevronRight size={18} />}
+                                <span>{copy.rsvpGateContinue}</span>
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {step === 'thank_you_positive' && (
+                    <div className="rsvp-success">
+                        <div className="success-icon"><CheckCircle2 size={28} /></div>
+                        <h3>{gateCopy.positiveTitle}</h3>
+                        <p>{gateCopy.positiveBody}</p>
+                        <button className="submit-btn" type="button" onClick={() => onResolved(attendance || 'attending')}>
+                            <span>{gateCopy.positiveButton}</span>
+                        </button>
+                    </div>
+                )}
+
+                {step === 'farewell_negative' && (
+                    <div className="rsvp-success">
+                        <div className="success-icon"><CheckCircle2 size={28} /></div>
+                        <h3>{gateCopy.negativeTitle}</h3>
+                        <p>{gateCopy.negativeBody}</p>
+                        <button className="submit-btn" type="button" onClick={() => onResolved('not_attending')}>
+                            <span>{gateCopy.negativeButton}</span>
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

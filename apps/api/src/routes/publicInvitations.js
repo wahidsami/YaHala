@@ -30,6 +30,67 @@ function normalizeLanguage(language, fallback = 'ar') {
     return language === 'en' ? 'en' : fallback === 'en' ? 'en' : 'ar';
 }
 
+function sanitizeRsvpGateConfig(value) {
+    const config = safeJson(value, {});
+    if (!config || typeof config !== 'object') {
+        return { enabled: false };
+    }
+
+    const enabled = Boolean(config.enabled);
+    const style = safeJson(config.style, {});
+    const copy = safeJson(config.copy, {});
+    const behavior = safeJson(config.behavior, {});
+
+    return {
+        enabled,
+        style: {
+            variant: typeof style.variant === 'string' ? style.variant : 'brand',
+            primaryColor: typeof style.primaryColor === 'string' ? style.primaryColor : '#946FA7',
+            secondaryColor: typeof style.secondaryColor === 'string' ? style.secondaryColor : '#FF9D00',
+            icon: typeof style.icon === 'string' ? style.icon : 'sparkles'
+        },
+        copy: {
+            en: safeJson(copy.en, {}),
+            ar: safeJson(copy.ar, {})
+        },
+        behavior: {
+            showReasonOnNo: behavior.showReasonOnNo !== false,
+            requireReasonOnNo: Boolean(behavior.requireReasonOnNo)
+        }
+    };
+}
+
+async function fetchLatestRsvpResponse(db, projectId, recipientId) {
+    if (!projectId || !recipientId) {
+        return null;
+    }
+
+    const { rows } = await db.query(
+        `
+        SELECT r.response_data
+        FROM invitation_module_responses r
+        JOIN invitation_modules m ON m.id = r.module_id
+        WHERE r.project_id = $1
+          AND r.recipient_id = $2
+          AND m.module_type = 'rsvp'
+          AND r.response_status = 'submitted'
+        ORDER BY COALESCE(r.submitted_at, r.updated_at, r.created_at) DESC
+        LIMIT 1
+        `,
+        [projectId, recipientId]
+    );
+
+    if (!rows.length) {
+        return null;
+    }
+
+    const data = safeJson(rows[0].response_data, {});
+    return {
+        attendance: typeof data.attendance === 'string' ? data.attendance : null,
+        notes: typeof data.notes === 'string' ? data.notes : ''
+    };
+}
+
 function shapeModuleField(field) {
     return {
         id: field.id,
@@ -293,6 +354,7 @@ async function fetchPublicInvitationBundle(db, token) {
             e.end_datetime,
             e.venue,
             e.event_type,
+            e.settings AS event_settings,
             t.name AS cover_template_name,
             t.name_ar AS cover_template_name_ar,
             t.design_data AS cover_template_design_data
@@ -312,6 +374,11 @@ async function fetchPublicInvitationBundle(db, token) {
     }
 
     const recipient = rows[0];
+    const latestRsvp = await fetchLatestRsvpResponse(db, recipient.project_id, recipient.recipient_id);
+    if (latestRsvp) {
+        recipient.rsvp_attendance = latestRsvp.attendance;
+        recipient.rsvp_notes = latestRsvp.notes;
+    }
 
     if (recipient.overall_status === 'opted_out') {
         throw new AppError('Invitation link is no longer available', 410, 'INVITATION_INACTIVE');
@@ -482,7 +549,8 @@ async function fetchPublicInvitationBundle(db, token) {
             start_datetime: recipient.start_datetime,
             end_datetime: recipient.end_datetime,
             venue: recipient.venue,
-            event_type: recipient.event_type
+            event_type: recipient.event_type,
+            rsvp_gate: sanitizeRsvpGateConfig(safeJson(recipient.event_settings, {})?.rsvp_gate)
         },
         cover_template: recipient.cover_template_id
             ? {
