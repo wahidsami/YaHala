@@ -1032,18 +1032,6 @@
     cursor: not-allowed;
 }
 
-.instructions-modal {
-    width: min(96vw, 460px);
-    max-width: min(96vw, 460px);
-    max-height: min(90vh, 840px);
-}
-
-.instructions-modal-body {
-    max-height: min(78vh, 760px);
-    overflow: auto;
-    padding-right: 4px;
-}
-
 .instructions-schema-canvas {
     overflow: hidden;
     border-radius: 12px;

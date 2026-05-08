@@ -1155,7 +1155,6 @@ export default function PublicInvitationPage() {
     const [rsvpCompleted, setRsvpCompleted] = useState(false);
     const [gateDecision, setGateDecision] = useState(null);
     const [showGate, setShowGate] = useState(false);
-    const [showInstructionsModal, setShowInstructionsModal] = useState(false);
     const [completedAddonPages, setCompletedAddonPages] = useState({});
     const [sessionToken, setSessionToken] = useState(() => {
         if (typeof window === 'undefined') {
@@ -1407,12 +1406,6 @@ export default function PublicInvitationPage() {
     }
 
     function openAddonPage(pageKey) {
-        const target = interactivePages.find((page) => page.page_key === pageKey);
-        if (target?.page_type === 'instructions') {
-            setShowInstructionsModal(true);
-        } else {
-            setShowInstructionsModal(false);
-        }
         setActivePageKey(pageKey);
     }
 
@@ -1569,7 +1562,13 @@ export default function PublicInvitationPage() {
                         );
                     }
                     if (activePage.page_type === 'instructions') {
-                        return null;
+                        return (
+                            <InstructionsPanel
+                                language={activeLanguage}
+                                page={activePage}
+                                onBack={() => setActivePageKey('cover')}
+                            />
+                        );
                     }
                     return <PlaceholderPanel language={activeLanguage} page={activePage} />;
                 })()}
@@ -1621,30 +1620,6 @@ export default function PublicInvitationPage() {
                         )}
                     </div>
                 )}
-
-                {showInstructionsModal && (() => {
-                    const activeInstructionsPage = interactivePages.find((page) => page.page_key === activePageKey && page.page_type === 'instructions');
-                    if (!activeInstructionsPage) {
-                        return null;
-                    }
-                    return (
-                        <div className="rsvp-modal-overlay" role="presentation" onClick={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }}>
-                            <div className="rsvp-modal instructions-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-                                <div className="rsvp-modal-header">
-                                    <div>
-                                        <h3>{localizedText(activeLanguage, activeInstructionsPage.title || 'Instructions', activeInstructionsPage.title_ar || 'تعليمات')}</h3>
-                                    </div>
-                                    <button type="button" className="rsvp-modal-close" onClick={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }}>
-                                        <X size={18} />
-                                    </button>
-                                </div>
-                                <div className="instructions-modal-body">
-                                    <InstructionsPanel language={activeLanguage} page={activeInstructionsPage} onBack={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }} />
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })()}
 
             {cardLockedByDecline && (
                 <div className="module-panel">
