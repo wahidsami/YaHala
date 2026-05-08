@@ -925,8 +925,28 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                 <p className="info-text">Logo size is locked to the imported aspect ratio.</p>
                             </>
                         )}
-                        {widget.type === 'instructions_link' && (
+                        {(widget.type === 'instructions_link' || widget.type === 'questionnaire_link') && (
                             <>
+                                {widget.type === 'instructions_link' && (
+                                    <div className="form-group">
+                                        <label>Addon Target</label>
+                                        <select
+                                            value={content.addonType || 'instructions'}
+                                            onChange={(e) => {
+                                                const addonType = e.target.value === 'questionnaire' ? 'questionnaire' : 'instructions';
+                                                const sharedContent = {
+                                                    ...(widget.content || {}),
+                                                    ar: { ...(widget.content?.ar || {}), addonType },
+                                                    en: { ...(widget.content?.en || {}), addonType }
+                                                };
+                                                onUpdate({ content: sharedContent });
+                                            }}
+                                        >
+                                            <option value="instructions">Instructions</option>
+                                            <option value="questionnaire">Questionnaire</option>
+                                        </select>
+                                    </div>
+                                )}
                                 <div className="form-group">
                                     <label>Icon URL</label>
                                     <input
@@ -934,10 +954,13 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                         value={content.iconUrl || ''}
                                         onChange={(e) => {
                                             const iconUrl = e.target.value;
+                                            const addonType = widget.type === 'questionnaire_link'
+                                                ? 'questionnaire'
+                                                : (content.addonType || 'instructions');
                                             const sharedContent = {
                                                 ...(widget.content || {}),
-                                                ar: { ...(widget.content?.ar || {}), iconUrl, addonType: 'instructions' },
-                                                en: { ...(widget.content?.en || {}), iconUrl, addonType: 'instructions' }
+                                                ar: { ...(widget.content?.ar || {}), iconUrl, addonType },
+                                                en: { ...(widget.content?.en || {}), iconUrl, addonType }
                                             };
                                             onUpdate({ content: sharedContent });
                                         }}
@@ -955,10 +978,13 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                                 const reader = new FileReader();
                                                 reader.onload = (event) => {
                                                     const iconUrl = typeof event.target.result === 'string' ? event.target.result : '';
+                                                    const addonType = widget.type === 'questionnaire_link'
+                                                        ? 'questionnaire'
+                                                        : (content.addonType || 'instructions');
                                                     const sharedContent = {
                                                         ...(widget.content || {}),
-                                                        ar: { ...(widget.content?.ar || {}), iconUrl, addonType: 'instructions' },
-                                                        en: { ...(widget.content?.en || {}), iconUrl, addonType: 'instructions' }
+                                                        ar: { ...(widget.content?.ar || {}), iconUrl, addonType },
+                                                        en: { ...(widget.content?.en || {}), iconUrl, addonType }
                                                     };
                                                     onUpdate({ content: sharedContent });
                                                 };
@@ -982,7 +1008,11 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                         onChange={(e) => updateStyle('iconSize', Math.max(12, Math.min(160, parseInt(e.target.value, 10) || 28)))}
                                     />
                                 </div>
-                                <p className="info-text">This icon auto-links to the event Instructions addon and opens it in public invitation.</p>
+                                <p className="info-text">
+                                    {widget.type === 'questionnaire_link'
+                                        ? 'This icon auto-links to the event Questionnaire addon and opens it in public invitation.'
+                                        : 'This icon auto-links to the selected event addon and opens it in public invitation.'}
+                                </p>
                             </>
                         )}
                         {widget.type === 'event_details' && (

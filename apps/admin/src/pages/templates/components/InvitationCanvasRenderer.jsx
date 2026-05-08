@@ -439,8 +439,10 @@ export function InvitationWidgetPreview({
                     <button className="map-btn" type="button">📍 Open Location Map</button>
                 </div>
             );
-        case 'instructions_link': {
-            const addonType = `${content.addonType || 'instructions'}`.toLowerCase();
+        case 'instructions_link':
+        case 'questionnaire_link': {
+            const defaultAddonType = widget.type === 'questionnaire_link' ? 'questionnaire' : 'instructions';
+            const addonType = `${content.addonType || defaultAddonType}`.toLowerCase();
             const target = addonLaunchTargets?.[addonType] || null;
             const isPublic = mode === 'public';
             const hasTarget = Boolean(target?.pageKey);

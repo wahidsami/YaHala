@@ -1446,12 +1446,19 @@ export default function PublicInvitationPage() {
     const showCoverPage = !cardUnlocked || !activeAddonPage || showInstructionsModal;
 
     useEffect(() => {
+        // Always start each invitation session on cover to avoid carrying
+        // addon-page state between different invitation links.
+        setActivePageKey('cover');
+        setShowInstructionsModal(false);
+    }, [token]);
+
+    useEffect(() => {
         if (!interactivePages.length) {
             setActivePageKey('cover');
             return;
         }
         if (activePageKey !== 'cover' && !interactivePages.some((page) => page.page_key === activePageKey)) {
-            setActivePageKey(interactivePages[0].page_key);
+            setActivePageKey('cover');
         }
     }, [activePageKey, interactivePages]);
 

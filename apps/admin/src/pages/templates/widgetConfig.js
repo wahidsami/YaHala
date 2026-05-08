@@ -5,6 +5,7 @@ export const WIDGET_TYPES = [
     { type: 'image', label: 'Image', icon: 'Image', category: 'content' },
     { type: 'logo', label: 'Entity Logo', icon: 'Shield', category: 'content' },
     { type: 'instructions_link', label: 'Instructions Link', icon: 'BookOpen', category: 'content' },
+    { type: 'questionnaire_link', label: 'Questionnaire Button', icon: 'ClipboardList', category: 'content' },
     { type: 'event_details', label: 'Event Details', icon: 'Calendar', category: 'event' },
     { type: 'qr_code', label: 'QR Code', icon: 'QrCode', category: 'event' },
     { type: 'guest_name', label: 'Guest Name', icon: 'User', category: 'guest' }
@@ -32,6 +33,10 @@ export const DEFAULT_WIDGET_CONTENT = {
     instructions_link: {
         ar: { label: '', iconUrl: '', addonType: 'instructions' },
         en: { label: '', iconUrl: '', addonType: 'instructions' }
+    },
+    questionnaire_link: {
+        ar: { label: '', iconUrl: '', addonType: 'questionnaire' },
+        en: { label: '', iconUrl: '', addonType: 'questionnaire' }
     },
     event_details: {
         ar: { showDate: true, showTime: true, showVenue: true },

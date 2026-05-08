@@ -639,6 +639,7 @@ function PreviewWidget({ widget, context, eventData }) {
                 </div>
             );
         case 'instructions_link':
+        case 'questionnaire_link':
             return (
                 <div style={style} className="preview-widget map-widget">
                     <button className="instructions-icon-btn">
