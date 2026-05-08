@@ -108,6 +108,18 @@
     color: #b91c1c;
 }
 
+.theme-settings-block {
+    margin-top: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.85rem;
+    padding: 0.8rem;
+    background: var(--bg-secondary);
+}
+
+.theme-settings-block h4 {
+    margin: 0 0 0.65rem;
+}
+
 @media (max-width: 760px) {
     .option-row {
         grid-template-columns: 1fr;

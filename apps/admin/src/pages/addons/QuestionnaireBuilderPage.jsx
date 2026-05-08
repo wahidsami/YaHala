@@ -4,6 +4,15 @@ import { ArrowLeft, CheckSquare, CircleDot, ListChecks, MessageSquareText, Plus,
 import api from '../../services/api';
 import './QuestionnaireBuilderPage.css';
 
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
 const QUESTION_TYPES = [
     { id: 'yes_no', label: 'Yes / No', icon: CheckSquare },
     { id: 'single_choice', label: 'Single Choice', icon: CircleDot },
@@ -74,7 +83,18 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
         status: initialData.status || 'draft',
         settings: {
             purpose: initialData.settings?.purpose || '',
-            purposeAr: initialData.settings?.purposeAr || initialData.settings?.purpose_ar || ''
+            purposeAr: initialData.settings?.purposeAr || initialData.settings?.purpose_ar || '',
+            theme: {
+                backgroundType: initialData.settings?.theme?.backgroundType || 'color',
+                backgroundColor: initialData.settings?.theme?.backgroundColor || '#f8fafc',
+                backgroundImage: initialData.settings?.theme?.backgroundImage || '',
+                backgroundSize: initialData.settings?.theme?.backgroundSize || 'cover',
+                backgroundRepeat: initialData.settings?.theme?.backgroundRepeat || 'no-repeat',
+                backgroundPosition: initialData.settings?.theme?.backgroundPosition || 'center center',
+                textColor: initialData.settings?.theme?.textColor || '#0f172a',
+                buttonColor: initialData.settings?.theme?.buttonColor || '#334155',
+                buttonTextColor: initialData.settings?.theme?.buttonTextColor || '#ffffff'
+            }
         },
         questions: Array.isArray(initialData.questions) && initialData.questions.length
             ? initialData.questions.map((q, idx) => ({
@@ -128,6 +148,30 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
 
     function updateField(name, value) {
         setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
+    function updateTheme(patch) {
+        setFormData((prev) => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                theme: {
+                    ...(prev.settings?.theme || {}),
+                    ...patch
+                }
+            }
+        }));
+    }
+
+    async function uploadThemeBackgroundImage(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+            const dataUrl = await readFileAsDataUrl(file);
+            updateTheme({ backgroundType: 'image', backgroundImage: dataUrl });
+        } catch {
+            setError('Failed to upload background image.');
+        }
     }
 
     function addQuestion(type = 'short_text') {
@@ -338,6 +382,107 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                             <option value="published">Published</option>
                             <option value="archived">Archived</option>
                         </select>
+                    </div>
+
+                    <div className="theme-settings-block">
+                        <h4>Questionnaire Theme</h4>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Background Type</label>
+                                <select
+                                    value={formData.settings?.theme?.backgroundType || 'color'}
+                                    onChange={(e) => updateTheme({ backgroundType: e.target.value })}
+                                >
+                                    <option value="color">Color</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Background Color</label>
+                                <input
+                                    type="color"
+                                    value={formData.settings?.theme?.backgroundColor || '#f8fafc'}
+                                    onChange={(e) => updateTheme({ backgroundColor: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Upload Background Image</label>
+                                <input type="file" accept="image/*" onChange={uploadThemeBackgroundImage} />
+                            </div>
+                            <div className="form-group">
+                                <label>Background Size</label>
+                                <select
+                                    value={formData.settings?.theme?.backgroundSize || 'cover'}
+                                    onChange={(e) => updateTheme({ backgroundSize: e.target.value })}
+                                >
+                                    <option value="cover">Cover</option>
+                                    <option value="contain">Fit / Contain</option>
+                                    <option value="auto">Auto</option>
+                                    <option value="100% 100%">Stretch</option>
+                                    <option value="64px 64px">Tile</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Background Repeat</label>
+                                <select
+                                    value={formData.settings?.theme?.backgroundRepeat || 'no-repeat'}
+                                    onChange={(e) => updateTheme({ backgroundRepeat: e.target.value })}
+                                >
+                                    <option value="no-repeat">No Repeat</option>
+                                    <option value="repeat">Repeat</option>
+                                    <option value="repeat-x">Repeat X</option>
+                                    <option value="repeat-y">Repeat Y</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Background Position</label>
+                                <select
+                                    value={formData.settings?.theme?.backgroundPosition || 'center center'}
+                                    onChange={(e) => updateTheme({ backgroundPosition: e.target.value })}
+                                >
+                                    <option value="center center">Center</option>
+                                    <option value="top center">Top</option>
+                                    <option value="bottom center">Bottom</option>
+                                    <option value="left center">Left</option>
+                                    <option value="right center">Right</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Text Color</label>
+                                <input
+                                    type="color"
+                                    value={formData.settings?.theme?.textColor || '#0f172a'}
+                                    onChange={(e) => updateTheme({ textColor: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Button Color</label>
+                                <input
+                                    type="color"
+                                    value={formData.settings?.theme?.buttonColor || '#334155'}
+                                    onChange={(e) => updateTheme({ buttonColor: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Button Text Color</label>
+                                <input
+                                    type="color"
+                                    value={formData.settings?.theme?.buttonTextColor || '#ffffff'}
+                                    onChange={(e) => updateTheme({ buttonTextColor: e.target.value })}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </section>
             )}

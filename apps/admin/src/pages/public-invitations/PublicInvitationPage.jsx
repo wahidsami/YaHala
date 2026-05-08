@@ -921,6 +921,7 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
         setQuestionnaireState(snapshot);
@@ -929,6 +930,7 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
         setSubmitting(false);
         setError('');
         setSuccess('');
+        setShowSuccessModal(false);
     }, [snapshot.questionnaire_id, page?.id]);
 
     useEffect(() => {
@@ -962,6 +964,21 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
         && !Number.isNaN(new Date(questionnaireState.start_date).getTime())
         && new Date(questionnaireState.start_date).getTime() > Date.now();
     const canSubmit = questionnaireState.status === 'published' && !questionnaireEnded && !questionnaireNotStarted && !submitted;
+    const questionnaireTheme = questionnaireState?.settings?.theme || {};
+    const questionnaireSurfaceStyle = {
+        backgroundColor: questionnaireTheme.backgroundColor || '#ffffff',
+        backgroundImage: questionnaireTheme.backgroundType === 'image' && questionnaireTheme.backgroundImage
+            ? `url(${resolveStorageUrl(questionnaireTheme.backgroundImage)})`
+            : undefined,
+        backgroundSize: questionnaireTheme.backgroundSize || 'cover',
+        backgroundRepeat: questionnaireTheme.backgroundRepeat || 'no-repeat',
+        backgroundPosition: questionnaireTheme.backgroundPosition || 'center center',
+        color: questionnaireTheme.textColor || '#0f172a'
+    };
+    const questionnaireButtonStyle = {
+        background: questionnaireTheme.buttonColor || '#334155',
+        color: questionnaireTheme.buttonTextColor || '#ffffff'
+    };
 
     function setAnswer(questionId, value) {
         setError('');
@@ -1019,10 +1036,8 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
             }
             setSubmitted(true);
             setSuccess(copy.questionnaireSubmitSuccess);
+            setShowSuccessModal(true);
             onSubmitted?.(page.page_key);
-            if (page?._runtime?.autoReturnAfterSubmit !== false) {
-                window.setTimeout(() => onBack?.(), 1200);
-            }
         } catch (submitError) {
             setError(submitError.response?.data?.message || copy.questionnaireUnavailable);
         } finally {
@@ -1031,7 +1046,12 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
     }
 
     return (
-        <div className="module-panel">
+        <div className="module-panel questionnaire-panel" style={questionnaireSurfaceStyle}>
+            <div className="module-top-actions">
+                <button type="button" className="ghost-link module-back-btn" onClick={onBack}>
+                    {copy.close}
+                </button>
+            </div>
             <div className="panel-header">
                 <span className="eyebrow">{copy.questionnaire}</span>
                 <h2>{localizedText(language, page.title || questionnaireState.title || copy.questionnaire, page.title_ar || questionnaireState.title_ar || copy.questionnaire)}</h2>
@@ -1105,7 +1125,7 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
                 {error && <div className="form-error">{error}</div>}
                 {success && <div className="status-banner success">{success}</div>}
                 {canSubmit ? (
-                    <button type="button" className="submit-btn poll-cta" onClick={submitQuestionnaire} disabled={submitting}>
+                    <button type="button" className="submit-btn poll-cta" style={questionnaireButtonStyle} onClick={submitQuestionnaire} disabled={submitting}>
                         <span>{submitting ? copy.submitting : copy.submit}</span>
                     </button>
                 ) : (
@@ -1117,6 +1137,31 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
                     </button>
                 )}
             </div>
+
+            {showSuccessModal && (
+                <div className="rsvp-modal-overlay" role="presentation">
+                    <div className="rsvp-modal questionnaire-success-modal" role="dialog" aria-modal="true">
+                        <div className="rsvp-modal-header">
+                            <div>
+                                <h3>{copy.questionnaireSubmitSuccess}</h3>
+                            </div>
+                        </div>
+                        <div className="rsvp-modal-actions">
+                            <button
+                                type="button"
+                                className="submit-btn"
+                                style={questionnaireButtonStyle}
+                                onClick={() => {
+                                    setShowSuccessModal(false);
+                                    onBack?.();
+                                }}
+                            >
+                                <span>OK</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
