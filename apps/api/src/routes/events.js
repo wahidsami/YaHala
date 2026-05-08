@@ -12,6 +12,7 @@ const router = Router();
 router.use(authenticate);
 
 const EVENT_ADDIN_IDS = new Set(['poll', 'questionnaire', 'quiz', 'instructions', 'guest_book', 'files_downloads']);
+const EVENT_ADDON_PAGE_TYPES = new Set(['poll', 'questionnaire', 'quiz', 'instructions', 'guest_book', 'files_downloads']);
 
 function safeJson(value, fallback = {}) {
     if (value === undefined || value === null || value === '') return fallback;
@@ -535,6 +536,85 @@ async function syncEventTemplateToProject(db, eventId, eventTemplateId) {
     };
 }
 
+async function syncProjectAddonPagesFromEventSetup(db, projectId, tabs = []) {
+    const normalizedTabs = Array.isArray(tabs) ? tabs.filter((tab) => EVENT_ADDON_PAGE_TYPES.has(tab?.type) && tab?.addon_id) : [];
+
+    await db.query(
+        `
+        DELETE FROM invitation_project_pages
+        WHERE project_id = $1
+          AND page_type = ANY($2::text[])
+        `,
+        [projectId, Array.from(EVENT_ADDON_PAGE_TYPES)]
+    );
+
+    if (!normalizedTabs.length) {
+        return;
+    }
+
+    const { rows: maxRows } = await db.query(
+        `
+        SELECT COALESCE(MAX(sort_order), 0)::int AS max_sort
+        FROM invitation_project_pages
+        WHERE project_id = $1
+        `,
+        [projectId]
+    );
+    let sortOrder = (maxRows[0]?.max_sort || 0) + 1;
+
+    for (const tab of normalizedTabs) {
+        const pageId = uuidv4();
+        const addonId = tab.addon_id;
+        const pageKey = `${tab.type}-${String(addonId).slice(0, 8)}-${sortOrder}`;
+        const title = tab.title || tab.type;
+        const titleAr = tab.title_ar || null;
+
+        const settings = {
+            source: 'event_invitation_setup',
+            addon_type: tab.type,
+            addon_id: addonId,
+            activation_rules: safeJson(tab.activation_rules, {}),
+            display: safeJson(tab.display, {}),
+            addon_snapshot: safeJson(tab.addon_snapshot, {})
+        };
+
+        if (tab.type === 'instructions') {
+            settings.instructions = safeJson(tab.addon_snapshot, {});
+        }
+
+        await db.query(
+            `
+            INSERT INTO invitation_project_pages (
+                id,
+                project_id,
+                page_key,
+                page_type,
+                title,
+                title_ar,
+                description,
+                description_ar,
+                sort_order,
+                is_enabled,
+                settings
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, $7, TRUE, $8::jsonb)
+            `,
+            [
+                pageId,
+                projectId,
+                pageKey,
+                tab.type,
+                title,
+                titleAr,
+                sortOrder,
+                JSON.stringify(settings)
+            ]
+        );
+
+        sortOrder += 1;
+    }
+}
+
 // GET /api/admin/events - List events with filters
 router.get('/', requirePermission('events.view'), async (req, res, next) => {
     try {
@@ -900,6 +980,8 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
             nextSettings.addIns = requestedAddIns;
         }
 
+        let selectedTabsForSync = null;
+
         if (hasInvitationSetup) {
             const setup = req.body.invitationSetup;
             const normalizedTabs = normalizeInvitationSetupTabs(setup?.tabs);
@@ -1018,6 +1100,7 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
                 ...safeJson(setup, {}),
                 tabs: selectedTabs
             };
+            selectedTabsForSync = selectedTabs;
         } else if (hasAddIns) {
             const existingSetup = safeJson(nextSettings.invitation_setup, {});
             const existingTabs = Array.isArray(existingSetup.tabs) ? existingSetup.tabs : [];
@@ -1030,6 +1113,11 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
 
         if (hasRsvpGate) {
             nextSettings.rsvp_gate = normalizeRsvpGateConfig(req.body.rsvpGate);
+        }
+
+        if (selectedTabsForSync) {
+            const { project } = await resolvePrimaryInvitationProject(pool, req.params.id);
+            await syncProjectAddonPagesFromEventSetup(pool, project.id, selectedTabsForSync);
         }
 
         const nextTemplateId = hasTemplateId

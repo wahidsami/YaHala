@@ -246,7 +246,7 @@ function resolveStorageUrl(storagePath) {
 }
 
 function getWidgetContent(widget, language) {
-    return widget?.content?.[language] || widget?.content?.ar || widget?.content?.en || {};
+    return widget?.content?.[language] || widget?.content?.ar || widget?.content?.en || widget?.content || {};
 }
 
 function resolveQrTheme(widget, content) {
@@ -400,7 +400,7 @@ function WidgetPreview({ widget, language, project, recipient }) {
             return (
                 <div style={style} className="preview-widget image-widget">
                     {content.url ? (
-                        <img src={content.url} alt={content.alt || 'Widget'} style={{ maxWidth: '100%', height: 'auto' }} />
+                        <img src={resolveStorageUrl(content.url)} alt={content.alt || 'Widget'} style={{ maxWidth: '100%', height: 'auto' }} />
                     ) : (
                         <div className="image-placeholder">Image</div>
                     )}
@@ -410,7 +410,7 @@ function WidgetPreview({ widget, language, project, recipient }) {
             return (
                 <div style={style} className="preview-widget image-widget">
                     {content.url ? (
-                        <img src={content.url} alt={content.alt || 'Logo'} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }} />
+                        <img src={resolveStorageUrl(content.url)} alt={content.alt || 'Logo'} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }} />
                     ) : (
                         <div className="image-placeholder">Logo</div>
                     )}
