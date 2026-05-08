@@ -83,6 +83,17 @@
     color: var(--text-secondary);
 }
 
+.addon-soon-badge {
+    margin-inline-start: auto;
+    font-size: 0.68rem;
+    border-radius: 999px;
+    padding: 0.1rem 0.45rem;
+    background: rgba(148, 111, 167, 0.12);
+    color: #6b4f7b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 .event-addons-actions {
     display: flex;
     align-items: center;

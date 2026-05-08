@@ -436,7 +436,7 @@ export default function EventDashboardPage() {
 
                 {activeTab === 'guests' && <EventGuestsTab event={event} />}
 
-                {activeTab === 'addons' && <EventAddonsTab eventId={id} />}
+                {activeTab === 'addons' && <EventAddonsTab event={event} />}
             </div>
         </div>
     );

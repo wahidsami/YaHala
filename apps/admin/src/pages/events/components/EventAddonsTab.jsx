@@ -9,10 +9,21 @@ function localizedText(i18n, enText, arText) {
     return i18n.language?.startsWith('ar') ? (arText || enText || '') : (enText || arText || '');
 }
 
-export default function EventAddonsTab({ eventId }) {
+const ADDON_CATALOG = [
+    { id: 'poll', label: 'Poll', icon: MessageSquare, comingSoon: false },
+    { id: 'questionnaire', label: 'Questionnaire', icon: ClipboardList, comingSoon: false },
+    { id: 'instructions', label: 'Instructions', icon: Layers3, comingSoon: true },
+    { id: 'quiz', label: 'Quiz', icon: Layers3, comingSoon: true },
+    { id: 'files_downloads', label: 'Files & Downloads', icon: Layers3, comingSoon: true },
+    { id: 'guest_book', label: 'Guest Book', icon: Layers3, comingSoon: true }
+];
+
+export default function EventAddonsTab({ event }) {
     const { t, i18n } = useTranslation();
+    const eventId = event?.id;
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [creatingQuestionnaire, setCreatingQuestionnaire] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [polls, setPolls] = useState([]);
@@ -90,6 +101,46 @@ export default function EventAddonsTab({ eventId }) {
         });
     }
 
+    async function createQuestionnaire() {
+        const title = window.prompt('Questionnaire title');
+        if (!title || !title.trim()) {
+            return;
+        }
+        if (!event?.client_id || !event?.id) {
+            setError('Missing event/client context for questionnaire creation.');
+            return;
+        }
+
+        setCreatingQuestionnaire(true);
+        setError('');
+        setSuccess('');
+        try {
+            await api.post('/admin/questionnaires', {
+                clientId: event.client_id,
+                eventId: event.id,
+                title: title.trim(),
+                status: 'draft',
+                questions: [
+                    {
+                        questionType: 'short_text',
+                        title: 'Question 1',
+                        isRequired: false,
+                        sortOrder: 0,
+                        settings: {}
+                    }
+                ]
+            });
+            setActiveAddon('questionnaire');
+            setSuccess('Questionnaire created. You can now link it to card tabs.');
+            await loadAddons();
+        } catch (createError) {
+            console.error('Failed to create questionnaire:', createError);
+            setError(createError.response?.data?.message || 'Failed to create questionnaire.');
+        } finally {
+            setCreatingQuestionnaire(false);
+        }
+    }
+
     function toggleSelection(key, id, checked) {
         setFormData((prev) => {
             const source = new Set(prev[key]);
@@ -158,43 +209,32 @@ export default function EventAddonsTab({ eventId }) {
             <div className="event-addons-workspace">
                 <aside className="event-addons-sidebar">
                     <h4>Add-on List</h4>
-                    <div className="event-addon-nav-item">
-                        <button
-                            type="button"
-                            className={`event-addon-nav-btn ${activeAddon === 'poll' ? 'active' : ''}`}
-                            onClick={() => setActiveAddon('poll')}
-                        >
-                            <MessageSquare size={16} />
-                            <span>{t('addons.pollTab')}</span>
-                        </button>
-                        <label className="event-addon-toggle">
-                            <input
-                                type="checkbox"
-                                checked={enabledAddonSet.has('poll')}
-                                onChange={(event) => toggleAddon('poll', event.target.checked)}
-                            />
-                            <span>Enabled</span>
-                        </label>
-                    </div>
-                    <div className="event-addon-nav-item">
-                        <button
-                            type="button"
-                            className={`event-addon-nav-btn ${activeAddon === 'questionnaire' ? 'active' : ''}`}
-                            onClick={() => setActiveAddon('questionnaire')}
-                        >
-                            <ClipboardList size={16} />
-                            <span>{t('addons.questionnaireTab')}</span>
-                        </button>
-                        <label className="event-addon-toggle">
-                            <input
-                                type="checkbox"
-                                checked={enabledAddonSet.has('questionnaire')}
-                                onChange={(event) => toggleAddon('questionnaire', event.target.checked)}
-                            />
-                            <span>Enabled</span>
-                        </label>
-                    </div>
-                    <div className="event-addon-coming-soon">Quiz, Instructions, Files: coming next.</div>
+                    {ADDON_CATALOG.map((addon) => {
+                        const Icon = addon.icon;
+                        const isActive = activeAddon === addon.id;
+                        const isEnabled = enabledAddonSet.has(addon.id);
+                        return (
+                            <div key={addon.id} className="event-addon-nav-item">
+                                <button
+                                    type="button"
+                                    className={`event-addon-nav-btn ${isActive ? 'active' : ''}`}
+                                    onClick={() => setActiveAddon(addon.id)}
+                                >
+                                    <Icon size={16} />
+                                    <span>{addon.label}</span>
+                                    {addon.comingSoon && <small className="addon-soon-badge">Soon</small>}
+                                </button>
+                                <label className="event-addon-toggle">
+                                    <input
+                                        type="checkbox"
+                                        checked={isEnabled}
+                                        onChange={(eventParam) => toggleAddon(addon.id, eventParam.target.checked)}
+                                    />
+                                    <span>Enabled</span>
+                                </label>
+                            </div>
+                        );
+                    })}
                 </aside>
 
                 <section className="event-addons-panel">
@@ -239,6 +279,9 @@ export default function EventAddonsTab({ eventId }) {
                         <>
                             <div className="event-addons-card-header">
                                 <h4>Questionnaire tabs linked to invitation card</h4>
+                                <button type="button" className="btn btn-secondary" onClick={createQuestionnaire} disabled={creatingQuestionnaire}>
+                                    {creatingQuestionnaire ? t('common.loading') : 'Create Questionnaire'}
+                                </button>
                             </div>
                             {!enabledAddonSet.has('questionnaire') ? (
                                 <p className="event-addons-empty">Enable Questionnaire addon from the left menu first.</p>
@@ -265,6 +308,17 @@ export default function EventAddonsTab({ eventId }) {
                                     })}
                                 </div>
                             )}
+                        </>
+                    )}
+
+                    {!['poll', 'questionnaire'].includes(activeAddon) && (
+                        <>
+                            <div className="event-addons-card-header">
+                                <h4>{ADDON_CATALOG.find((item) => item.id === activeAddon)?.label || 'Addon'} setup</h4>
+                            </div>
+                            <p className="event-addons-empty">
+                                This add-on is currently in rollout. You can enable/disable it now, and full content management will be added in next phase.
+                            </p>
                         </>
                     )}
                 </section>
