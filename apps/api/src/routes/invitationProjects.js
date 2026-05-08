@@ -69,6 +69,130 @@ function normalizeFieldOptions(options) {
     return [];
 }
 
+function shapeModuleField(field) {
+    return {
+        id: field.id,
+        field_key: field.field_key,
+        field_type: field.field_type,
+        label: field.label,
+        label_ar: field.label_ar,
+        placeholder: field.placeholder,
+        placeholder_ar: field.placeholder_ar,
+        help_text: field.help_text,
+        help_text_ar: field.help_text_ar,
+        required: field.required,
+        sort_order: field.sort_order,
+        options: safeJson(field.options, []),
+        validation: safeJson(field.validation, {}),
+        correct_answer: safeJson(field.correct_answer, null),
+        points: field.points || 0,
+        branch_logic: safeJson(field.branch_logic, [])
+    };
+}
+
+function shapeModule(module, fields = []) {
+    return {
+        id: module.id,
+        page_id: module.page_id,
+        module_key: module.module_key,
+        module_type: module.module_type,
+        title: module.title,
+        title_ar: module.title_ar,
+        description: module.description,
+        description_ar: module.description_ar,
+        settings: safeJson(module.settings, {}),
+        rules: safeJson(module.rules, []),
+        sort_order: module.sort_order,
+        is_enabled: module.is_enabled,
+        fields: fields.map(shapeModuleField)
+    };
+}
+
+function shapePollSnapshot(poll, options = [], stats = {}) {
+    const totalVotes = Number(stats.total_votes ?? options.reduce((sum, option) => sum + Number(option.votes_count || 0), 0)) || 0;
+    const participantsCount = Number(stats.participants_count ?? 0) || 0;
+
+    return {
+        type: 'poll',
+        poll_id: poll.id,
+        title: poll.title,
+        title_ar: poll.title_ar || '',
+        subtitle: poll.subtitle || '',
+        subtitle_ar: poll.subtitle_ar || '',
+        description: poll.description || '',
+        description_ar: poll.description_ar || '',
+        cover_image_path: poll.cover_image_path || '',
+        theme_settings: safeJson(poll.theme_settings, {}),
+        layout_settings: safeJson(poll.layout_settings, {}),
+        status: poll.status,
+        poll_mode: poll.poll_mode,
+        allow_multiple_choice: poll.allow_multiple_choice,
+        require_login: poll.require_login,
+        start_date: poll.start_date,
+        end_date: poll.end_date,
+        max_votes_per_user: poll.max_votes_per_user,
+        show_results_mode: poll.show_results_mode,
+        total_votes: totalVotes,
+        participants_count: participantsCount,
+        options: options.map((option) => ({
+            id: option.id,
+            text: option.text,
+            text_ar: option.text_ar,
+            image_path: option.image_path,
+            icon_path: option.icon_path || '',
+            icon: option.icon || '',
+            color_override: option.color_override || '',
+            sort_order: option.sort_order,
+            votes_count: option.votes_count || 0
+        }))
+    };
+}
+
+async function fetchPollRuntimeState(db, pollId, clientId, eventId) {
+    const { rows: polls } = await db.query(
+        `
+        SELECT p.*
+        FROM polls p
+        WHERE p.id = $1
+          AND p.client_id = $2
+          AND p.event_id = $3
+        LIMIT 1
+        `,
+        [pollId, clientId, eventId]
+    );
+
+    if (!polls.length) {
+        return null;
+    }
+
+    const { rows: options } = await db.query(
+        `
+        SELECT *
+        FROM poll_options
+        WHERE poll_id = $1
+        ORDER BY sort_order ASC, created_at ASC
+        `,
+        [pollId]
+    );
+
+    const { rows: voteStats } = await db.query(
+        `
+        SELECT
+            COUNT(*)::int AS total_votes,
+            COUNT(DISTINCT COALESCE(guest_id::text, session_id))::int AS participants_count
+        FROM poll_votes
+        WHERE poll_id = $1
+        `,
+        [pollId]
+    );
+
+    return {
+        poll: polls[0],
+        options,
+        stats: voteStats[0] || { total_votes: 0, participants_count: 0 }
+    };
+}
+
 function stableStringify(value) {
     if (value === null || value === undefined) {
         return 'null';
