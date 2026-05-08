@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, MoveDown, MoveUp, Save, Smartphone, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, Bold, Italic, Monitor, MoveDown, MoveUp, Save, Smartphone, Trash2, Underline, ZoomIn, ZoomOut } from 'lucide-react';
 import api from '../../services/api';
 import './InstructionsBuilderPage.css';
 
@@ -699,13 +699,50 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                                 <>
                                     <label><span>Text (EN)</span><input type="text" value={selectedWidget.content.text || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { text: e.target.value } })} /></label>
                                     <label><span>Text (AR)</span><input type="text" value={selectedWidget.content.textAr || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { textAr: e.target.value } })} dir="rtl" /></label>
-                                    <label><span>Font</span><select value={selectedWidget.style.fontFamily || 'Cairo'} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontFamily: e.target.value } })}>{FONT_OPTIONS.map((font) => <option key={font} value={font}>{font}</option>)}</select></label>
-                                    <label><span>Alignment</span><select value={selectedWidget.style.textAlign || 'start'} onChange={(e) => updateWidget(selectedWidget.id, { style: { textAlign: e.target.value } })}><option value="start">start</option><option value="center">center</option><option value="end">end</option></select></label>
-                                    <label><span>Font size</span><input type="number" value={selectedWidget.style.fontSize || 24} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontSize: Number.parseInt(e.target.value, 10) || 24 } })} /></label>
-                                    <label><span>Font weight</span><select value={selectedWidget.style.fontWeight || '400'} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontWeight: e.target.value } })}><option value="300">300</option><option value="400">400</option><option value="500">500</option><option value="600">600</option><option value="700">700</option><option value="800">800</option></select></label>
-                                    <label><span>Italic</span><input type="checkbox" checked={Boolean(selectedWidget.style.italic)} onChange={(e) => updateWidget(selectedWidget.id, { style: { italic: e.target.checked } })} /></label>
-                                    <label><span>Underline</span><input type="checkbox" checked={Boolean(selectedWidget.style.underline)} onChange={(e) => updateWidget(selectedWidget.id, { style: { underline: e.target.checked } })} /></label>
-                                    <label><span>Text color</span><input type="color" value={selectedWidget.style.color || '#0f172a'} onChange={(e) => updateWidget(selectedWidget.id, { style: { color: e.target.value } })} /></label>
+
+                                    <div className="typography-compact-card">
+                                        <label>
+                                            <span>Font Family</span>
+                                            <select value={selectedWidget.style.fontFamily || 'Cairo'} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontFamily: e.target.value } })}>
+                                                {FONT_OPTIONS.map((font) => <option key={font} value={font}>{font}</option>)}
+                                            </select>
+                                        </label>
+
+                                        <div className="typography-inline-row">
+                                            <label>
+                                                <span>Size</span>
+                                                <input type="number" value={selectedWidget.style.fontSize || 24} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontSize: Number.parseInt(e.target.value, 10) || 24 } })} />
+                                            </label>
+                                            <label>
+                                                <span>Color</span>
+                                                <input type="color" value={selectedWidget.style.color || '#0f172a'} onChange={(e) => updateWidget(selectedWidget.id, { style: { color: e.target.value } })} />
+                                            </label>
+                                            <div className="format-icon-group" aria-label="Text format">
+                                                <button type="button" className={`icon-btn ${String(selectedWidget.style.fontWeight || '400') >= '600' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { fontWeight: String(selectedWidget.style.fontWeight || '400') >= '600' ? '400' : '700' } })} title="Bold">
+                                                    <Bold size={14} />
+                                                </button>
+                                                <button type="button" className={`icon-btn ${Boolean(selectedWidget.style.italic) ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { italic: !Boolean(selectedWidget.style.italic) } })} title="Italic">
+                                                    <Italic size={14} />
+                                                </button>
+                                                <button type="button" className={`icon-btn ${Boolean(selectedWidget.style.underline) ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { underline: !Boolean(selectedWidget.style.underline) } })} title="Underline">
+                                                    <Underline size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="align-icon-group" aria-label="Text align">
+                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'start' || !selectedWidget.style.textAlign ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'start' } })} title="Align start">
+                                                <AlignLeft size={14} />
+                                            </button>
+                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'center' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'center' } })} title="Align center">
+                                                <AlignCenter size={14} />
+                                            </button>
+                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'end' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'end' } })} title="Align end">
+                                                <AlignRight size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <label><span>Direction</span><select value={selectedWidget.style.direction || 'auto'} onChange={(e) => updateWidget(selectedWidget.id, { style: { direction: e.target.value } })}><option value="auto">Auto</option><option value="ltr">LTR</option><option value="rtl">RTL</option></select></label>
                                 </>
                             )}

@@ -269,6 +269,61 @@
     font-size: 0.9rem;
 }
 
+.typography-compact-card {
+    border: 1px solid #dbe3ef;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.typography-inline-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.45rem;
+    align-items: end;
+}
+
+.format-icon-group,
+.align-icon-group {
+    display: inline-flex;
+    border: 1px solid #d7deea;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.icon-btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-right: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #475569;
+}
+
+.icon-btn:last-child {
+    border-right: none;
+}
+
+.icon-btn.active {
+    background: rgba(15, 118, 110, 0.12);
+    color: #0f766e;
+}
+
+.align-icon-group {
+    width: 100%;
+}
+
+.align-icon-group .icon-btn {
+    flex: 1;
+}
+
 .instructions-settings-panel input[type='number'],
 .instructions-settings-panel input[type='text'],
 .instructions-settings-panel select,
