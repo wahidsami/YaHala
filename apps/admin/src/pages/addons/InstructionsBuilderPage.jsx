@@ -1,15 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import './InstructionsBuilderPage.css';
+
+const FONT_OPTIONS = ['Cairo', 'Tajawal', 'Noto Sans Arabic', 'IBM Plex Sans Arabic', 'Inter', 'Lora'];
+const GRID_MIN = 4;
+const GRID_MAX = 80;
 
 const DEFAULT_SCHEMA = {
     version: 1,
     page: {
         width: 1080,
         height: 1600,
-        responsive: true
+        responsive: true,
+        background: {
+            color: '#ffffff',
+            image: '',
+            size: 'cover',
+            repeat: 'no-repeat',
+            position: 'center center'
+        }
     },
     widgets: []
 };
@@ -21,19 +32,142 @@ const DEFAULT_EDITOR_SETTINGS = {
     pageHeight: 1600
 };
 
+function createId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return `wid-${crypto.randomUUID()}`;
+    }
+    return `wid-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function snap(value, grid, enabled) {
+    if (!enabled) return value;
+    return Math.round(value / grid) * grid;
+}
+
+function localeDirection(language) {
+    return language?.startsWith('ar') ? 'rtl' : 'ltr';
+}
+
+function defaultWidget(type) {
+    if (type === 'title') {
+        return {
+            id: createId(),
+            type,
+            x: 80,
+            y: 80,
+            w: 640,
+            h: 90,
+            z: 10,
+            content: { text: 'Title', textAr: 'عنوان' },
+            style: { fontFamily: 'Cairo', fontSize: 44, fontWeight: '700', textAlign: 'start', color: '#0f172a', direction: 'auto' }
+        };
+    }
+
+    if (type === 'text') {
+        return {
+            id: createId(),
+            type,
+            x: 80,
+            y: 200,
+            w: 740,
+            h: 180,
+            z: 20,
+            content: {
+                text: 'Write your text here',
+                textAr: 'اكتب النص هنا',
+                bullets: ['First point', 'Second point'],
+                bulletsAr: ['النقطة الأولى', 'النقطة الثانية'],
+                asBullets: false
+            },
+            style: { fontFamily: 'Tajawal', fontSize: 26, fontWeight: '400', textAlign: 'start', color: '#1e293b', lineHeight: 1.45, direction: 'auto' }
+        };
+    }
+
+    if (type === 'image') {
+        return {
+            id: createId(),
+            type,
+            x: 80,
+            y: 420,
+            w: 420,
+            h: 240,
+            z: 30,
+            content: { src: '', alt: 'Image' },
+            style: { lockRatio: true, objectFit: 'cover', borderRadius: 14 }
+        };
+    }
+
+    if (type === 'item_block') {
+        return {
+            id: createId(),
+            type,
+            x: 80,
+            y: 700,
+            w: 760,
+            h: 100,
+            z: 40,
+            content: { text: 'Item text', textAr: 'نص العنصر', icon: '•', iconImage: '', useIconImage: false },
+            style: {
+                fontFamily: 'Cairo',
+                fontSize: 26,
+                fontWeight: '500',
+                textAlign: 'start',
+                color: '#0f172a',
+                blockMode: 'boxed',
+                blockColor: '#e2e8f0',
+                iconColor: '#0f766e',
+                iconSize: 26,
+                direction: 'auto'
+            }
+        };
+    }
+
+    return { id: createId(), type, x: 60, y: 60, w: 300, h: 120, z: 50, content: {}, style: {} };
+}
+
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
 export default function InstructionsBuilderPage({ mode = 'create', initialData = null }) {
     const navigate = useNavigate();
+    const canvasRef = useRef(null);
     const [clients, setClients] = useState([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [formData, setFormData] = useState(() => ({
-        name: initialData?.name || '',
-        nameAr: initialData?.name_ar || '',
-        clientId: initialData?.client_id || '',
-        status: initialData?.status || 'draft',
-        contentSchema: initialData?.content_schema || DEFAULT_SCHEMA,
-        editorSettings: initialData?.editor_settings || DEFAULT_EDITOR_SETTINGS
-    }));
+    const [activeLanguage, setActiveLanguage] = useState('en');
+    const [selectedWidgetId, setSelectedWidgetId] = useState(null);
+
+    const [formData, setFormData] = useState(() => {
+        const schema = initialData?.content_schema || DEFAULT_SCHEMA;
+        const settings = initialData?.editor_settings || DEFAULT_EDITOR_SETTINGS;
+        return {
+            name: initialData?.name || '',
+            nameAr: initialData?.name_ar || '',
+            clientId: initialData?.client_id || '',
+            status: initialData?.status || 'draft',
+            contentSchema: {
+                ...DEFAULT_SCHEMA,
+                ...schema,
+                page: {
+                    ...DEFAULT_SCHEMA.page,
+                    ...(schema.page || {}),
+                    background: { ...DEFAULT_SCHEMA.page.background, ...(schema.page?.background || {}) }
+                },
+                widgets: Array.isArray(schema.widgets) ? schema.widgets : []
+            },
+            editorSettings: { ...DEFAULT_EDITOR_SETTINGS, ...settings, pageHeight: settings.pageHeight || schema?.page?.height || 1600 }
+        };
+    });
 
     useEffect(() => {
         fetchClients();
@@ -52,6 +186,132 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         setFormData((prev) => ({ ...prev, [key]: value }));
     }
 
+    function updateEditorSettings(patch) {
+        setFormData((prev) => ({ ...prev, editorSettings: { ...prev.editorSettings, ...patch } }));
+    }
+
+    function updatePage(patch) {
+        setFormData((prev) => ({ ...prev, contentSchema: { ...prev.contentSchema, page: { ...prev.contentSchema.page, ...patch } } }));
+    }
+
+    function updatePageBackground(patch) {
+        setFormData((prev) => ({
+            ...prev,
+            contentSchema: {
+                ...prev.contentSchema,
+                page: { ...prev.contentSchema.page, background: { ...prev.contentSchema.page.background, ...patch } }
+            }
+        }));
+    }
+
+    function updateWidgets(nextWidgets) {
+        setFormData((prev) => ({ ...prev, contentSchema: { ...prev.contentSchema, widgets: nextWidgets } }));
+    }
+
+    function updateWidget(widgetId, patch) {
+        updateWidgets((formData.contentSchema.widgets || []).map((item) => (
+            item.id === widgetId
+                ? { ...item, ...patch, content: { ...item.content, ...(patch.content || {}) }, style: { ...item.style, ...(patch.style || {}) } }
+                : item
+        )));
+    }
+
+    function addWidget(type) {
+        if (type === 'background') {
+            updatePageBackground({ color: '#f8fafc', image: '', size: 'cover', repeat: 'no-repeat', position: 'center center' });
+            return;
+        }
+        const widget = defaultWidget(type);
+        updateWidgets([...(formData.contentSchema.widgets || []), widget]);
+        setSelectedWidgetId(widget.id);
+    }
+
+    function removeSelectedWidget() {
+        if (!selectedWidgetId) return;
+        updateWidgets((formData.contentSchema.widgets || []).filter((item) => item.id !== selectedWidgetId));
+        setSelectedWidgetId(null);
+    }
+
+    function beginWidgetDrag(event, widget, modeName) {
+        event.preventDefault();
+        event.stopPropagation();
+        setSelectedWidgetId(widget.id);
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const start = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
+        const grid = clamp(Number(formData.editorSettings.gridSize) || 16, GRID_MIN, GRID_MAX);
+        const snapping = Boolean(formData.editorSettings.snapToGrid);
+        const ratio = widget.h ? widget.w / widget.h : 1;
+
+        function onMove(moveEvent) {
+            const dx = moveEvent.clientX - startX;
+            const dy = moveEvent.clientY - startY;
+
+            if (modeName === 'move') {
+                const nextX = clamp(snap(start.x + dx, grid, snapping), 0, rect.width - widget.w);
+                const nextY = clamp(snap(start.y + dy, grid, snapping), 0, (formData.editorSettings.pageHeight || 1600) - widget.h);
+                updateWidget(widget.id, { x: nextX, y: nextY });
+                return;
+            }
+
+            let nextW = clamp(snap(start.w + dx, grid, snapping), 80, rect.width - widget.x);
+            let nextH = clamp(snap(start.h + dy, grid, snapping), 50, (formData.editorSettings.pageHeight || 1600) - widget.y);
+            if (widget.type === 'image' && widget.style?.lockRatio) {
+                nextH = Math.max(50, Math.round(nextW / ratio));
+            }
+            updateWidget(widget.id, { w: nextW, h: nextH });
+        }
+
+        function onUp() {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        }
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    }
+
+    function beginPageResize(event) {
+        event.preventDefault();
+        const startY = event.clientY;
+        const startHeight = Number(formData.editorSettings.pageHeight) || 1600;
+        const grid = clamp(Number(formData.editorSettings.gridSize) || 16, GRID_MIN, GRID_MAX);
+
+        function onMove(moveEvent) {
+            const dy = moveEvent.clientY - startY;
+            const nextHeight = clamp(snap(startHeight + dy, grid, true), 600, 6000);
+            updateEditorSettings({ pageHeight: nextHeight });
+            updatePage({ height: nextHeight });
+        }
+
+        function onUp() {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        }
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    }
+
+    async function onUploadWidgetImage(event, widgetId, modeName = 'src') {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+            const dataUrl = await readFileAsDataUrl(file);
+            if (modeName === 'iconImage') {
+                updateWidget(widgetId, { content: { iconImage: dataUrl, useIconImage: true } });
+            } else {
+                updateWidget(widgetId, { content: { src: dataUrl } });
+            }
+        } catch (uploadError) {
+            console.error(uploadError);
+        }
+    }
+
     async function handleSave() {
         const name = formData.name.trim();
         if (!name) {
@@ -65,7 +325,6 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
         setSaving(true);
         setError('');
-
         try {
             const payload = {
                 name,
@@ -81,7 +340,6 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             } else {
                 await api.post('/admin/instructions', payload);
             }
-
             navigate('/addons/instructions');
         } catch (saveError) {
             setError(saveError.response?.data?.message || 'Failed to save instruction.');
@@ -90,13 +348,99 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         }
     }
 
-    const widgetCatalog = useMemo(() => ([
-        'Title',
-        'Text',
-        'Image',
-        'Background',
-        'Item Block'
-    ]), []);
+    const widgets = formData.contentSchema.widgets || [];
+    const selectedWidget = widgets.find((item) => item.id === selectedWidgetId) || null;
+    const canvasHeight = formData.editorSettings.pageHeight || 1600;
+    const canvasGrid = clamp(Number(formData.editorSettings.gridSize) || 16, GRID_MIN, GRID_MAX);
+    const direction = localeDirection(activeLanguage);
+
+    function renderWidget(widget) {
+        if (widget.type === 'title') {
+            const text = activeLanguage === 'ar' ? (widget.content.textAr || widget.content.text) : (widget.content.text || widget.content.textAr);
+            return (
+                <div className="instruction-widget-content" style={{
+                    fontFamily: widget.style.fontFamily,
+                    fontSize: `${widget.style.fontSize}px`,
+                    fontWeight: widget.style.fontWeight,
+                    textAlign: widget.style.textAlign,
+                    color: widget.style.color,
+                    direction: widget.style.direction === 'auto' ? direction : widget.style.direction
+                }}>{text}</div>
+            );
+        }
+
+        if (widget.type === 'text') {
+            const text = activeLanguage === 'ar' ? (widget.content.textAr || widget.content.text) : (widget.content.text || widget.content.textAr);
+            const bullets = activeLanguage === 'ar' ? (widget.content.bulletsAr || []) : (widget.content.bullets || []);
+            return (
+                <div className="instruction-widget-content" style={{
+                    fontFamily: widget.style.fontFamily,
+                    fontSize: `${widget.style.fontSize}px`,
+                    fontWeight: widget.style.fontWeight,
+                    textAlign: widget.style.textAlign,
+                    color: widget.style.color,
+                    lineHeight: widget.style.lineHeight,
+                    direction: widget.style.direction === 'auto' ? direction : widget.style.direction
+                }}>
+                    {widget.content.asBullets ? (
+                        <ul className="instruction-widget-list">
+                            {bullets.map((item, index) => <li key={`${widget.id}-bullet-${index}`}>{item}</li>)}
+                        </ul>
+                    ) : <p>{text}</p>}
+                </div>
+            );
+        }
+
+        if (widget.type === 'image') {
+            return (
+                <div className="instruction-widget-content image-widget-content">
+                    {widget.content.src ? (
+                        <img
+                            src={widget.content.src}
+                            alt={widget.content.alt || 'instruction image'}
+                            style={{ width: '100%', height: '100%', objectFit: widget.style.objectFit || 'cover', borderRadius: `${widget.style.borderRadius || 0}px` }}
+                        />
+                    ) : <div className="widget-placeholder">Upload image</div>}
+                </div>
+            );
+        }
+
+        if (widget.type === 'item_block') {
+            const text = activeLanguage === 'ar' ? (widget.content.textAr || widget.content.text) : (widget.content.text || widget.content.textAr);
+            const dir = widget.style.direction === 'auto' ? direction : widget.style.direction;
+            const iconRight = dir === 'rtl';
+            const showBox = widget.style.blockMode === 'boxed';
+            return (
+                <div className="instruction-widget-content item-block" style={{
+                    background: showBox ? (widget.style.blockColor || '#e2e8f0') : 'transparent',
+                    fontFamily: widget.style.fontFamily,
+                    fontSize: `${widget.style.fontSize}px`,
+                    fontWeight: widget.style.fontWeight,
+                    color: widget.style.color,
+                    direction: dir,
+                    justifyContent: iconRight ? 'flex-end' : 'flex-start'
+                }}>
+                    {!iconRight && (
+                        <span className="item-block-icon" style={{ color: widget.style.iconColor, fontSize: `${widget.style.iconSize || 24}px` }}>
+                            {widget.content.useIconImage && widget.content.iconImage
+                                ? <img src={widget.content.iconImage} alt="icon" className="item-block-icon-image" />
+                                : (widget.content.icon || '•')}
+                        </span>
+                    )}
+                    <span className="item-block-text">{text}</span>
+                    {iconRight && (
+                        <span className="item-block-icon" style={{ color: widget.style.iconColor, fontSize: `${widget.style.iconSize || 24}px` }}>
+                            {widget.content.useIconImage && widget.content.iconImage
+                                ? <img src={widget.content.iconImage} alt="icon" className="item-block-icon-image" />
+                                : (widget.content.icon || '•')}
+                        </span>
+                    )}
+                </div>
+            );
+        }
+
+        return <div className="instruction-widget-content">Unsupported widget</div>;
+    }
 
     return (
         <div className="instructions-builder-page">
@@ -107,17 +451,10 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         <span>Back</span>
                     </button>
                     <div className="instructions-top-fields">
-                        <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(event) => updateField('name', event.target.value)}
-                            placeholder="Instruction name (required)"
-                        />
+                        <input type="text" value={formData.name} onChange={(event) => updateField('name', event.target.value)} placeholder="Instruction name (required)" />
                         <select value={formData.clientId} onChange={(event) => updateField('clientId', event.target.value)}>
                             <option value="">Select client</option>
-                            {clients.map((client) => (
-                                <option key={client.id} value={client.id}>{client.name}</option>
-                            ))}
+                            {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
                         </select>
                     </div>
                 </div>
@@ -133,67 +470,81 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                 <aside className="instructions-panel instructions-widgets-panel">
                     <h3>Widgets</h3>
                     <ul>
-                        {widgetCatalog.map((widget) => (
-                            <li key={widget}><button type="button">{widget}</button></li>
-                        ))}
+                        <li><button type="button" onClick={() => addWidget('title')}>Title</button></li>
+                        <li><button type="button" onClick={() => addWidget('text')}>Text</button></li>
+                        <li><button type="button" onClick={() => addWidget('image')}>Image</button></li>
+                        <li><button type="button" onClick={() => addWidget('background')}>Background</button></li>
+                        <li><button type="button" onClick={() => addWidget('item_block')}>Item Block</button></li>
                     </ul>
+                    <div className="lang-toggle">
+                        <button type="button" className={activeLanguage === 'en' ? 'active' : ''} onClick={() => setActiveLanguage('en')}>EN</button>
+                        <button type="button" className={activeLanguage === 'ar' ? 'active' : ''} onClick={() => setActiveLanguage('ar')}>AR</button>
+                    </div>
                 </aside>
 
                 <div className="instructions-canvas-wrap">
                     <div
+                        ref={canvasRef}
                         className="instructions-canvas"
+                        onMouseDown={() => setSelectedWidgetId(null)}
                         style={{
-                            minHeight: `${formData.editorSettings.pageHeight || 1600}px`,
-                            backgroundSize: `${formData.editorSettings.gridSize || 16}px ${formData.editorSettings.gridSize || 16}px`,
-                            backgroundImage: formData.editorSettings.showGrid
-                                ? 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)'
-                                : 'none'
+                            minHeight: `${canvasHeight}px`,
+                            height: `${canvasHeight}px`,
+                            backgroundColor: formData.contentSchema.page.background.color,
+                            backgroundImage: formData.contentSchema.page.background.image
+                                ? `url(${formData.contentSchema.page.background.image})`
+                                : (formData.editorSettings.showGrid
+                                    ? 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)'
+                                    : 'none'),
+                            backgroundSize: formData.contentSchema.page.background.image ? formData.contentSchema.page.background.size : `${canvasGrid}px ${canvasGrid}px`,
+                            backgroundRepeat: formData.contentSchema.page.background.repeat,
+                            backgroundPosition: formData.contentSchema.page.background.position
                         }}
                     >
-                        <div className="canvas-empty">
-                            <h4>Instruction Canvas</h4>
-                            <p>Widget renderer will be implemented next (drag/drop + per-widget settings).</p>
+                        {widgets.length === 0 && (
+                            <div className="canvas-empty">
+                                <h4>Instruction Canvas</h4>
+                                <p>Add widgets from the left panel.</p>
+                            </div>
+                        )}
+
+                        {widgets.map((widget) => (
+                            <div
+                                key={widget.id}
+                                className={`instruction-widget ${selectedWidgetId === widget.id ? 'selected' : ''}`}
+                                style={{ left: `${widget.x}px`, top: `${widget.y}px`, width: `${widget.w}px`, height: `${widget.h}px`, zIndex: widget.z || 1 }}
+                                onMouseDown={(event) => beginWidgetDrag(event, widget, 'move')}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    setSelectedWidgetId(widget.id);
+                                }}
+                            >
+                                {renderWidget(widget)}
+                                {selectedWidgetId === widget.id && (
+                                    <div className="widget-resize-handle" onMouseDown={(event) => beginWidgetDrag(event, widget, 'resize')} />
+                                )}
+                            </div>
+                        ))}
+
+                        <div className="canvas-resize-handle" onMouseDown={beginPageResize}>
+                            <span>{canvasHeight}px</span>
                         </div>
-                        <div className="canvas-resize-handle" />
                     </div>
                 </div>
 
                 <aside className="instructions-panel instructions-settings-panel">
-                    <h3>Page Settings</h3>
+                    <h3>Settings</h3>
                     <label>
                         <span>Show grid</span>
-                        <input
-                            type="checkbox"
-                            checked={Boolean(formData.editorSettings.showGrid)}
-                            onChange={(event) => updateField('editorSettings', {
-                                ...formData.editorSettings,
-                                showGrid: event.target.checked
-                            })}
-                        />
+                        <input type="checkbox" checked={Boolean(formData.editorSettings.showGrid)} onChange={(event) => updateEditorSettings({ showGrid: event.target.checked })} />
                     </label>
                     <label>
                         <span>Snap to grid</span>
-                        <input
-                            type="checkbox"
-                            checked={Boolean(formData.editorSettings.snapToGrid)}
-                            onChange={(event) => updateField('editorSettings', {
-                                ...formData.editorSettings,
-                                snapToGrid: event.target.checked
-                            })}
-                        />
+                        <input type="checkbox" checked={Boolean(formData.editorSettings.snapToGrid)} onChange={(event) => updateEditorSettings({ snapToGrid: event.target.checked })} />
                     </label>
                     <label>
                         <span>Grid size</span>
-                        <input
-                            type="number"
-                            min="4"
-                            max="80"
-                            value={formData.editorSettings.gridSize || 16}
-                            onChange={(event) => updateField('editorSettings', {
-                                ...formData.editorSettings,
-                                gridSize: Number.parseInt(event.target.value, 10) || 16
-                            })}
-                        />
+                        <input type="number" min={GRID_MIN} max={GRID_MAX} value={canvasGrid} onChange={(event) => updateEditorSettings({ gridSize: clamp(Number.parseInt(event.target.value, 10) || 16, GRID_MIN, GRID_MAX) })} />
                     </label>
                     <label>
                         <span>Page height (px)</span>
@@ -201,15 +552,112 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             type="number"
                             min="600"
                             max="6000"
-                            value={formData.editorSettings.pageHeight || 1600}
-                            onChange={(event) => updateField('editorSettings', {
-                                ...formData.editorSettings,
-                                pageHeight: Number.parseInt(event.target.value, 10) || 1600
-                            })}
+                            value={canvasHeight}
+                            onChange={(event) => {
+                                const nextHeight = clamp(Number.parseInt(event.target.value, 10) || 1600, 600, 6000);
+                                updateEditorSettings({ pageHeight: nextHeight });
+                                updatePage({ height: nextHeight });
+                            }}
                         />
                     </label>
+
+                    {!selectedWidget && (
+                        <>
+                            <hr />
+                            <h4>Background</h4>
+                            <label><span>Color</span><input type="color" value={formData.contentSchema.page.background.color || '#ffffff'} onChange={(event) => updatePageBackground({ color: event.target.value })} /></label>
+                            <label><span>Image URL</span><input type="text" value={formData.contentSchema.page.background.image || ''} onChange={(event) => updatePageBackground({ image: event.target.value })} placeholder="https://..." /></label>
+                            <label>
+                                <span>Size</span>
+                                <select value={formData.contentSchema.page.background.size || 'cover'} onChange={(event) => updatePageBackground({ size: event.target.value })}>
+                                    <option value="cover">cover</option>
+                                    <option value="contain">fit/contain</option>
+                                    <option value="auto">auto</option>
+                                    <option value="100% 100%">stretch</option>
+                                    <option value="64px 64px">tile</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Repeat</span>
+                                <select value={formData.contentSchema.page.background.repeat || 'no-repeat'} onChange={(event) => updatePageBackground({ repeat: event.target.value })}>
+                                    <option value="no-repeat">no-repeat</option>
+                                    <option value="repeat">repeat</option>
+                                    <option value="repeat-x">repeat-x</option>
+                                    <option value="repeat-y">repeat-y</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Position</span>
+                                <select value={formData.contentSchema.page.background.position || 'center center'} onChange={(event) => updatePageBackground({ position: event.target.value })}>
+                                    <option value="center center">center</option>
+                                    <option value="top center">top</option>
+                                    <option value="bottom center">bottom</option>
+                                    <option value="left center">left</option>
+                                    <option value="right center">right</option>
+                                </select>
+                            </label>
+                        </>
+                    )}
+
+                    {selectedWidget && (
+                        <>
+                            <hr />
+                            <h4>Widget</h4>
+                            <label><span>X</span><input type="number" value={selectedWidget.x} onChange={(e) => updateWidget(selectedWidget.id, { x: Number.parseInt(e.target.value, 10) || 0 })} /></label>
+                            <label><span>Y</span><input type="number" value={selectedWidget.y} onChange={(e) => updateWidget(selectedWidget.id, { y: Number.parseInt(e.target.value, 10) || 0 })} /></label>
+                            <label><span>Width</span><input type="number" value={selectedWidget.w} onChange={(e) => updateWidget(selectedWidget.id, { w: Math.max(80, Number.parseInt(e.target.value, 10) || 80) })} /></label>
+                            <label><span>Height</span><input type="number" value={selectedWidget.h} onChange={(e) => updateWidget(selectedWidget.id, { h: Math.max(50, Number.parseInt(e.target.value, 10) || 50) })} /></label>
+
+                            {(selectedWidget.type === 'title' || selectedWidget.type === 'text' || selectedWidget.type === 'item_block') && (
+                                <>
+                                    <label><span>Text (EN)</span><input type="text" value={selectedWidget.content.text || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { text: e.target.value } })} /></label>
+                                    <label><span>Text (AR)</span><input type="text" value={selectedWidget.content.textAr || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { textAr: e.target.value } })} dir="rtl" /></label>
+                                    <label><span>Font</span><select value={selectedWidget.style.fontFamily || 'Cairo'} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontFamily: e.target.value } })}>{FONT_OPTIONS.map((font) => <option key={font} value={font}>{font}</option>)}</select></label>
+                                    <label><span>Alignment</span><select value={selectedWidget.style.textAlign || 'start'} onChange={(e) => updateWidget(selectedWidget.id, { style: { textAlign: e.target.value } })}><option value="start">start</option><option value="center">center</option><option value="end">end</option></select></label>
+                                    <label><span>Font size</span><input type="number" value={selectedWidget.style.fontSize || 24} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontSize: Number.parseInt(e.target.value, 10) || 24 } })} /></label>
+                                    <label><span>Font weight</span><select value={selectedWidget.style.fontWeight || '400'} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontWeight: e.target.value } })}><option value="300">300</option><option value="400">400</option><option value="500">500</option><option value="600">600</option><option value="700">700</option><option value="800">800</option></select></label>
+                                    <label><span>Text color</span><input type="color" value={selectedWidget.style.color || '#0f172a'} onChange={(e) => updateWidget(selectedWidget.id, { style: { color: e.target.value } })} /></label>
+                                    <label><span>Direction</span><select value={selectedWidget.style.direction || 'auto'} onChange={(e) => updateWidget(selectedWidget.id, { style: { direction: e.target.value } })}><option value="auto">Auto</option><option value="ltr">LTR</option><option value="rtl">RTL</option></select></label>
+                                </>
+                            )}
+
+                            {selectedWidget.type === 'text' && (
+                                <>
+                                    <label><span>Bullet list mode</span><input type="checkbox" checked={Boolean(selectedWidget.content.asBullets)} onChange={(e) => updateWidget(selectedWidget.id, { content: { asBullets: e.target.checked } })} /></label>
+                                    <label><span>Bullets (EN)</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bullets) ? selectedWidget.content.bullets.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bullets: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} /></label>
+                                    <label><span>Bullets (AR)</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bulletsAr) ? selectedWidget.content.bulletsAr.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bulletsAr: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} dir="rtl" /></label>
+                                </>
+                            )}
+
+                            {selectedWidget.type === 'image' && (
+                                <>
+                                    <label><span>Upload image</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'src')} /></label>
+                                    <label><span>Image URL / Data URL</span><input type="text" value={selectedWidget.content.src || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { src: e.target.value } })} /></label>
+                                    <label><span>Object fit</span><select value={selectedWidget.style.objectFit || 'cover'} onChange={(e) => updateWidget(selectedWidget.id, { style: { objectFit: e.target.value } })}><option value="cover">cover</option><option value="contain">fit/contain</option><option value="fill">fill</option></select></label>
+                                    <label><span>Lock ratio</span><input type="checkbox" checked={Boolean(selectedWidget.style.lockRatio)} onChange={(e) => updateWidget(selectedWidget.id, { style: { lockRatio: e.target.checked } })} /></label>
+                                </>
+                            )}
+
+                            {selectedWidget.type === 'item_block' && (
+                                <>
+                                    <label><span>Icon text</span><input type="text" value={selectedWidget.content.icon || '•'} onChange={(e) => updateWidget(selectedWidget.id, { content: { icon: e.target.value } })} /></label>
+                                    <label><span>Icon image upload</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'iconImage')} /></label>
+                                    <label><span>Use icon image</span><input type="checkbox" checked={Boolean(selectedWidget.content.useIconImage)} onChange={(e) => updateWidget(selectedWidget.id, { content: { useIconImage: e.target.checked } })} /></label>
+                                    <label><span>Block mode</span><select value={selectedWidget.style.blockMode || 'boxed'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockMode: e.target.value } })}><option value="boxed">Boxed</option><option value="transparent">Transparent</option></select></label>
+                                    <label><span>Block color</span><input type="color" value={selectedWidget.style.blockColor || '#e2e8f0'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockColor: e.target.value } })} /></label>
+                                    <label><span>Icon color</span><input type="color" value={selectedWidget.style.iconColor || '#0f766e'} onChange={(e) => updateWidget(selectedWidget.id, { style: { iconColor: e.target.value } })} /></label>
+                                </>
+                            )}
+
+                            <button type="button" className="btn btn-danger btn-delete-widget" onClick={removeSelectedWidget}>
+                                <Trash2 size={14} />
+                                <span>Delete Widget</span>
+                            </button>
+                        </>
+                    )}
                 </aside>
             </section>
         </div>
     );
 }
+
