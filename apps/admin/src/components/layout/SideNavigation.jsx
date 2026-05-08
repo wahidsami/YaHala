@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import RoleGuard from '../auth/RoleGuard';
@@ -13,6 +14,7 @@ import {
     BarChart3,
     FileText,
     Settings,
+    ChevronDown,
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
@@ -32,13 +34,44 @@ const NAV_ITEMS = [
     { id: 'settings', icon: Settings, path: '/settings', permission: 'settings.view' }
 ];
 
+const ADDON_SUB_ITEMS = [
+    { id: 'polls', label: 'Polls', path: '/addons/polls' },
+    { id: 'questionnaires', label: 'Questionnaires', path: '/addons/questionnaires' },
+    { id: 'instructions', label: 'Instructions', path: '/addons/instructions' },
+    { id: 'quiz', label: 'Quiz', path: '/addons/quiz' },
+    { id: 'files-downloads', label: 'Files & Downloads', path: '/addons/files-downloads' }
+];
+
 export default function SideNavigation({ collapsed = false, onToggleCollapse }) {
     const { t, i18n } = useTranslation();
     const { hasPermission, user } = useAuth();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const isAddonsRoute = location.pathname.startsWith('/addons');
+    const [addonsOpen, setAddonsOpen] = useState(isAddonsRoute);
     const isArabic = i18n.language?.startsWith('ar');
     const CollapseIcon = isArabic
         ? (collapsed ? ChevronLeft : ChevronRight)
         : (collapsed ? ChevronRight : ChevronLeft);
+
+    useEffect(() => {
+        if (isAddonsRoute) {
+            setAddonsOpen(true);
+        }
+    }, [isAddonsRoute]);
+
+    function handleAddonsClick(event) {
+        event.preventDefault();
+        if (collapsed) {
+            navigate('/addons/polls');
+            return;
+        }
+
+        setAddonsOpen((prev) => !prev);
+        if (!isAddonsRoute) {
+            navigate('/addons/polls');
+        }
+    }
 
     return (
         <nav className={`side-navigation ${collapsed ? 'is-collapsed' : ''}`}>
@@ -64,6 +97,37 @@ export default function SideNavigation({ collapsed = false, onToggleCollapse }) 
                     }
 
                     const Icon = item.icon;
+
+                    if (item.id === 'addons') {
+                        return (
+                            <li key={item.id} className={`nav-group ${addonsOpen ? 'open' : ''}`}>
+                                <a
+                                    href={item.path}
+                                    className={`nav-item ${isAddonsRoute ? 'active' : ''}`}
+                                    title={collapsed ? t(`nav.${item.id}`) : undefined}
+                                    onClick={handleAddonsClick}
+                                >
+                                    <Icon size={20} />
+                                    <span>{t(`nav.${item.id}`)}</span>
+                                    {!collapsed && <ChevronDown size={16} className={`nav-group-chevron ${addonsOpen ? 'open' : ''}`} />}
+                                </a>
+                                {!collapsed && addonsOpen && (
+                                    <ul className="nav-sub-list">
+                                        {ADDON_SUB_ITEMS.map((subItem) => (
+                                            <li key={subItem.id}>
+                                                <NavLink
+                                                    to={subItem.path}
+                                                    className={({ isActive }) => `nav-sub-item ${isActive ? 'active' : ''}`}
+                                                >
+                                                    {subItem.label}
+                                                </NavLink>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </li>
+                        );
+                    }
 
                     return (
                         <li key={item.id}>

@@ -92,6 +92,47 @@
     border-inline-start: 3px solid transparent;
 }
 
+.nav-group .nav-item {
+    justify-content: flex-start;
+}
+
+.nav-group-chevron {
+    margin-inline-start: auto;
+    transition: transform 0.2s ease;
+}
+
+.nav-group-chevron.open {
+    transform: rotate(180deg);
+}
+
+.nav-sub-list {
+    list-style: none;
+    margin: 0.15rem 0 0.5rem;
+    padding: 0 0.5rem 0 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.nav-sub-item {
+    display: block;
+    color: var(--text-muted);
+    padding: 0.45rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.nav-sub-item:hover {
+    color: var(--text-inverse);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-sub-item.active {
+    color: var(--text-inverse);
+    background: rgba(59, 130, 246, 0.2);
+}
+
 .side-navigation.is-collapsed .nav-item {
     justify-content: center;
     padding-inline: 0.5rem;
