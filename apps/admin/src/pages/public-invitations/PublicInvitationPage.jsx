@@ -1732,6 +1732,8 @@ function InstructionsPanel({ language, page, onBack }) {
         const schemaWidgets = payload.widgets;
         const pageConfig = payload.page || {};
         const pageBg = pageConfig.background || {};
+        const designWidth = Math.max(280, Number(pageConfig.width) || 360);
+        const designHeight = Math.max(420, Number(pageConfig.height) || 1200);
         return (
             <div className="module-panel instructions-panel" style={{ backgroundColor: '#fff', color: '#0f172a', borderColor: '#0A7EA4' }}>
                 <div
@@ -1740,7 +1742,8 @@ function InstructionsPanel({ language, page, onBack }) {
                     style={{
                         position: 'relative',
                         width: '100%',
-                        minHeight: `${Math.max(600, Number(pageConfig.height) || 1200)}px`,
+                        aspectRatio: `${designWidth} / ${designHeight}`,
+                        minHeight: '420px',
                         backgroundColor: pageBg.color || '#ffffff',
                         backgroundImage: pageBg.image ? `url(${resolveStorageUrl(pageBg.image)})` : undefined,
                         backgroundSize: pageBg.size || 'cover',
@@ -1758,15 +1761,24 @@ function InstructionsPanel({ language, page, onBack }) {
                         const content = widget?.content || {};
                         const text = isArabic ? (content.textAr || content.text || '') : (content.text || content.textAr || '');
                         const blockText = isArabic ? (content.textAr || content.text || '') : (content.text || content.textAr || '');
+                        const rawBullets = isArabic
+                            ? (content.bulletsAr ?? content.bullets ?? content.bulletsEn ?? '')
+                            : (content.bulletsEn ?? content.bullets ?? content.bulletsAr ?? '');
+                        const bulletList = Array.isArray(rawBullets)
+                            ? rawBullets.filter(Boolean)
+                            : typeof rawBullets === 'string'
+                                ? rawBullets.split('\n').map((item) => item.trim()).filter(Boolean)
+                                : [];
+                        const asBullets = Boolean(content.asBullets) && bulletList.length > 0;
                         return (
                             <div
                                 key={widget.id}
                                 style={{
                                     position: 'absolute',
-                                    left: `${x}px`,
-                                    top: `${y}px`,
-                                    width: `${w}px`,
-                                    height: `${h}px`,
+                                    left: `${(x / designWidth) * 100}%`,
+                                    top: `${(y / designHeight) * 100}%`,
+                                    width: `${(w / designWidth) * 100}%`,
+                                    height: `${(h / designHeight) * 100}%`,
                                     zIndex: z,
                                     color: style.color || '#0f172a',
                                     fontFamily: style.fontFamily || 'Cairo',
@@ -1785,10 +1797,18 @@ function InstructionsPanel({ language, page, onBack }) {
                                         ) : (
                                             <span style={{ color: style.iconColor || '#0f766e', fontSize: `${Number(style.iconSize) || 24}px` }}>{content.icon || '•'}</span>
                                         )}
-                                        <span>{blockText}</span>
+                                        <span style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{blockText}</span>
                                     </div>
                                 ) : (
-                                    <div>{text}</div>
+                                    asBullets ? (
+                                        <ul className="instructions-schema-bullets">
+                                            {bulletList.map((item, index) => (
+                                                <li key={`${widget.id}-bullet-${index}`}>{item}</li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <div>{text}</div>
+                                    )
                                 )}
                             </div>
                         );
