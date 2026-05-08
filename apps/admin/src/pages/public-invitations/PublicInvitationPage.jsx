@@ -1332,6 +1332,13 @@ export default function PublicInvitationPage() {
             }
             return runtime.unlocked !== false;
         });
+    const topTabPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'top');
+    const bottomTabPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'tabs' && (page?._runtime?.position || 'top') === 'bottom');
+    const leftIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'left');
+    const rightIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'right');
+    const topIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'top');
+    const bottomIconPages = interactivePages.filter((page) => (page?._runtime?.displayMode || 'tabs') === 'icons' && (page?._runtime?.position || 'top') === 'bottom');
+    const qrSlotPages = interactivePages.filter((page) => Boolean(page?._runtime?.replaceQrSlot) || page?._runtime?.position === 'qr_slot');
     const copy = COPY[activeLanguage];
     const coverLayout = useMemo(() => normalizeLayout(invitation?.project?.cover_template_snapshot?.layout || invitation?.project?.cover_template?.design_data?.layout || {}), [invitation?.project?.cover_template_snapshot?.layout, invitation?.project?.cover_template?.design_data?.layout]);
     const canvasBaseWidth = 360;
@@ -1443,15 +1450,41 @@ export default function PublicInvitationPage() {
                             language={activeLanguage}
                             hasRsvpPage={hasRsvpPage}
                             rsvpCompleted={rsvpCompleted}
+                            onOpenAddon={(pageKey) => setActivePageKey(pageKey)}
+                            qrSlotActions={qrSlotPages.map((page) => {
+                                const runtime = page?._runtime || {};
+                                const disableAfterSubmission = runtime.disableAfterSubmission !== false;
+                                const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
+                                return {
+                                    pageKey: page.page_key,
+                                    label: localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type),
+                                    disabled: disableAfterSubmission && completed
+                                };
+                            })}
                             minCanvasHeight={minCanvasHeight}
                             onOpenRsvp={() => (gateEnabled ? setShowGate(true) : setShowRsvpModal(true))}
                         />
                     </div>
                 </div>
 
-                {cardUnlocked && interactivePages.length > 0 && (
+                {cardUnlocked && topIconPages.length > 0 && (
+                    <div className="addon-icons addon-icons-top">
+                        {topIconPages.map((page) => {
+                            const runtime = page?._runtime || {};
+                            const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
+                            const disabled = runtime.disableAfterSubmission !== false && completed;
+                            return (
+                                <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} disabled={disabled} onClick={() => setActivePageKey(page.page_key)}>
+                                    {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {cardUnlocked && topTabPages.length > 0 && (
                     <div className="card-tabs">
-                        {interactivePages.map((page) => (
+                        {topTabPages.map((page) => (
                             (() => {
                                 const runtime = page?._runtime || {};
                                 const disableAfterSubmission = runtime.disableAfterSubmission !== false;
@@ -1506,6 +1539,54 @@ export default function PublicInvitationPage() {
                     }
                     return <PlaceholderPanel language={activeLanguage} page={activePage} />;
                 })()}
+
+                {cardUnlocked && bottomTabPages.length > 0 && (
+                    <div className="card-tabs card-tabs-bottom">
+                        {bottomTabPages.map((page) => {
+                            const runtime = page?._runtime || {};
+                            const disableAfterSubmission = runtime.disableAfterSubmission !== false;
+                            const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
+                            const isDisabled = disableAfterSubmission && completed;
+                            return (
+                                <button key={page.page_key} type="button" className={activePageKey === page.page_key ? 'active' : ''} disabled={isDisabled} onClick={() => setActivePageKey(page.page_key)}>
+                                    {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {cardUnlocked && (leftIconPages.length > 0 || rightIconPages.length > 0 || bottomIconPages.length > 0) && (
+                    <div className="addon-icons-wrap">
+                        {leftIconPages.length > 0 && (
+                            <div className="addon-icons addon-icons-left">
+                                {leftIconPages.map((page) => (
+                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => setActivePageKey(page.page_key)}>
+                                        {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {rightIconPages.length > 0 && (
+                            <div className="addon-icons addon-icons-right">
+                                {rightIconPages.map((page) => (
+                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => setActivePageKey(page.page_key)}>
+                                        {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {bottomIconPages.length > 0 && (
+                            <div className="addon-icons addon-icons-bottom">
+                                {bottomIconPages.map((page) => (
+                                    <button key={page.page_key} type="button" className={`addon-icon-btn ${activePageKey === page.page_key ? 'active' : ''}`} onClick={() => setActivePageKey(page.page_key)}>
+                                        {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
             {cardLockedByDecline && (
                 <div className="module-panel">

@@ -249,7 +249,18 @@ function isWidgetVisible(widget, context) {
     return true;
 }
 
-export function InvitationWidgetPreview({ widget, language, project, recipient, mode = 'public', hasRsvpPage = false, rsvpCompleted = false, onOpenRsvp }) {
+export function InvitationWidgetPreview({
+    widget,
+    language,
+    project,
+    recipient,
+    mode = 'public',
+    hasRsvpPage = false,
+    rsvpCompleted = false,
+    onOpenRsvp,
+    qrSlotActions = [],
+    onOpenAddon
+}) {
     const content = getWidgetContent(widget, language);
     const isLogoWidget = widget.type === 'logo';
     const style = {
@@ -368,11 +379,26 @@ export function InvitationWidgetPreview({ widget, language, project, recipient, 
                 ? `${window.location.origin}/invite/preview-token`
                 : buildInvitationUrl(recipient.public_token);
             const { qrColor, qrBackground } = resolveQrTheme(widget, content);
+            const showAddonActions = mode === 'public' && Array.isArray(qrSlotActions) && qrSlotActions.length > 0;
 
             return (
                 <div style={style} className="preview-widget qr-widget">
                     <div className="qr-artwork">
-                        {invitationUrl ? (
+                        {showAddonActions ? (
+                            <div className="qr-slot-actions">
+                                {qrSlotActions.map((action) => (
+                                    <button
+                                        key={action.pageKey}
+                                        type="button"
+                                        className={`qr-slot-action-btn ${action.disabled ? 'disabled' : ''}`}
+                                        disabled={action.disabled}
+                                        onClick={() => onOpenAddon?.(action.pageKey)}
+                                    >
+                                        {action.label}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : invitationUrl ? (
                             <QRCode
                                 value={invitationUrl}
                                 size={256}
@@ -441,6 +467,8 @@ export default function InvitationCanvasRenderer({
     hasRsvpPage,
     rsvpCompleted,
     onOpenRsvp,
+    onOpenAddon,
+    qrSlotActions = [],
     minCanvasHeight = 0
 }) {
     const coverTemplate = project.cover_template_snapshot || project.cover_template?.design_data;
@@ -496,6 +524,8 @@ export default function InvitationCanvasRenderer({
                                 hasRsvpPage={hasRsvpPage}
                                 rsvpCompleted={rsvpCompleted}
                                 onOpenRsvp={onOpenRsvp}
+                                onOpenAddon={onOpenAddon}
+                                qrSlotActions={qrSlotActions}
                                 mode="public"
                             />
                         </div>
