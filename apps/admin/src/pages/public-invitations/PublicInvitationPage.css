@@ -15,6 +15,24 @@
     padding: 20px 16px 32px;
 }
 
+.public-guest-page .invitation-canvas-view {
+    width: 100%;
+}
+
+.public-guest-page .template-canvas-stage {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+.public-guest-page .public-canvas-stage {
+    border-radius: 0;
+}
+
 .public-bg {
     position: absolute;
     border-radius: 999px;
