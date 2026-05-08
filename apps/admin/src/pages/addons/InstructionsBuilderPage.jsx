@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, Bold, Italic, Monitor, MoveDown, MoveUp, Save, Smartphone, Trash2, Underline, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, Bold, CaseUpper, FileImage, Frame, Italic, List, Monitor, MoveDown, MoveUp, Save, Smartphone, Square, Trash2, Underline, ZoomIn, ZoomOut } from 'lucide-react';
 import api from '../../services/api';
 import './InstructionsBuilderPage.css';
 
@@ -152,7 +152,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
     const canvasRef = useRef(null);
     const [clients, setClients] = useState([]);
     const [saving, setSaving] = useState(false);
-    const [saveMessage, setSaveMessage] = useState('');
+    const [saveSuccessOpen, setSaveSuccessOpen] = useState(false);
     const [error, setError] = useState('');
     const [selectedWidgetId, setSelectedWidgetId] = useState(null);
     const [canvasZoom, setCanvasZoom] = useState(1);
@@ -371,7 +371,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
         setSaving(true);
         setError('');
-        setSaveMessage('');
+        setSaveSuccessOpen(false);
         try {
             const payload = {
                 name,
@@ -387,7 +387,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             } else {
                 await api.post('/admin/instructions', payload);
             }
-            setSaveMessage('Saved successfully.');
+            setSaveSuccessOpen(true);
         } catch (saveError) {
             setError(saveError.response?.data?.message || 'Failed to save instruction.');
         } finally {
@@ -475,14 +475,34 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     textDecoration: widget.style.underline ? 'underline' : 'none',
                     color: widget.style.color,
                     direction: dir,
-                    flexDirection: iconRight ? 'row-reverse' : 'row'
+                    flexDirection: 'row'
                 }}>
-                    <span className="item-block-icon" style={{ color: widget.style.iconColor, fontSize: `${widget.style.iconSize || 24}px` }}>
+                    <span
+                        className="item-block-icon"
+                        style={{
+                            color: widget.style.iconColor,
+                            fontSize: `${widget.style.iconSize || 24}px`,
+                            order: iconRight ? 2 : 1
+                        }}
+                    >
                         {widget.content.useIconImage && widget.content.iconImage
                             ? <img src={widget.content.iconImage} alt="icon" className="item-block-icon-image" />
                             : (widget.content.icon || '•')}
                     </span>
-                    <span className="item-block-text">{text}</span>
+                    <span
+                        className="item-block-text"
+                        style={{
+                            order: iconRight ? 1 : 2,
+                            alignItems:
+                                widget.style.textVerticalAlign === 'top'
+                                    ? 'flex-start'
+                                    : widget.style.textVerticalAlign === 'bottom'
+                                        ? 'flex-end'
+                                        : 'center'
+                        }}
+                    >
+                        {text}
+                    </span>
                 </div>
             );
         }
@@ -513,17 +533,15 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             </div>
 
             {error && <div className="form-error">{error}</div>}
-            {saveMessage && <div className="form-success">{saveMessage}</div>}
-
             <section className="instructions-editor-layout">
                 <aside className="instructions-panel instructions-widgets-panel">
                     <h3>Widgets</h3>
                     <ul>
-                        <li><button type="button" onClick={() => addWidget('title')}>Title</button></li>
-                        <li><button type="button" onClick={() => addWidget('text')}>Text</button></li>
-                        <li><button type="button" onClick={() => addWidget('image')}>Image</button></li>
-                        <li><button type="button" onClick={() => addWidget('background')}>Background</button></li>
-                        <li><button type="button" onClick={() => addWidget('item_block')}>Item Block</button></li>
+                        <li><button type="button" onClick={() => addWidget('title')}><CaseUpper size={16} /> <span>Title</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('text')}><List size={16} /> <span>Text</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('image')}><FileImage size={16} /> <span>Image</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('background')}><Frame size={16} /> <span>Background</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('item_block')}><Square size={16} /> <span>Item Block</span></button></li>
                     </ul>
                     <div className="lang-toggle">
                         <button type="button" className={activeLanguage === 'en' ? 'active' : ''} onClick={() => updateEditorSettings({ activeLanguage: 'en' })}>EN</button>
@@ -766,7 +784,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                                         <label><span>Icon</span><input type="color" value={selectedWidget.style.iconColor || '#0f766e'} onChange={(e) => updateWidget(selectedWidget.id, { style: { iconColor: e.target.value } })} /></label>
                                     </div>
                                     <label><span>Corners</span><input type="number" min="0" max="80" value={selectedWidget.style.borderRadius ?? 10} onChange={(e) => updateWidget(selectedWidget.id, { style: { borderRadius: Number.parseInt(e.target.value, 10) || 0 } })} /></label>
-                                </div>
+                                    <label><span>Text Vertical Align</span><select value={selectedWidget.style.textVerticalAlign || 'center'} onChange={(e) => updateWidget(selectedWidget.id, { style: { textVerticalAlign: e.target.value } })}><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+                                    </div>
                             )}
 
                             <div className="layer-controls">
@@ -788,6 +807,16 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     )}
                 </aside>
             </section>
+
+            {saveSuccessOpen && (
+                <div className="save-modal-backdrop" role="dialog" aria-modal="true">
+                    <div className="save-modal-card">
+                        <h4>Saved</h4>
+                        <p>Instruction design progress saved successfully.</p>
+                        <button type="button" className="btn btn-primary" onClick={() => setSaveSuccessOpen(false)}>OK</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
