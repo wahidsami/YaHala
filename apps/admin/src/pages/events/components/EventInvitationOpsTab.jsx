@@ -72,6 +72,23 @@ export default function EventInvitationOpsTab({ event }) {
         loadData();
     }, [event?.id]);
 
+    useEffect(() => {
+        if (!event?.id) {
+            return undefined;
+        }
+
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+            if (!actionLoading && !sending && !tracing) {
+                loadData();
+            }
+        }, 15000);
+
+        return () => window.clearInterval(intervalId);
+    }, [event?.id, actionLoading, sending, tracing]);
+
     const readiness = useMemo(() => {
         const recipients = summary?.totals?.recipients || 0;
         const templateSelected = Boolean(event?.template_id);

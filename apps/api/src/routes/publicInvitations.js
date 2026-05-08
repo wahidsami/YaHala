@@ -390,7 +390,57 @@ async function fetchPublicInvitationBundle(db, token) {
             ? invitationSnapshot.recipient
             : {};
         const snapshotProject = invitationSnapshot.project;
-        const snapshotPages = invitationSnapshot.pages;
+        const snapshotPages = Array.isArray(invitationSnapshot.pages)
+            ? invitationSnapshot.pages.map((page) => ({ ...page, settings: safeJson(page?.settings, {}) }))
+            : [];
+
+        for (const page of snapshotPages) {
+            const pageId = typeof page?.id === 'string' ? page.id : null;
+            const pageKey = typeof page?.page_key === 'string' ? page.page_key : null;
+            if (!pageId && !pageKey) {
+                continue;
+            }
+
+            const queryParts = [];
+            const queryValues = [recipient.project_id, recipient.recipient_id];
+            if (pageId) {
+                queryParts.push(`page_id = $${queryValues.length + 1}`);
+                queryValues.push(pageId);
+            }
+            if (pageKey) {
+                queryParts.push(`page_key = $${queryValues.length + 1}`);
+                queryValues.push(pageKey);
+            }
+            if (!queryParts.length) {
+                continue;
+            }
+
+            const { rows: stateRows } = await db.query(
+                `
+                SELECT *
+                FROM invitation_addon_guest_state
+                WHERE project_id = $1
+                  AND recipient_id = $2
+                  AND (${queryParts.join(' OR ')})
+                ORDER BY updated_at DESC
+                LIMIT 1
+                `,
+                queryValues
+            );
+
+            const stateRow = stateRows[0] || null;
+            const runtimeState = evaluateAddonRuntime({
+                recipient,
+                pageSettings: page.settings,
+                stateRow,
+                completedFromContent: false
+            });
+            page.settings = {
+                ...page.settings,
+                runtime: runtimeState
+            };
+        }
+
         const snapshotLanguage = normalizeLanguage(
             invitationSnapshot.language || snapshotRecipient.preferred_language || recipient.preferred_language,
             snapshotProject.default_language || recipient.default_language || 'ar'
