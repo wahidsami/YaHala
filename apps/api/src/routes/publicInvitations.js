@@ -492,17 +492,46 @@ async function fetchPublicInvitationBundle(db, token) {
     for (const page of pages) {
         const settings = safeJson(page.settings, {});
         const snapshot = safeJson(settings.addon_snapshot || settings.poll_snapshot, null);
+        const { rows: stateRows } = await db.query(
+            `
+            SELECT *
+            FROM invitation_addon_guest_state
+            WHERE project_id = $1
+              AND recipient_id = $2
+              AND page_id = $3
+            LIMIT 1
+            `,
+            [recipient.project_id, recipient.recipient_id, page.id]
+        );
+        const stateRow = stateRows[0] || null;
+        let completedFromContent = false;
         if (snapshot && snapshot.type === 'poll' && snapshot.poll_id) {
             const runtime = await fetchPollRuntimeState(db, snapshot.poll_id, recipient.client_id, recipient.event_id);
             if (!runtime) {
                 continue;
             }
 
+            if (recipient.client_guest_id) {
+                const { rows: voteRows } = await db.query(
+                    `
+                    SELECT id
+                    FROM poll_votes
+                    WHERE poll_id = $1
+                      AND guest_id = $2
+                    LIMIT 1
+                    `,
+                    [snapshot.poll_id, recipient.client_guest_id]
+                );
+                completedFromContent = voteRows.length > 0;
+            }
+
             const liveSnapshot = shapePollSnapshot(runtime.poll, runtime.options, runtime.stats);
+            const runtimeState = evaluateAddonRuntime({ recipient, pageSettings: settings, stateRow, completedFromContent });
             page.settings = {
                 ...settings,
                 addon_snapshot: liveSnapshot,
-                poll_snapshot: liveSnapshot
+                poll_snapshot: liveSnapshot,
+                runtime: runtimeState
             };
         } else if (
             (snapshot && snapshot.type === 'questionnaire' && snapshot.questionnaire_id)
@@ -514,11 +543,31 @@ async function fetchPublicInvitationBundle(db, token) {
                 continue;
             }
 
+            const { rows: submissionRows } = await db.query(
+                `
+                SELECT id
+                FROM questionnaire_submissions
+                WHERE questionnaire_id = $1
+                  AND recipient_id = $2
+                LIMIT 1
+                `,
+                [questionnaireId, recipient.recipient_id]
+            );
+            completedFromContent = submissionRows.length > 0;
+
             const liveSnapshot = shapeQuestionnaireSnapshot(runtime.questionnaire, runtime.questions);
+            const runtimeState = evaluateAddonRuntime({ recipient, pageSettings: settings, stateRow, completedFromContent });
             page.settings = {
                 ...settings,
                 addon_snapshot: liveSnapshot,
-                questionnaire_snapshot: liveSnapshot
+                questionnaire_snapshot: liveSnapshot,
+                runtime: runtimeState
+            };
+        } else if (settings.activation_rules || settings.activationRules || settings.display) {
+            const runtimeState = evaluateAddonRuntime({ recipient, pageSettings: settings, stateRow, completedFromContent: false });
+            page.settings = {
+                ...settings,
+                runtime: runtimeState
             };
         }
     }
@@ -597,6 +646,70 @@ function normalizeQuestionnaireAnswers(value) {
             boolean: typeof answer?.boolean === 'boolean' ? answer.boolean : null
         }))
         .filter((answer) => answer.questionId);
+}
+
+function toIsoDate(value) {
+    if (typeof value !== 'string' || !value.trim()) {
+        return null;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+    return date.toISOString();
+}
+
+function evaluateAddonRuntime({ recipient, pageSettings, stateRow, completedFromContent }) {
+    const activation = safeJson(pageSettings?.activation_rules || pageSettings?.activationRules, {});
+    const display = safeJson(pageSettings?.display, {});
+    const metadata = safeJson(recipient?.metadata || recipient?.recipient_metadata, {});
+    const attendanceStatus = `${metadata?.attendance_status || metadata?.check_in_status || ''}`.toLowerCase();
+    const checkedIn = attendanceStatus === 'checked_in' || attendanceStatus === 'attended';
+    const scannerEnabled = Boolean(stateRow?.scanner_manual_enabled);
+
+    const scheduleEnabled = Boolean(activation.liveOnSchedule);
+    const scheduleStartAt = toIsoDate(activation.scheduleStartAt || activation.schedule_start_at);
+    const scheduleEndAt = toIsoDate(activation.scheduleEndAt || activation.schedule_end_at);
+    const now = Date.now();
+    const afterStart = !scheduleStartAt || new Date(scheduleStartAt).getTime() <= now;
+    const beforeEnd = !scheduleEndAt || new Date(scheduleEndAt).getTime() >= now;
+    const scheduleUnlocked = scheduleEnabled ? (afterStart && beforeEnd) : false;
+
+    const activeRuleResults = [];
+    if (activation.liveAfterQrScanned) activeRuleResults.push(checkedIn);
+    if (activation.liveWhenScannerEnabled) activeRuleResults.push(scannerEnabled);
+    if (scheduleEnabled) activeRuleResults.push(scheduleUnlocked);
+
+    const unlockLogic = activation.unlockLogic === 'all' ? 'all' : 'any';
+    const unlockedFromRules = !activeRuleResults.length
+        ? true
+        : unlockLogic === 'all'
+            ? activeRuleResults.every(Boolean)
+            : activeRuleResults.some(Boolean);
+
+    const completed = Boolean(stateRow?.is_completed) || Boolean(completedFromContent);
+    const unlocked = Boolean(stateRow?.is_unlocked) || unlockedFromRules;
+
+    return {
+        unlocked,
+        completed,
+        completedAt: stateRow?.completed_at || null,
+        disableAfterSubmission: display.disableAfterSubmission !== false,
+        showBackButton: display.showBackButton !== false,
+        autoReturnAfterSubmit: display.autoReturnAfterSubmit !== false,
+        displayMode: display.mode === 'icons' ? 'icons' : 'tabs',
+        position: ['top', 'left', 'right', 'bottom', 'qr_slot'].includes(display.position) ? display.position : 'top',
+        replaceQrSlot: Boolean(display.replaceQrSlot),
+        ruleSnapshot: {
+            unlockLogic,
+            checkedIn,
+            scannerEnabled,
+            scheduleEnabled,
+            scheduleStartAt,
+            scheduleEndAt,
+            scheduleUnlocked
+        }
+    };
 }
 
 async function fetchRsvpModule(db, projectId) {

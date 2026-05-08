@@ -331,6 +331,49 @@ function buildInvitationUrl(token) {
     return `${window.location.origin}/invite/${token}`;
 }
 
+function evaluatePageRuntimeFallback(page, recipient) {
+    const runtime = page?.settings?.runtime || {};
+    if (runtime && typeof runtime.unlocked === 'boolean') {
+        return runtime;
+    }
+
+    const activation = page?.settings?.activation_rules || page?.settings?.activationRules || {};
+    const display = page?.settings?.display || {};
+    const metadata = recipient?.metadata || recipient?.recipient_metadata || {};
+    const attendanceStatus = `${metadata?.attendance_status || metadata?.check_in_status || ''}`.toLowerCase();
+    const checkedIn = attendanceStatus === 'checked_in' || attendanceStatus === 'attended';
+    const scannerEnabled = false;
+    const scheduleEnabled = Boolean(activation.liveOnSchedule);
+    const now = Date.now();
+    const startTs = activation.scheduleStartAt ? new Date(activation.scheduleStartAt).getTime() : null;
+    const endTs = activation.scheduleEndAt ? new Date(activation.scheduleEndAt).getTime() : null;
+    const scheduleUnlocked = scheduleEnabled
+        ? (!startTs || startTs <= now) && (!endTs || endTs >= now)
+        : false;
+
+    const activeResults = [];
+    if (activation.liveAfterQrScanned) activeResults.push(checkedIn);
+    if (activation.liveWhenScannerEnabled) activeResults.push(scannerEnabled);
+    if (scheduleEnabled) activeResults.push(scheduleUnlocked);
+    const unlockLogic = activation.unlockLogic === 'all' ? 'all' : 'any';
+    const unlocked = !activeResults.length
+        ? true
+        : unlockLogic === 'all'
+            ? activeResults.every(Boolean)
+            : activeResults.some(Boolean);
+
+    return {
+        unlocked,
+        completed: false,
+        disableAfterSubmission: display.disableAfterSubmission !== false,
+        showBackButton: display.showBackButton !== false,
+        autoReturnAfterSubmit: display.autoReturnAfterSubmit !== false,
+        displayMode: display.mode === 'icons' ? 'icons' : 'tabs',
+        position: ['top', 'left', 'right', 'bottom', 'qr_slot'].includes(display.position) ? display.position : 'top',
+        replaceQrSlot: Boolean(display.replaceQrSlot)
+    };
+}
+
 function WidgetPreview({ widget, language, project, recipient }) {
     const content = getWidgetContent(widget, language);
     const isLogoWidget = widget.type === 'logo';
@@ -670,7 +713,7 @@ function RsvpPanel({ token, invitation, language, sessionToken, setSessionToken,
     );
 }
 
-function PollPanel({ language, page, token, sessionToken, setSessionToken }) {
+function PollPanel({ language, page, token, sessionToken, setSessionToken, onBack, onSubmitted }) {
     const copy = COPY[language];
     const snapshot = page?.settings?.addon_snapshot || page?.settings?.poll_snapshot || {};
     const [pollState, setPollState] = useState(snapshot);
@@ -684,8 +727,8 @@ function PollPanel({ language, page, token, sessionToken, setSessionToken }) {
         setSelectedOptionIds([]);
         setSubmitting(false);
         setError('');
-        setSubmitted(false);
-    }, [snapshot.poll_id, page?.id]);
+        setSubmitted(Boolean(page?.settings?.runtime?.completed));
+    }, [snapshot.poll_id, page?.id, page?.settings?.runtime?.completed]);
 
     const options = Array.isArray(pollState.options)
         ? [...pollState.options].sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0))
@@ -756,6 +799,10 @@ function PollPanel({ language, page, token, sessionToken, setSessionToken }) {
                 window.localStorage.setItem(`rawaj-public-session:${token}`, nextSessionToken);
             }
             setSubmitted(true);
+            onSubmitted?.(page.page_key);
+            if (page?._runtime?.autoReturnAfterSubmit !== false) {
+                window.setTimeout(() => onBack?.(), 1200);
+            }
         } catch (voteError) {
             setError(voteError.response?.data?.message || copy.pollUnavailable);
         } finally {
@@ -854,16 +901,21 @@ function PollPanel({ language, page, token, sessionToken, setSessionToken }) {
                         {pollEnded ? copy.pollVotingClosed : copy.pollUnavailable}
                     </div>
                 )}
+                {page?._runtime?.showBackButton !== false && (
+                    <button type="button" className="ghost-link" onClick={onBack}>
+                        {copy.close}
+                    </button>
+                )}
             </div>
         </div>
     );
 }
 
-function QuestionnairePanel({ language, page, token, sessionToken, setSessionToken }) {
+function QuestionnairePanel({ language, page, token, sessionToken, setSessionToken, onBack, onSubmitted }) {
     const copy = COPY[language];
     const snapshot = page?.settings?.addon_snapshot || page?.settings?.questionnaire_snapshot || {};
     const [questionnaireState, setQuestionnaireState] = useState(snapshot);
-    const [submitted, setSubmitted] = useState(false);
+    const [submitted, setSubmitted] = useState(Boolean(page?.settings?.runtime?.completed));
     const [answers, setAnswers] = useState({});
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -966,6 +1018,10 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
             }
             setSubmitted(true);
             setSuccess(copy.questionnaireSubmitSuccess);
+            onSubmitted?.(page.page_key);
+            if (page?._runtime?.autoReturnAfterSubmit !== false) {
+                window.setTimeout(() => onBack?.(), 1200);
+            }
         } catch (submitError) {
             setError(submitError.response?.data?.message || copy.questionnaireUnavailable);
         } finally {
@@ -1054,6 +1110,11 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
                 ) : (
                     <div className="poll-empty-state">{submitted ? copy.questionnaireSubmitSuccess : copy.questionnaireUnavailable}</div>
                 )}
+                {page?._runtime?.showBackButton !== false && (
+                    <button type="button" className="ghost-link" onClick={onBack}>
+                        {copy.close}
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -1093,6 +1154,7 @@ export default function PublicInvitationPage() {
     const [rsvpCompleted, setRsvpCompleted] = useState(false);
     const [gateDecision, setGateDecision] = useState(null);
     const [showGate, setShowGate] = useState(false);
+    const [completedAddonPages, setCompletedAddonPages] = useState({});
     const [sessionToken, setSessionToken] = useState(() => {
         if (typeof window === 'undefined') {
             return null;
@@ -1255,7 +1317,21 @@ export default function PublicInvitationPage() {
     const gateEnabled = Boolean(gateConfig.enabled) && hasRsvpPage;
     const cardUnlocked = !gateEnabled || rsvpCompleted || gateDecision === 'attending' || gateDecision === 'maybe';
     const cardLockedByDecline = gateEnabled && !showGate && gateDecision === 'not_attending';
-    const interactivePages = pages.filter((page) => page.is_enabled && !['cover', 'rsvp'].includes(page.page_type));
+    const eligibleInteractivePages = pages.filter((page) => page.is_enabled && !['cover', 'rsvp'].includes(page.page_type));
+    const interactivePages = eligibleInteractivePages
+        .map((page) => ({
+            ...page,
+            _runtime: evaluatePageRuntimeFallback(page, invitation?.recipient || {})
+        }))
+        .filter((page) => {
+            const runtime = page?._runtime || {};
+            const forceCompleted = Boolean(completedAddonPages[page.page_key]);
+            const disableAfterSubmission = runtime.disableAfterSubmission !== false;
+            if (disableAfterSubmission && (runtime.completed || forceCompleted)) {
+                return true;
+            }
+            return runtime.unlocked !== false;
+        });
     const copy = COPY[activeLanguage];
     const coverLayout = useMemo(() => normalizeLayout(invitation?.project?.cover_template_snapshot?.layout || invitation?.project?.cover_template?.design_data?.layout || {}), [invitation?.project?.cover_template_snapshot?.layout, invitation?.project?.cover_template?.design_data?.layout]);
     const canvasBaseWidth = 360;
@@ -1289,10 +1365,17 @@ export default function PublicInvitationPage() {
             setActivePageKey('cover');
             return;
         }
-        if (!interactivePages.some((page) => page.page_key === activePageKey)) {
+        if (activePageKey !== 'cover' && !interactivePages.some((page) => page.page_key === activePageKey)) {
             setActivePageKey(interactivePages[0].page_key);
         }
     }, [activePageKey, interactivePages]);
+
+    function markAddonSubmitted(pageKey) {
+        if (!pageKey) {
+            return;
+        }
+        setCompletedAddonPages((prev) => ({ ...prev, [pageKey]: true }));
+    }
 
     useEffect(() => {
         if (!invitationReady || !gateEnabled) {
@@ -1369,20 +1452,29 @@ export default function PublicInvitationPage() {
                 {cardUnlocked && interactivePages.length > 0 && (
                     <div className="card-tabs">
                         {interactivePages.map((page) => (
+                            (() => {
+                                const runtime = page?._runtime || {};
+                                const disableAfterSubmission = runtime.disableAfterSubmission !== false;
+                                const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
+                                const isDisabled = disableAfterSubmission && completed;
+                                return (
                             <button
                                 key={page.page_key}
                                 type="button"
                                 className={activePageKey === page.page_key ? 'active' : ''}
+                                disabled={isDisabled}
                                 onClick={() => setActivePageKey(page.page_key)}
                             >
                                 {localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type)}
                             </button>
-                        ))}
+                                );
+                            })()
+                        )}
                     </div>
                 )}
 
                 {cardUnlocked && interactivePages.length > 0 && (() => {
-                    const activePage = interactivePages.find((page) => page.page_key === activePageKey) || interactivePages[0];
+                    const activePage = interactivePages.find((page) => page.page_key === activePageKey);
                     if (!activePage) {
                         return null;
                     }
@@ -1394,6 +1486,8 @@ export default function PublicInvitationPage() {
                                 token={token}
                                 sessionToken={sessionToken}
                                 setSessionToken={setSessionToken}
+                                onBack={() => setActivePageKey('cover')}
+                                onSubmitted={markAddonSubmitted}
                             />
                         );
                     }
@@ -1405,6 +1499,8 @@ export default function PublicInvitationPage() {
                                 token={token}
                                 sessionToken={sessionToken}
                                 setSessionToken={setSessionToken}
+                                onBack={() => setActivePageKey('cover')}
+                                onSubmitted={markAddonSubmitted}
                             />
                         );
                     }

@@ -288,12 +288,12 @@ For each guest + addon page:
 - [x] Add display mode + placement controls (tabs/icons/qr-slot)
 
 #### Phase 3 - Public Card Runtime
-- Status: `pending`
-- [ ] Evaluate activation rules at card runtime
+- Status: `in_progress`
+- [x] Evaluate activation rules at card runtime
 - [ ] Render addon entry in selected placement
 - [ ] Replace QR slot when configured
-- [ ] Add back button in poll/questionnaire panels
-- [ ] Post-submit thank-you + auto-return + disable action
+- [x] Add back button in poll/questionnaire panels
+- [x] Post-submit thank-you + auto-return + disable action
 
 #### Phase 4 - Scanner Runtime Integration
 - Status: `pending`
