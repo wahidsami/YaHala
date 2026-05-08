@@ -398,8 +398,8 @@ async function fetchPublicInvitationBundle(db, token) {
 
         return {
             recipient: {
-                ...recipient,
                 ...snapshotRecipient,
+                ...recipient,
                 recipient_id: recipient.recipient_id,
                 project_id: recipient.project_id,
                 public_token: recipient.public_token,

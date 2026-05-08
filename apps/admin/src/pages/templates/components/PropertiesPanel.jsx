@@ -1060,16 +1060,16 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                         <label>QR Color</label>
                                         <input
                                             type="color"
-                                            value={widget.style?.color || '#111827'}
-                                            onChange={(e) => updateStyle('color', e.target.value)}
+                                            value={content.qrColor || widget.style?.color || '#111827'}
+                                            onChange={(e) => updateContent('qrColor', e.target.value)}
                                         />
                                     </div>
                                     <div className="form-group tiny">
                                         <label>QR Background</label>
                                         <input
                                             type="color"
-                                            value={widget.style?.backgroundColor || '#ffffff'}
-                                            onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+                                            value={content.qrBackground || widget.style?.backgroundColor || '#ffffff'}
+                                            onChange={(e) => updateContent('qrBackground', e.target.value)}
                                         />
                                     </div>
                                 </div>

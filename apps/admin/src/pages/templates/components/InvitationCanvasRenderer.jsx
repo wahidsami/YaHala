@@ -94,14 +94,14 @@ function getGuestPosition(recipient, content) {
     ).trim();
 }
 
-function buildQrImageUrl(token, widgetStyle = {}) {
+function buildQrImageUrl(token, qrContent = {}, widgetStyle = {}) {
     if (!token) {
         return null;
     }
 
     const invitationUrl = `${window.location.origin}/invite/${token}`;
-    const colorHex = (widgetStyle?.color || '#111827').replace('#', '');
-    const backgroundHex = (widgetStyle?.backgroundColor || '#ffffff').replace('#', '');
+    const colorHex = (qrContent?.qrColor || widgetStyle?.color || '#111827').replace('#', '');
+    const backgroundHex = (qrContent?.qrBackground || widgetStyle?.backgroundColor || '#ffffff').replace('#', '');
     return `https://api.qrserver.com/v1/create-qr-code/?size=384x384&margin=24&color=${encodeURIComponent(colorHex)}&bgcolor=${encodeURIComponent(backgroundHex)}&data=${encodeURIComponent(invitationUrl)}`;
 }
 
@@ -236,7 +236,7 @@ export function InvitationWidgetPreview({ widget, language, project, recipient, 
     const style = {
         textAlign: widget?.style?.textAlign,
         color: widget?.style?.color,
-        backgroundColor: widget?.style?.backgroundColor,
+        backgroundColor: widget?.type === 'qr_code' ? undefined : widget?.style?.backgroundColor,
         padding: isLogoWidget ? 0 : widget?.style?.padding ? `${widget.style.padding}px` : undefined,
         fontSize: widget?.style?.fontSize ? `${widget.style.fontSize}px` : undefined,
         fontWeight: widget?.style?.fontWeight,
@@ -345,7 +345,9 @@ export function InvitationWidgetPreview({ widget, language, project, recipient, 
             );
         }
         case 'qr_code': {
-            const qrImageUrl = mode === 'builder' ? null : buildQrImageUrl(recipient.public_token, widget?.style || {});
+            const qrImageUrl = mode === 'builder'
+                ? null
+                : buildQrImageUrl(recipient.public_token, content, widget?.style || {});
 
             return (
                 <div style={style} className="preview-widget qr-widget">
