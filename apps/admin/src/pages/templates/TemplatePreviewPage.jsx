@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Eye, Loader2 } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
@@ -6,28 +6,12 @@ import { normalizeLayout } from './backgroundUtils';
 import TemplatePreviewCanvas from './components/TemplatePreviewCanvas';
 import './TemplatePreviewPage.css';
 
-function readPreviewState(storageKey) {
-    try {
-        const raw = sessionStorage.getItem(storageKey);
-        if (!raw) {
-            return null;
-        }
-
-        return JSON.parse(raw);
-    } catch (error) {
-        console.warn('Failed to read preview state:', error);
-        return null;
-    }
-}
-
 export default function TemplatePreviewPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const storageKey = `template-preview:${id || 'new'}`;
     const locationState = location.state || {};
-    const storedState = useMemo(() => readPreviewState(storageKey), [storageKey]);
-    const initialState = locationState.designData ? locationState : storedState;
+    const initialState = locationState.designData ? locationState : null;
 
     const [previewState, setPreviewState] = useState(initialState);
     const [loading, setLoading] = useState(!initialState);
@@ -36,7 +20,7 @@ export default function TemplatePreviewPage() {
         let mounted = true;
 
         async function loadTemplate() {
-            if (locationState.designData || storedState?.designData) {
+            if (locationState.designData) {
                 setLoading(false);
                 return;
             }
@@ -82,7 +66,7 @@ export default function TemplatePreviewPage() {
         return () => {
             mounted = false;
         };
-    }, [id, locationState.designData, storedState?.designData]);
+    }, [id, locationState.designData]);
 
     const templateName = previewState?.templateName || 'Template Preview';
     const templateHash = previewState?.templateHash || '';

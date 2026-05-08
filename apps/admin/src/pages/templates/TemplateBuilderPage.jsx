@@ -45,39 +45,12 @@ export default function TemplateBuilderPage() {
     const [activeId, setActiveId] = useState(null);
     const [templateName, setTemplateName] = useState('');
     const [templateHash, setTemplateHash] = useState('');
-    const draftKey = `template-builder-draft:${id || 'new'}`;
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
     );
 
     useEffect(() => {
-        const draftState = (() => {
-            try {
-                const raw = sessionStorage.getItem(draftKey);
-                return raw ? JSON.parse(raw) : null;
-            } catch {
-                return null;
-            }
-        })();
-
-        if (draftState?.designData) {
-            setTemplate(null);
-            setDesignData({
-                ...DEFAULT_TEMPLATE,
-                ...draftState.designData,
-                layout: {
-                    ...DEFAULT_TEMPLATE.layout,
-                    ...normalizeLayout(draftState.designData?.layout)
-                }
-            });
-            setSelectedWidget(null);
-            setTemplateName(draftState.templateName || '');
-            setTemplateHash(draftState.templateHash || '');
-            setActiveLanguage(draftState.activeLanguage || 'ar');
-            return;
-        }
-
         if (id && id !== 'new') {
             fetchTemplate();
             return;
@@ -88,7 +61,7 @@ export default function TemplateBuilderPage() {
         setSelectedWidget(null);
         setTemplateName('');
         setTemplateHash('');
-    }, [draftKey, id]);
+    }, [id]);
 
     async function fetchTemplate() {
         try {
@@ -237,7 +210,6 @@ export default function TemplateBuilderPage() {
     }
 
     function handlePreview() {
-        const previewKey = `template-preview:${id || 'new'}`;
         const previewState = {
             templateId: id,
             templateName,
@@ -245,13 +217,6 @@ export default function TemplateBuilderPage() {
             activeLanguage,
             designData
         };
-
-        try {
-            sessionStorage.setItem(previewKey, JSON.stringify(previewState));
-            sessionStorage.setItem(draftKey, JSON.stringify(previewState));
-        } catch (error) {
-            console.warn('Failed to persist preview state:', error);
-        }
 
         navigate(`/templates/${id || 'new'}/preview`, { state: previewState });
     }
@@ -272,7 +237,6 @@ export default function TemplateBuilderPage() {
                     designData
                 });
                 setTemplateHash(response.data.data.design_data_hash || '');
-                sessionStorage.removeItem(draftKey);
             } else {
                 const response = await api.post('/admin/templates', {
                     name: normalizedName,
@@ -280,7 +244,6 @@ export default function TemplateBuilderPage() {
                     designData
                 });
                 setTemplateHash(response.data.data.design_data_hash || '');
-                sessionStorage.removeItem(draftKey);
                 navigate(`/templates/${response.data.data.id}`, { replace: true });
                 return;
             }

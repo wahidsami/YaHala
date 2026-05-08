@@ -89,12 +89,18 @@ export default function EventGuestsTab({ event }) {
                 guestIds: selectedIds
             });
             const result = response.data?.data;
-            setSuccess(
-                t('events.guests.assignSuccess', {
-                    created: result?.created || 0,
-                    updated: result?.updated || 0
-                })
-            );
+            const createdCount = result?.created || 0;
+            const updatedCount = result?.updated || 0;
+            if (createdCount === 0 && updatedCount > 0) {
+                setSuccess(`Guests already linked to event: ${updatedCount} refreshed.`);
+            } else {
+                setSuccess(
+                    t('events.guests.assignSuccess', {
+                        created: createdCount,
+                        updated: updatedCount
+                    })
+                );
+            }
             await loadGuests(pagination.page);
         } catch (assignError) {
             console.error('Failed to assign guests to event:', assignError);
