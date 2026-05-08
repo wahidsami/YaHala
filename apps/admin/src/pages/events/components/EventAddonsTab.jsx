@@ -23,8 +23,6 @@ export default function EventAddonsTab({ event }) {
     const eventId = event?.id;
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [creatingQuestionnaire, setCreatingQuestionnaire] = useState(false);
-    const [showQuestionnaireCreator, setShowQuestionnaireCreator] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [polls, setPolls] = useState([]);
@@ -34,13 +32,6 @@ export default function EventAddonsTab({ event }) {
         addIns: [],
         pollIds: [],
         questionnaireIds: []
-    });
-    const [questionnaireDraft, setQuestionnaireDraft] = useState({
-        title: '',
-        titleAr: '',
-        status: 'draft',
-        firstQuestionTitle: 'Question 1',
-        firstQuestionTitleAr: ''
     });
 
     const enabledAddonSet = useMemo(() => new Set(formData.addIns), [formData.addIns]);
@@ -107,60 +98,6 @@ export default function EventAddonsTab({ event }) {
                 questionnaireIds: addonId === 'questionnaire' && !checked ? [] : prev.questionnaireIds
             };
         });
-    }
-
-    async function createQuestionnaire() {
-        if (!questionnaireDraft.title.trim()) {
-            setError('Questionnaire title is required.');
-            return;
-        }
-        if (!questionnaireDraft.firstQuestionTitle.trim() && !questionnaireDraft.firstQuestionTitleAr.trim()) {
-            setError('First question title is required.');
-            return;
-        }
-        if (!event?.client_id || !event?.id) {
-            setError('Missing event/client context for questionnaire creation.');
-            return;
-        }
-
-        setCreatingQuestionnaire(true);
-        setError('');
-        setSuccess('');
-        try {
-            await api.post('/admin/questionnaires', {
-                clientId: event.client_id,
-                eventId: event.id,
-                title: questionnaireDraft.title.trim(),
-                titleAr: questionnaireDraft.titleAr.trim() || null,
-                status: questionnaireDraft.status,
-                questions: [
-                    {
-                        questionType: 'short_text',
-                        title: questionnaireDraft.firstQuestionTitle.trim() || questionnaireDraft.firstQuestionTitleAr.trim(),
-                        titleAr: questionnaireDraft.firstQuestionTitleAr.trim() || null,
-                        isRequired: false,
-                        sortOrder: 0,
-                        settings: {}
-                    }
-                ]
-            });
-            setActiveAddon('questionnaire');
-            setSuccess('Questionnaire created. You can now link it to card tabs.');
-            setQuestionnaireDraft({
-                title: '',
-                titleAr: '',
-                status: 'draft',
-                firstQuestionTitle: 'Question 1',
-                firstQuestionTitleAr: ''
-            });
-            setShowQuestionnaireCreator(false);
-            await loadAddons();
-        } catch (createError) {
-            console.error('Failed to create questionnaire:', createError);
-            setError(createError.response?.data?.message || 'Failed to create questionnaire.');
-        } finally {
-            setCreatingQuestionnaire(false);
-        }
     }
 
     function toggleSelection(key, id, checked) {
@@ -301,71 +238,10 @@ export default function EventAddonsTab({ event }) {
                         <>
                             <div className="event-addons-card-header">
                                 <h4>Questionnaire tabs linked to invitation card</h4>
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={() => setShowQuestionnaireCreator((prev) => !prev)}
-                                    disabled={creatingQuestionnaire}
-                                >
-                                    {showQuestionnaireCreator ? 'Close Questionnaire Tools' : 'Create Questionnaire'}
-                                </button>
+                                <Link to={`/addons/questionnaires/new?eventId=${eventId}&clientId=${event?.client_id || ''}`} className="btn btn-secondary">
+                                    Create Questionnaire
+                                </Link>
                             </div>
-                            {showQuestionnaireCreator && (
-                                <div className="questionnaire-creator">
-                                    <h5>Questionnaire Tools</h5>
-                                    <div className="questionnaire-creator-grid">
-                                        <div className="form-group">
-                                            <label>Title (EN)</label>
-                                            <input
-                                                type="text"
-                                                value={questionnaireDraft.title}
-                                                onChange={(eventParam) => setQuestionnaireDraft((prev) => ({ ...prev, title: eventParam.target.value }))}
-                                                placeholder="Example: Event Experience Survey"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Title (AR)</label>
-                                            <input
-                                                type="text"
-                                                value={questionnaireDraft.titleAr}
-                                                onChange={(eventParam) => setQuestionnaireDraft((prev) => ({ ...prev, titleAr: eventParam.target.value }))}
-                                                placeholder="عنوان الاستبيان"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Status</label>
-                                            <select
-                                                value={questionnaireDraft.status}
-                                                onChange={(eventParam) => setQuestionnaireDraft((prev) => ({ ...prev, status: eventParam.target.value }))}
-                                            >
-                                                <option value="draft">Draft</option>
-                                                <option value="published">Published</option>
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label>First Question (EN)</label>
-                                            <input
-                                                type="text"
-                                                value={questionnaireDraft.firstQuestionTitle}
-                                                onChange={(eventParam) => setQuestionnaireDraft((prev) => ({ ...prev, firstQuestionTitle: eventParam.target.value }))}
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>First Question (AR)</label>
-                                            <input
-                                                type="text"
-                                                value={questionnaireDraft.firstQuestionTitleAr}
-                                                onChange={(eventParam) => setQuestionnaireDraft((prev) => ({ ...prev, firstQuestionTitleAr: eventParam.target.value }))}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="questionnaire-creator-actions">
-                                        <button type="button" className="btn btn-primary" onClick={createQuestionnaire} disabled={creatingQuestionnaire}>
-                                            {creatingQuestionnaire ? t('common.loading') : 'Create Questionnaire Now'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                             {!enabledAddonSet.has('questionnaire') ? (
                                 <p className="event-addons-empty">Enable Questionnaire addon from the left menu first.</p>
                             ) : questionnaires.length === 0 ? (
@@ -385,6 +261,7 @@ export default function EventAddonsTab({ event }) {
                                                     <strong>{localizedText(i18n, questionnaire.title, questionnaire.title_ar)}</strong>
                                                     <small>{questionnaire.status} · {questionnaire.question_count || 0} questions · {questionnaire.submission_count || 0} submissions</small>
                                                 </div>
+                                                <Link to={`/addons/questionnaires/${questionnaire.id}`} className="btn btn-secondary">Open</Link>
                                                 {checked && <span className="linked-pill">Linked</span>}
                                             </label>
                                         );

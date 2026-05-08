@@ -238,9 +238,9 @@ export default function AddonsPage() {
                     <p>{t('addons.subtitle')}</p>
                 </div>
                 <RoleGuard permission="events.edit">
-                    <Link to="/addons/polls/new" className="btn btn-primary">
+                    <Link to={activeTab === 'questionnaire' ? '/addons/questionnaires/new' : '/addons/polls/new'} className="btn btn-primary">
                         <Plus size={18} />
-                        <span>{t('addons.polls.create')}</span>
+                        <span>{activeTab === 'questionnaire' ? 'Create Questionnaire' : t('addons.polls.create')}</span>
                     </Link>
                 </RoleGuard>
             </div>
@@ -518,7 +518,7 @@ export default function AddonsPage() {
                                             </td>
                                             <td>
                                                 <div className="row-actions">
-                                                    <Link to={`/events/${questionnaire.event_id}`} className="action-btn" title={t('common.view')}>
+                                                    <Link to={`/addons/questionnaires/${questionnaire.id}`} className="action-btn" title={t('common.view')}>
                                                         <Eye size={16} />
                                                     </Link>
                                                 </div>

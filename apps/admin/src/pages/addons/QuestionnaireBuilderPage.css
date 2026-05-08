@@ -1,0 +1,96 @@
+.questionnaire-builder-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.builder-steps {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.builder-steps button {
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    font-weight: 700;
+}
+
+.builder-steps button.active {
+    background: rgba(148, 111, 167, 0.14);
+    border-color: rgba(148, 111, 167, 0.4);
+}
+
+.question-add-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.question-card {
+    border: 1px solid var(--border-color);
+    border-radius: 0.85rem;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+}
+
+.question-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.switch-inline {
+    display: inline-flex;
+    gap: 0.45rem;
+    margin: 0.4rem 0 0.6rem;
+}
+
+.question-options {
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.6rem;
+}
+
+.question-options-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.option-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.45rem;
+    margin-bottom: 0.45rem;
+}
+
+.icon-btn {
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    border-radius: 0.5rem;
+    width: 32px;
+    height: 32px;
+    display: inline-grid;
+    place-items: center;
+}
+
+.icon-btn.danger {
+    color: #b91c1c;
+}
+
+@media (max-width: 760px) {
+    .option-row {
+        grid-template-columns: 1fr;
+    }
+}

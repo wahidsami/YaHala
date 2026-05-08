@@ -24,6 +24,7 @@ import TemplateBuilderPage from './pages/templates/TemplateBuilderPage';
 import TemplatePreviewPage from './pages/templates/TemplatePreviewPage';
 import AddonsPage from './pages/addons/AddonsPage';
 import PollBuilderPage from './pages/addons/PollBuilderPage';
+import QuestionnaireBuilderPage from './pages/addons/QuestionnaireBuilderPage';
 import InvitationProjectListPage from './pages/invitation-projects/InvitationProjectListPage';
 import InvitationProjectFormPage from './pages/invitation-projects/InvitationProjectFormPage';
 import InvitationProjectDetailPage from './pages/invitation-projects/InvitationProjectDetailPage';
@@ -70,6 +71,8 @@ function App() {
                     <Route path="/addons" element={<AddonsPage />} />
                     <Route path="/addons/polls/new" element={<PollBuilderPage mode="create" />} />
                     <Route path="/addons/polls/:id" element={<PollEditWrapper />} />
+                    <Route path="/addons/questionnaires/new" element={<QuestionnaireBuilderPage mode="create" />} />
+                    <Route path="/addons/questionnaires/:id" element={<QuestionnaireEditWrapper />} />
 
                     {/* Invitation Projects */}
                     <Route path="/invitation-projects" element={<InvitationProjectListPage />} />
@@ -191,6 +194,51 @@ function PlaceholderPage({ titleKey }) {
             <p>{t('common.comingSoon')}</p>
         </div>
     );
+}
+
+function QuestionnaireEditWrapper() {
+    const { t } = useTranslation();
+    const { id } = useParams();
+    const [questionnaire, setQuestionnaire] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let mounted = true;
+
+        async function fetchQuestionnaire() {
+            try {
+                const response = await api.get(`/admin/questionnaires/${id}`);
+                if (mounted) {
+                    setQuestionnaire(response.data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch questionnaire:', error);
+                if (mounted) {
+                    setQuestionnaire(null);
+                }
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        fetchQuestionnaire();
+
+        return () => {
+            mounted = false;
+        };
+    }, [id]);
+
+    if (loading) {
+        return <div className="loading">{t('common.loading')}</div>;
+    }
+
+    if (!questionnaire) {
+        return <div className="error">{t('common.notFound')}</div>;
+    }
+
+    return <QuestionnaireBuilderPage mode="edit" initialData={questionnaire} />;
 }
 
 export default App;
