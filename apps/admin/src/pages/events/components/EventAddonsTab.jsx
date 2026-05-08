@@ -25,6 +25,14 @@ export default function EventAddonsTab({ eventId }) {
     });
 
     const enabledAddonSet = useMemo(() => new Set(formData.addIns), [formData.addIns]);
+    const linkedPolls = useMemo(() => {
+        const byId = new Map(polls.map((item) => [item.id, item]));
+        return formData.pollIds.map((id) => byId.get(id)).filter(Boolean);
+    }, [formData.pollIds, polls]);
+    const linkedQuestionnaires = useMemo(() => {
+        const byId = new Map(questionnaires.map((item) => [item.id, item]));
+        return formData.questionnaireIds.map((id) => byId.get(id)).filter(Boolean);
+    }, [formData.questionnaireIds, questionnaires]);
 
     async function loadAddons() {
         setLoading(true);
@@ -95,6 +103,16 @@ export default function EventAddonsTab({ eventId }) {
                 [key]: Array.from(source)
             };
         });
+    }
+
+    function unlinkItem(type, id) {
+        if (type === 'poll') {
+            toggleSelection('pollIds', id, false);
+            return;
+        }
+        if (type === 'questionnaire') {
+            toggleSelection('questionnaireIds', id, false);
+        }
     }
 
     async function saveAddonsSetup() {
@@ -205,6 +223,7 @@ export default function EventAddonsTab({ eventId }) {
                                                     <strong>{localizedText(i18n, poll.title, poll.title_ar)}</strong>
                                                     <small>{t(`addons.polls.status.${poll.status}`) || poll.status}</small>
                                                 </div>
+                                                {checked && <span className="linked-pill">Linked</span>}
                                                 <Link to={`/addons/polls/${poll.id}`} className="btn btn-secondary">
                                                     {t('events.addons.openPoll')}
                                                 </Link>
@@ -240,6 +259,7 @@ export default function EventAddonsTab({ eventId }) {
                                                     <strong>{localizedText(i18n, questionnaire.title, questionnaire.title_ar)}</strong>
                                                     <small>{questionnaire.status} · {questionnaire.question_count || 0} questions · {questionnaire.submission_count || 0} submissions</small>
                                                 </div>
+                                                {checked && <span className="linked-pill">Linked</span>}
                                             </label>
                                         );
                                     })}
@@ -278,13 +298,32 @@ export default function EventAddonsTab({ eventId }) {
 
                 <section className="event-addons-card">
                     <div className="event-addons-card-header">
-                        <h4>Current linked tabs</h4>
+                        <h4>Card Tabs Preview</h4>
                         <MessageSquare size={16} />
                     </div>
                     {(formData.pollIds.length + formData.questionnaireIds.length) > 0 ? (
-                        <p className="event-addons-empty">
-                            Poll: {formData.pollIds.length} · Questionnaire: {formData.questionnaireIds.length}
-                        </p>
+                        <div className="linked-preview-list">
+                            {linkedPolls.map((poll, index) => (
+                                <div key={`poll-${poll.id}`} className="linked-preview-item">
+                                    <span className="linked-order">{index + 1}</span>
+                                    <div>
+                                        <strong>Poll</strong>
+                                        <small>{localizedText(i18n, poll.title, poll.title_ar)}</small>
+                                    </div>
+                                    <button type="button" className="btn btn-secondary" onClick={() => unlinkItem('poll', poll.id)}>Unlink</button>
+                                </div>
+                            ))}
+                            {linkedQuestionnaires.map((questionnaire, index) => (
+                                <div key={`questionnaire-${questionnaire.id}`} className="linked-preview-item">
+                                    <span className="linked-order">{linkedPolls.length + index + 1}</span>
+                                    <div>
+                                        <strong>Questionnaire</strong>
+                                        <small>{localizedText(i18n, questionnaire.title, questionnaire.title_ar)}</small>
+                                    </div>
+                                    <button type="button" className="btn btn-secondary" onClick={() => unlinkItem('questionnaire', questionnaire.id)}>Unlink</button>
+                                </div>
+                            ))}
+                        </div>
                     ) : (
                         <p className="event-addons-empty">No card tabs linked yet.</p>
                     )}

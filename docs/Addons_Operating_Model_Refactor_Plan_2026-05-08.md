@@ -85,11 +85,11 @@
 
 ## Phase 5 - Multi-Instance Add-on Experience
 - Goal: Support multiple resources per add-on type from Add-ons workspace.
-- Status: `pending`
+- Status: `done`
 - Tracking:
-  - [ ] Poll: select/create multiple polls
-  - [ ] Questionnaire: select/create multiple questionnaires (if allowed by business rules)
-  - [ ] Explicit linking UX to card tabs
+  - [x] Poll: select/create multiple polls
+  - [x] Questionnaire: select/create multiple questionnaires (if allowed by business rules)
+  - [x] Explicit linking UX to card tabs
 
 ## Phase 6 - QA and Release
 - Goal: Validate end-to-end flows and finalize rollout.
@@ -106,3 +106,4 @@
 - 2026-05-08: Phase 2 completed (event Add-ons tab converted to left-menu control center with multi-select content linking and save flow).
 - 2026-05-08: Phase 3 completed (deduplicated add-on/tab persistence, deterministic sort ordering, and post-save reload to prevent stale UI state).
 - 2026-05-08: Phase 4 completed (Invitation Setup now focuses on template and read-only status; add-on ownership moved to Add-ons tab).
+- 2026-05-08: Phase 5 completed (multi-instance linking UX with explicit card-tab preview and per-item unlink actions).
