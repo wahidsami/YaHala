@@ -37,12 +37,16 @@ function createQuestion(type = 'short_text', index = 0) {
             { id: createId(), label: 'Yes', labelAr: 'نعم', value: 'yes', sortOrder: 0 },
             { id: createId(), label: 'No', labelAr: 'لا', value: 'no', sortOrder: 1 }
         ];
+        base.settings = { correctBoolean: null };
     }
     if (type === 'single_choice' || type === 'multiple_choice') {
         base.options = [
             { id: createId(), label: 'Option 1', labelAr: '', value: 'option_1', sortOrder: 0 },
             { id: createId(), label: 'Option 2', labelAr: '', value: 'option_2', sortOrder: 1 }
         ];
+        if (type === 'single_choice') {
+            base.settings = { correctOptionValue: '' };
+        }
     }
     if (type === 'rating') {
         base.settings = { min: 1, max: 5 };
@@ -69,6 +73,10 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
         description: initialData.description || '',
         descriptionAr: initialData.description_ar || '',
         status: initialData.status || 'draft',
+        settings: {
+            purpose: initialData.settings?.purpose || '',
+            purposeAr: initialData.settings?.purposeAr || initialData.settings?.purpose_ar || ''
+        },
         questions: Array.isArray(initialData.questions) && initialData.questions.length
             ? initialData.questions.map((q, idx) => ({
                 id: q.id || createId(),
@@ -209,6 +217,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                 description: formData.description || null,
                 descriptionAr: formData.descriptionAr || null,
                 status: nextStatus,
+                settings: formData.settings || {},
                 questions: formData.questions.map((q, index) => ({
                     id: q.id,
                     questionType: q.questionType,
@@ -303,6 +312,26 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                             <textarea rows="3" value={formData.descriptionAr} onChange={(e) => updateField('descriptionAr', e.target.value)} />
                         </div>
                     </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Questionnaire Purpose (EN)</label>
+                            <textarea
+                                rows="3"
+                                value={formData.settings?.purpose || ''}
+                                onChange={(e) => updateField('settings', { ...formData.settings, purpose: e.target.value })}
+                                placeholder="Why this questionnaire exists and what decisions it should support"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Questionnaire Purpose (AR)</label>
+                            <textarea
+                                rows="3"
+                                value={formData.settings?.purposeAr || ''}
+                                onChange={(e) => updateField('settings', { ...formData.settings, purposeAr: e.target.value })}
+                                placeholder="هدف الاستبيان"
+                            />
+                        </div>
+                    </div>
                     <div className="form-group">
                         <label>Status</label>
                         <select value={formData.status} onChange={(e) => updateField('status', e.target.value)}>
@@ -354,6 +383,32 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                                     <span>Required</span>
                                 </label>
 
+                                {question.questionType === 'yes_no' && (
+                                    <div className="form-group">
+                                        <label>Correct Answer (optional)</label>
+                                        <select
+                                            value={
+                                                question.settings?.correctBoolean === true
+                                                    ? 'yes'
+                                                    : question.settings?.correctBoolean === false
+                                                        ? 'no'
+                                                        : ''
+                                            }
+                                            onChange={(e) => {
+                                                const raw = e.target.value;
+                                                const correctBoolean = raw === 'yes' ? true : raw === 'no' ? false : null;
+                                                updateQuestion(question.id, {
+                                                    settings: { ...question.settings, correctBoolean }
+                                                });
+                                            }}
+                                        >
+                                            <option value="">No correct answer</option>
+                                            <option value="yes">Yes</option>
+                                            <option value="no">No</option>
+                                        </select>
+                                    </div>
+                                )}
+
                                 {(question.questionType === 'single_choice' || question.questionType === 'multiple_choice') && (
                                     <div className="question-options">
                                         <div className="question-options-head">
@@ -377,6 +432,24 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                                                 </button>
                                             </div>
                                         ))}
+                                        {question.questionType === 'single_choice' && question.options.length > 0 && (
+                                            <div className="form-group">
+                                                <label>Correct Answer (optional)</label>
+                                                <select
+                                                    value={question.settings?.correctOptionValue || ''}
+                                                    onChange={(e) => updateQuestion(question.id, {
+                                                        settings: { ...question.settings, correctOptionValue: e.target.value }
+                                                    })}
+                                                >
+                                                    <option value="">No correct answer</option>
+                                                    {question.options.map((option) => (
+                                                        <option key={option.id} value={option.value || option.label}>
+                                                            {option.label || option.value}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
