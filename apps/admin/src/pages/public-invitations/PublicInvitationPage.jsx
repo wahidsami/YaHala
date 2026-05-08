@@ -1226,8 +1226,8 @@ export default function PublicInvitationPage() {
     const hasRsvpPage = pages.some((page) => page.page_type === 'rsvp' && page.is_enabled);
     const gateConfig = invitation?.project?.event?.rsvp_gate || { enabled: false };
     const gateEnabled = Boolean(gateConfig.enabled) && hasRsvpPage;
-    const cardUnlocked = !gateEnabled || gateDecision === 'attending' || gateDecision === 'maybe';
-    const cardLockedByDecline = gateEnabled && gateDecision === 'not_attending';
+    const cardUnlocked = !gateEnabled || rsvpCompleted || gateDecision === 'attending' || gateDecision === 'maybe';
+    const cardLockedByDecline = gateEnabled && !showGate && gateDecision === 'not_attending';
     const interactivePages = pages.filter((page) => page.is_enabled && !['cover', 'rsvp'].includes(page.page_type));
     const copy = COPY[activeLanguage];
     const coverLayout = useMemo(() => normalizeLayout(invitation?.project?.cover_template_snapshot?.layout || invitation?.project?.cover_template?.design_data?.layout || {}), [invitation?.project?.cover_template_snapshot?.layout, invitation?.project?.cover_template?.design_data?.layout]);
@@ -1265,13 +1265,18 @@ export default function PublicInvitationPage() {
             return;
         }
 
+        if (rsvpCompleted) {
+            setShowGate(false);
+            return;
+        }
+
         if (!gateDecision) {
             setShowGate(true);
             return;
         }
 
         setShowGate(false);
-    }, [gateDecision, gateEnabled, invitationReady]);
+    }, [gateDecision, gateEnabled, invitationReady, rsvpCompleted]);
 
     if (loading) {
         return (
