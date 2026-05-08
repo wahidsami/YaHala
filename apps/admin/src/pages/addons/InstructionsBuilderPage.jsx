@@ -56,10 +56,6 @@ function snap(value, grid, enabled) {
     return Math.round(value / grid) * grid;
 }
 
-function localeDirection(language) {
-    return language?.startsWith('ar') ? 'rtl' : 'ltr';
-}
-
 function defaultWidget(type) {
     if (type === 'title') {
         return {
@@ -401,7 +397,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
     const previewMode = formData.editorSettings.previewMode || 'desktop';
     const canvasHeight = formData.editorSettings.pageHeight || 1600;
     const canvasGrid = clamp(Number(formData.editorSettings.gridSize) || 16, GRID_MIN, GRID_MAX);
-    const direction = localeDirection(activeLanguage);
+    const direction = activeLanguage === 'ar' ? 'rtl' : 'ltr';
     const canvasWidth = previewMode === 'mobile' ? 420 : 1080;
 
     function renderWidget(widget) {
@@ -416,7 +412,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     textDecoration: widget.style.underline ? 'underline' : 'none',
                     textAlign: widget.style.textAlign,
                     color: widget.style.color,
-                    direction: widget.style.direction === 'auto' ? direction : widget.style.direction
+                    direction
                 }}>{text}</div>
             );
         }
@@ -434,7 +430,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     textAlign: widget.style.textAlign,
                     color: widget.style.color,
                     lineHeight: widget.style.lineHeight,
-                    direction: widget.style.direction === 'auto' ? direction : widget.style.direction
+                    direction
                 }}>
                     {widget.content.asBullets ? (
                         <ul className="instruction-widget-list">
@@ -461,7 +457,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
         if (widget.type === 'item_block') {
             const text = activeLanguage === 'ar' ? (widget.content.textAr || widget.content.text) : (widget.content.text || widget.content.textAr);
-            const dir = widget.style.direction === 'auto' ? direction : widget.style.direction;
+            const dir = direction;
             const iconRight = dir === 'rtl';
             const showBox = widget.style.blockMode === 'boxed';
             return (
@@ -583,6 +579,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             transformOrigin: 'top center',
                             minHeight: `${canvasHeight}px`,
                             height: `${canvasHeight}px`,
+                            direction,
                             backgroundColor: formData.contentSchema.page.background.color,
                             backgroundImage: formData.contentSchema.page.background.type === 'gradient'
                                 ? `linear-gradient(${formData.contentSchema.page.background.gradient?.angle ?? 135}deg, ${formData.contentSchema.page.background.gradient?.from || '#ffffff'}, ${formData.contentSchema.page.background.gradient?.to || '#dbeafe'})`
@@ -747,7 +744,6 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                                         </div>
                                     </div>
 
-                                    <label><span>Direction</span><select value={selectedWidget.style.direction || 'auto'} onChange={(e) => updateWidget(selectedWidget.id, { style: { direction: e.target.value } })}><option value="auto">Auto</option><option value="ltr">LTR</option><option value="rtl">RTL</option></select></label>
                                 </>
                             )}
 
