@@ -347,6 +347,71 @@ async function resolvePrimaryInvitationProject(db, eventId) {
     return { event, project };
 }
 
+async function syncEventTemplateToProject(db, eventId, eventTemplateId) {
+    const { project } = await resolvePrimaryInvitationProject(db, eventId);
+
+    let coverTemplateSnapshot = null;
+    let coverTemplateHash = null;
+
+    if (eventTemplateId) {
+        const { rows: templates } = await db.query(
+            'SELECT design_data FROM templates WHERE id = $1 LIMIT 1',
+            [eventTemplateId]
+        );
+        if (!templates.length) {
+            throw new AppError('Event template not found', 404, 'NOT_FOUND');
+        }
+        coverTemplateSnapshot = templates[0].design_data;
+        coverTemplateHash = computeDesignDataHash(coverTemplateSnapshot);
+    }
+
+    const nextSettings = safeJson(project.settings, {});
+    nextSettings.cover_template_id = eventTemplateId;
+    nextSettings.cover_template_hash = coverTemplateHash;
+
+    await db.query(
+        `
+        UPDATE invitation_projects
+        SET
+            cover_template_id = $1,
+            cover_template_snapshot = $2::jsonb,
+            settings = $3::jsonb,
+            updated_at = NOW()
+        WHERE id = $4
+        `,
+        [
+            eventTemplateId,
+            coverTemplateSnapshot === null ? null : JSON.stringify(coverTemplateSnapshot),
+            JSON.stringify(nextSettings),
+            project.id
+        ]
+    );
+
+    await db.query(
+        `
+        UPDATE invitation_project_pages
+        SET
+            settings = $1::jsonb,
+            updated_at = NOW()
+        WHERE project_id = $2
+          AND page_type = 'cover'
+        `,
+        [
+            JSON.stringify({
+                coverTemplateId: eventTemplateId,
+                coverTemplateSnapshot,
+                coverTemplateHash
+            }),
+            project.id
+        ]
+    );
+
+    return {
+        projectId: project.id,
+        coverTemplateHash
+    };
+}
+
 // GET /api/admin/events - List events with filters
 router.get('/', requirePermission('events.view'), async (req, res, next) => {
     try {
@@ -829,6 +894,10 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
             ]
         );
 
+        if (hasTemplateId) {
+            await syncEventTemplateToProject(pool, req.params.id, nextTemplateId);
+        }
+
         const { rows: updated } = await pool.query(
             `SELECT e.*, c.name as client_name, c.name_ar as client_name_ar, t.name as template_name, t.name_ar as template_name_ar
              FROM events e
@@ -855,73 +924,18 @@ router.post('/:id/sync-invitation-template', requirePermission('events.edit'), a
         }
 
         await db.query('BEGIN');
-        const { event, project } = await resolvePrimaryInvitationProject(db, eventId);
-
+        const { event } = await resolvePrimaryInvitationProject(db, eventId);
         const eventTemplateId = event.template_id || null;
-        let coverTemplateSnapshot = null;
-        let coverTemplateHash = null;
-
-        if (eventTemplateId) {
-            const { rows: templates } = await db.query(
-                'SELECT design_data FROM templates WHERE id = $1 LIMIT 1',
-                [eventTemplateId]
-            );
-            if (!templates.length) {
-                throw new AppError('Event template not found', 404, 'NOT_FOUND');
-            }
-            coverTemplateSnapshot = templates[0].design_data;
-            coverTemplateHash = computeDesignDataHash(coverTemplateSnapshot);
-        }
-
-        const nextSettings = safeJson(project.settings, {});
-        nextSettings.cover_template_id = eventTemplateId;
-        nextSettings.cover_template_hash = coverTemplateHash;
-
-        await db.query(
-            `
-            UPDATE invitation_projects
-            SET
-                cover_template_id = $1,
-                cover_template_snapshot = $2::jsonb,
-                settings = $3::jsonb,
-                updated_at = NOW()
-            WHERE id = $4
-            `,
-            [
-                eventTemplateId,
-                coverTemplateSnapshot === null ? null : JSON.stringify(coverTemplateSnapshot),
-                JSON.stringify(nextSettings),
-                project.id
-            ]
-        );
-
-        await db.query(
-            `
-            UPDATE invitation_project_pages
-            SET
-                settings = $1::jsonb,
-                updated_at = NOW()
-            WHERE project_id = $2
-              AND page_type = 'cover'
-            `,
-            [
-                JSON.stringify({
-                    coverTemplateId: eventTemplateId,
-                    coverTemplateSnapshot,
-                    coverTemplateHash
-                }),
-                project.id
-            ]
-        );
+        const syncResult = await syncEventTemplateToProject(db, eventId, eventTemplateId);
 
         await db.query('COMMIT');
 
         res.json({
             data: {
                 eventId,
-                projectId: project.id,
+                projectId: syncResult.projectId,
                 synced: true,
-                coverTemplateHash
+                coverTemplateHash: syncResult.coverTemplateHash
             }
         });
     } catch (error) {

@@ -43,14 +43,6 @@ function formatEventLocation(language, event) {
     return venue || address;
 }
 
-function buildQrImageUrl(publicLink) {
-    if (!publicLink) {
-        return '';
-    }
-
-    return `https://api.qrserver.com/v1/create-qr-code/?size=384x384&margin=24&data=${encodeURIComponent(publicLink)}`;
-}
-
 export function getPublicInvitationBaseUrl() {
     return normalizeText(process.env.PUBLIC_INVITATION_BASE_URL || 'http://localhost:5173').replace(/\/+$/, '');
 }
@@ -63,7 +55,6 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
     const eventLocation = formatEventLocation(language, project.event || project);
     const invitationTitle = localizedText(language, project.name, project.name_ar);
     const isArabic = language === 'ar';
-    const qrImageUrl = buildQrImageUrl(publicLink);
     const subject = isArabic
         ? `دعوة إلى ${eventName || invitationTitle || clientName || ''}`.trim()
         : `Invitation to ${eventName || invitationTitle || clientName || ''}`.trim();
@@ -89,13 +80,6 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
                     </div>
                     <p style="margin:0 0 12px;color:#374151;line-height:1.8">${escapeHtml(isArabic ? `لديك دعوة جديدة من ${clientName || 'Rawaj'}.` : `You have a new invitation from ${clientName || 'Rawaj'}.`)}</p>
                     <p style="margin:0 0 22px;color:#374151;line-height:1.8">${escapeHtml(isArabic ? 'افتح بطاقة الدعوة من الرابط التالي:' : 'Open your invitation card using the link below:')}</p>
-                    ${qrImageUrl ? `
-                        <div style="margin:0 0 22px;padding:18px;border:1px solid #e2e8f0;border-radius:18px;background:#ffffff;text-align:center">
-                            <p style="margin:0 0 12px;color:#0f172a;font-weight:700">${escapeHtml(isArabic ? 'امسح رمز QR لفتح الدعوة' : 'Scan the QR code to open your invitation')}</p>
-                            <img src="${escapeAttribute(qrImageUrl)}" alt="${escapeAttribute(isArabic ? 'رمز QR للدعوة' : 'Invitation QR Code')}" width="240" height="240" style="display:block;margin:0 auto 12px;border:0;max-width:240px;width:240px;height:240px" />
-                            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.7;word-break:break-all">${escapeHtml(publicLink)}</p>
-                        </div>
-                    ` : ''}
                     <div style="margin:24px 0 18px">
                         <a href="${escapeAttribute(publicLink)}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:14px 24px;border-radius:14px;font-weight:700">${isArabic ? 'فتح الدعوة' : 'Open Invitation'}</a>
                     </div>
