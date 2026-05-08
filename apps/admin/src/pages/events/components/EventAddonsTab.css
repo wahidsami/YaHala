@@ -219,12 +219,40 @@
     background: color-mix(in srgb, var(--color-primary) 14%, white);
 }
 
+.questionnaire-creator {
+    border: 1px solid var(--border-color);
+    border-radius: 0.9rem;
+    padding: 0.9rem;
+    margin-bottom: 0.9rem;
+    background: var(--bg-secondary);
+}
+
+.questionnaire-creator h5 {
+    margin: 0 0 0.7rem;
+}
+
+.questionnaire-creator-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.questionnaire-creator-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
 @media (max-width: 900px) {
     .event-addons-workspace {
         grid-template-columns: 1fr;
     }
 
     .event-addons-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .questionnaire-creator-grid {
         grid-template-columns: 1fr;
     }
 }
