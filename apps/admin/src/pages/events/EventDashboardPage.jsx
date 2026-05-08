@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Edit, Users, Send, CheckCircle, Clock, Clock3, MessageSquare, Book, Mail, MapPin, Image, Link2, Layers3 } from 'lucide-react';
+import { ArrowLeft, Edit, Users, Send, CheckCircle, Clock, Clock3, Mail, MapPin, Image, Link2, Layers3 } from 'lucide-react';
 import api from '../../services/api';
 import RoleGuard from '../../components/auth/RoleGuard';
 import EventInvitationSetupTab from './components/EventInvitationSetupTab';
 import EventInvitationOpsTab from './components/EventInvitationOpsTab';
 import EventAddonsTab from './components/EventAddonsTab';
 import EventGuestsTab from './components/EventGuestsTab';
-import EventPollsTab from './components/EventPollsTab';
-import SubmissionsViewer from './components/SubmissionsViewer';
-import MemoryBookPage from './components/MemoryBookPage';
 import './EventDashboardPage.css';
 
 function getStorageBaseUrl() {
@@ -203,15 +200,6 @@ export default function EventDashboardPage() {
                 </button>
                 <button className={activeTab === 'addons' ? 'active' : ''} onClick={() => setActiveTab('addons')}>
                     <Layers3 size={16} /> {t('events.dashboardAddons')}
-                </button>
-                <button className={activeTab === 'polls' ? 'active' : ''} onClick={() => setActiveTab('polls')}>
-                    <MessageSquare size={16} /> {t('events.dashboardPolls')}
-                </button>
-                <button className={activeTab === 'submissions' ? 'active' : ''} onClick={() => setActiveTab('submissions')}>
-                    <MessageSquare size={16} /> {t('events.dashboardSubmissions')}
-                </button>
-                <button className={activeTab === 'memory-book' ? 'active' : ''} onClick={() => setActiveTab('memory-book')}>
-                    <Book size={16} /> {t('events.dashboardMemoryBook')}
                 </button>
             </div>
 
@@ -449,17 +437,6 @@ export default function EventDashboardPage() {
                 {activeTab === 'guests' && <EventGuestsTab event={event} />}
 
                 {activeTab === 'addons' && <EventAddonsTab eventId={id} />}
-
-                {activeTab === 'polls' && (
-                    <EventPollsTab
-                        event={event}
-                        clientName={event.client_name}
-                        clientNameAr={event.client_name_ar}
-                    />
-                )}
-
-                {activeTab === 'submissions' && <SubmissionsViewer eventId={id} />}
-                {activeTab === 'memory-book' && <MemoryBookPage eventId={id} />}
             </div>
         </div>
     );
