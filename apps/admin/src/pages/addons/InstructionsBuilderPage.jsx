@@ -15,11 +15,17 @@ const DEFAULT_SCHEMA = {
         height: 1600,
         responsive: true,
         background: {
+            type: 'solid',
             color: '#ffffff',
             image: '',
             size: 'cover',
             repeat: 'no-repeat',
-            position: 'center center'
+            position: 'center center',
+            gradient: {
+                from: '#ffffff',
+                to: '#dbeafe',
+                angle: 135
+            }
         }
     },
     widgets: []
@@ -29,7 +35,9 @@ const DEFAULT_EDITOR_SETTINGS = {
     showGrid: true,
     snapToGrid: true,
     gridSize: 16,
-    pageHeight: 1600
+    pageHeight: 1600,
+    previewMode: 'desktop',
+    activeLanguage: 'en'
 };
 
 function createId() {
@@ -119,6 +127,7 @@ function defaultWidget(type) {
                 color: '#0f172a',
                 blockMode: 'boxed',
                 blockColor: '#e2e8f0',
+                borderRadius: 10,
                 iconColor: '#0f766e',
                 iconSize: 26,
                 direction: 'auto'
@@ -143,11 +152,10 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
     const canvasRef = useRef(null);
     const [clients, setClients] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState('');
     const [error, setError] = useState('');
-    const [activeLanguage, setActiveLanguage] = useState('en');
     const [selectedWidgetId, setSelectedWidgetId] = useState(null);
     const [canvasZoom, setCanvasZoom] = useState(1);
-    const [previewMode, setPreviewMode] = useState('desktop');
 
     const [formData, setFormData] = useState(() => {
         const schema = initialData?.content_schema || DEFAULT_SCHEMA;
@@ -339,6 +347,17 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         }
     }
 
+    async function onUploadBackgroundImage(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+            const dataUrl = await readFileAsDataUrl(file);
+            updatePageBackground({ image: dataUrl, type: 'image' });
+        } catch (uploadError) {
+            console.error(uploadError);
+        }
+    }
+
     async function handleSave() {
         const name = formData.name.trim();
         if (!name) {
@@ -352,6 +371,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
         setSaving(true);
         setError('');
+        setSaveMessage('');
         try {
             const payload = {
                 name,
@@ -367,7 +387,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             } else {
                 await api.post('/admin/instructions', payload);
             }
-            navigate('/addons/instructions');
+            setSaveMessage('Saved successfully.');
         } catch (saveError) {
             setError(saveError.response?.data?.message || 'Failed to save instruction.');
         } finally {
@@ -445,6 +465,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             return (
                 <div className="instruction-widget-content item-block" style={{
                     background: showBox ? (widget.style.blockColor || '#e2e8f0') : 'transparent',
+                    borderRadius: `${widget.style.borderRadius ?? 10}px`,
                     fontFamily: widget.style.fontFamily,
                     fontSize: `${widget.style.fontSize}px`,
                     fontWeight: widget.style.fontWeight,
@@ -452,23 +473,14 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     textDecoration: widget.style.underline ? 'underline' : 'none',
                     color: widget.style.color,
                     direction: dir,
-                    justifyContent: iconRight ? 'flex-end' : 'flex-start'
+                    flexDirection: iconRight ? 'row-reverse' : 'row'
                 }}>
-                    {!iconRight && (
-                        <span className="item-block-icon" style={{ color: widget.style.iconColor, fontSize: `${widget.style.iconSize || 24}px` }}>
-                            {widget.content.useIconImage && widget.content.iconImage
-                                ? <img src={widget.content.iconImage} alt="icon" className="item-block-icon-image" />
-                                : (widget.content.icon || '•')}
-                        </span>
-                    )}
+                    <span className="item-block-icon" style={{ color: widget.style.iconColor, fontSize: `${widget.style.iconSize || 24}px` }}>
+                        {widget.content.useIconImage && widget.content.iconImage
+                            ? <img src={widget.content.iconImage} alt="icon" className="item-block-icon-image" />
+                            : (widget.content.icon || '•')}
+                    </span>
                     <span className="item-block-text">{text}</span>
-                    {iconRight && (
-                        <span className="item-block-icon" style={{ color: widget.style.iconColor, fontSize: `${widget.style.iconSize || 24}px` }}>
-                            {widget.content.useIconImage && widget.content.iconImage
-                                ? <img src={widget.content.iconImage} alt="icon" className="item-block-icon-image" />
-                                : (widget.content.icon || '•')}
-                        </span>
-                    )}
                 </div>
             );
         }
@@ -499,6 +511,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             </div>
 
             {error && <div className="form-error">{error}</div>}
+            {saveMessage && <div className="form-success">{saveMessage}</div>}
 
             <section className="instructions-editor-layout">
                 <aside className="instructions-panel instructions-widgets-panel">
@@ -511,14 +524,14 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         <li><button type="button" onClick={() => addWidget('item_block')}>Item Block</button></li>
                     </ul>
                     <div className="lang-toggle">
-                        <button type="button" className={activeLanguage === 'en' ? 'active' : ''} onClick={() => setActiveLanguage('en')}>EN</button>
-                        <button type="button" className={activeLanguage === 'ar' ? 'active' : ''} onClick={() => setActiveLanguage('ar')}>AR</button>
+                        <button type="button" className={activeLanguage === 'en' ? 'active' : ''} onClick={() => updateEditorSettings({ activeLanguage: 'en' })}>EN</button>
+                        <button type="button" className={activeLanguage === 'ar' ? 'active' : ''} onClick={() => updateEditorSettings({ activeLanguage: 'ar' })}>AR</button>
                     </div>
                     <div className="preview-toggle">
-                        <button type="button" className={previewMode === 'desktop' ? 'active' : ''} onClick={() => setPreviewMode('desktop')}>
+                        <button type="button" className={previewMode === 'desktop' ? 'active' : ''} onClick={() => updateEditorSettings({ previewMode: 'desktop' })}>
                             <Monitor size={14} /> Desktop
                         </button>
-                        <button type="button" className={previewMode === 'mobile' ? 'active' : ''} onClick={() => setPreviewMode('mobile')}>
+                        <button type="button" className={previewMode === 'mobile' ? 'active' : ''} onClick={() => updateEditorSettings({ previewMode: 'mobile' })}>
                             <Smartphone size={14} /> Mobile
                         </button>
                     </div>
@@ -541,16 +554,22 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             minHeight: `${canvasHeight}px`,
                             height: `${canvasHeight}px`,
                             backgroundColor: formData.contentSchema.page.background.color,
-                            backgroundImage: formData.contentSchema.page.background.image
-                                ? `url(${formData.contentSchema.page.background.image})`
-                                : (formData.editorSettings.showGrid
-                                    ? 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)'
-                                    : 'none'),
-                            backgroundSize: formData.contentSchema.page.background.image ? formData.contentSchema.page.background.size : `${canvasGrid}px ${canvasGrid}px`,
+                            backgroundImage: formData.contentSchema.page.background.type === 'gradient'
+                                ? `linear-gradient(${formData.contentSchema.page.background.gradient?.angle ?? 135}deg, ${formData.contentSchema.page.background.gradient?.from || '#ffffff'}, ${formData.contentSchema.page.background.gradient?.to || '#dbeafe'})`
+                                : formData.contentSchema.page.background.image
+                                    ? `url(${formData.contentSchema.page.background.image})`
+                                    : 'none',
+                            backgroundSize: formData.contentSchema.page.background.image ? formData.contentSchema.page.background.size : 'auto',
                             backgroundRepeat: formData.contentSchema.page.background.repeat,
                             backgroundPosition: formData.contentSchema.page.background.position
                         }}
                     >
+                        {formData.editorSettings.showGrid && (
+                            <div
+                                className="instructions-grid-overlay"
+                                style={{ backgroundSize: `${canvasGrid}px ${canvasGrid}px` }}
+                            />
+                        )}
                         {widgets.length === 0 && (
                             <div className="canvas-empty">
                                 <h4>Instruction Canvas</h4>
@@ -615,8 +634,26 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         <>
                             <hr />
                             <h4>Background</h4>
+                            <label>
+                                <span>Type</span>
+                                <select
+                                    value={formData.contentSchema.page.background.type || 'solid'}
+                                    onChange={(event) => updatePageBackground({ type: event.target.value })}
+                                >
+                                    <option value="solid">Solid</option>
+                                    <option value="gradient">Gradient</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </label>
                             <label><span>Color</span><input type="color" value={formData.contentSchema.page.background.color || '#ffffff'} onChange={(event) => updatePageBackground({ color: event.target.value })} /></label>
-                            <label><span>Image URL</span><input type="text" value={formData.contentSchema.page.background.image || ''} onChange={(event) => updatePageBackground({ image: event.target.value })} placeholder="https://..." /></label>
+                            {(formData.contentSchema.page.background.type || 'solid') === 'gradient' && (
+                                <>
+                                    <label><span>Gradient From</span><input type="color" value={formData.contentSchema.page.background.gradient?.from || '#ffffff'} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), from: event.target.value } })} /></label>
+                                    <label><span>Gradient To</span><input type="color" value={formData.contentSchema.page.background.gradient?.to || '#dbeafe'} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), to: event.target.value } })} /></label>
+                                    <label><span>Gradient Angle</span><input type="number" min="0" max="360" value={formData.contentSchema.page.background.gradient?.angle ?? 135} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), angle: Number.parseInt(event.target.value, 10) || 135 } })} /></label>
+                                </>
+                            )}
+                            <label><span>Upload background</span><input type="file" accept="image/*" onChange={onUploadBackgroundImage} /></label>
                             <label>
                                 <span>Size</span>
                                 <select value={formData.contentSchema.page.background.size || 'cover'} onChange={(event) => updatePageBackground({ size: event.target.value })}>
@@ -698,6 +735,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                                     <label><span>Use icon image</span><input type="checkbox" checked={Boolean(selectedWidget.content.useIconImage)} onChange={(e) => updateWidget(selectedWidget.id, { content: { useIconImage: e.target.checked } })} /></label>
                                     <label><span>Block mode</span><select value={selectedWidget.style.blockMode || 'boxed'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockMode: e.target.value } })}><option value="boxed">Boxed</option><option value="transparent">Transparent</option></select></label>
                                     <label><span>Block color</span><input type="color" value={selectedWidget.style.blockColor || '#e2e8f0'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockColor: e.target.value } })} /></label>
+                                    <label><span>Corners Radius</span><input type="number" min="0" max="80" value={selectedWidget.style.borderRadius ?? 10} onChange={(e) => updateWidget(selectedWidget.id, { style: { borderRadius: Number.parseInt(e.target.value, 10) || 0 } })} /></label>
                                     <label><span>Icon color</span><input type="color" value={selectedWidget.style.iconColor || '#0f766e'} onChange={(e) => updateWidget(selectedWidget.id, { style: { iconColor: e.target.value } })} /></label>
                                 </>
                             )}
@@ -724,3 +762,5 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         </div>
     );
 }
+    const activeLanguage = formData.editorSettings.activeLanguage || 'en';
+    const previewMode = formData.editorSettings.previewMode || 'desktop';
