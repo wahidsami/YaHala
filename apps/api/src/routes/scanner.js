@@ -369,6 +369,86 @@ async function fetchRecipientQuestionnaireState(db, eventId, recipientId) {
     };
 }
 
+async function syncRecipientAddonStatesOnScan(db, recipient, scannerUser, scannedAtIso) {
+    const { rows: pageRows } = await db.query(
+        `
+        SELECT id, page_key, page_type, settings
+        FROM invitation_project_pages
+        WHERE project_id = $1
+          AND is_enabled = true
+          AND page_type IN ('poll', 'questionnaire')
+        ORDER BY sort_order ASC, created_at ASC
+        `,
+        [recipient.project_id]
+    );
+
+    const unlocked = [];
+    for (const page of pageRows) {
+        const settings = safeJson(page.settings, {});
+        const activation = safeJson(settings.activation_rules || settings.activationRules, {});
+        if (!activation.liveAfterQrScanned) {
+            continue;
+        }
+
+        const snapshot = safeJson(settings.addon_snapshot || settings.poll_snapshot || settings.questionnaire_snapshot, {});
+        const addonId = page.page_type === 'poll'
+            ? (snapshot.poll_id || settings.addon_id || null)
+            : (snapshot.questionnaire_id || settings.addon_id || null);
+
+        await db.query(
+            `
+            INSERT INTO invitation_addon_guest_state (
+                id,
+                project_id,
+                recipient_id,
+                page_id,
+                page_key,
+                addon_type,
+                addon_id,
+                is_unlocked,
+                unlocked_by,
+                unlocked_at,
+                metadata
+            )
+            VALUES (
+                $1, $2, $3, $4, $5, $6, $7, true, 'check_in', $8, $9::jsonb
+            )
+            ON CONFLICT (project_id, recipient_id, page_id)
+            DO UPDATE SET
+                is_unlocked = true,
+                unlocked_by = 'check_in',
+                unlocked_at = EXCLUDED.unlocked_at,
+                metadata = COALESCE(invitation_addon_guest_state.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+                updated_at = NOW()
+            `,
+            [
+                crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
+                recipient.project_id,
+                recipient.recipient_id,
+                page.id,
+                page.page_key,
+                page.page_type,
+                addonId,
+                scannedAtIso,
+                JSON.stringify({
+                    source: 'scanner_scan',
+                    scannerUserId: scannerUser.id,
+                    scannerUserName: scannerUser.name,
+                    scannedAt: scannedAtIso
+                })
+            ]
+        );
+
+        unlocked.push({
+            pageKey: page.page_key,
+            addonType: page.page_type,
+            addonId
+        });
+    }
+
+    return unlocked;
+}
+
 function signScannerToken(scannerUser, selectedEventId = null) {
     return jwt.sign(
         {
@@ -1298,6 +1378,7 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
         const alreadyAttended = getInvitationAttendanceStatus(currentMetadata) === 'checked_in';
         const scannedAt = new Date().toISOString();
         const questionnaire = await fetchRecipientQuestionnaireState(db, recipient.event_id, recipient.recipient_id);
+        const unlockedAddons = await syncRecipientAddonStatesOnScan(db, recipient, req.scannerUser, scannedAt);
 
         if (!alreadyAttended) {
             const nextMetadata = {
@@ -1357,7 +1438,8 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
                 name_ar: recipient.display_name_ar,
                 attendance_status: 'checked_in',
                 attended_at: alreadyAttended ? currentMetadata.attended_at || null : scannedAt,
-                questionnaire
+                questionnaire,
+                unlocked_addons: unlockedAddons
             },
             event: {
                 id: recipient.event_id,
@@ -1369,6 +1451,148 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
                 name: recipient.client_name,
                 name_ar: recipient.client_name_ar
             }
+        });
+    } catch (error) {
+        await db.query('ROLLBACK').catch(() => {});
+        next(error);
+    } finally {
+        db.release();
+    }
+});
+
+// POST /api/scanner/recipients/:recipientId/addons/:pageKey/enable
+router.post('/recipients/:recipientId/addons/:pageKey/enable', authenticateScanner, async (req, res, next) => {
+    const db = await pool.connect();
+
+    try {
+        const recipientId = normalizeText(req.params.recipientId);
+        const pageKey = normalizeText(req.params.pageKey);
+
+        if (!recipientId || !pageKey) {
+            throw new AppError('Recipient and page key are required', 400, 'VALIDATION_ERROR');
+        }
+
+        await db.query('BEGIN');
+
+        const { rows: recipientRows } = await db.query(
+            `
+            SELECT
+                r.id AS recipient_id,
+                r.project_id,
+                p.event_id,
+                p.client_id
+            FROM invitation_recipients r
+            JOIN invitation_projects p ON p.id = r.project_id
+            WHERE r.id = $1
+            LIMIT 1
+            `,
+            [recipientId]
+        );
+
+        if (!recipientRows.length) {
+            throw new AppError('Recipient not found', 404, 'NOT_FOUND');
+        }
+
+        const recipient = recipientRows[0];
+        if (recipient.client_id !== req.scannerUser.client_id) {
+            throw new AppError('Recipient belongs to a different client', 403, 'CLIENT_MISMATCH');
+        }
+        if (req.scannerUser.session_event_id && recipient.event_id !== req.scannerUser.session_event_id) {
+            throw new AppError('Recipient event is outside your current scanner session', 403, 'EVENT_SCOPE_VIOLATION');
+        }
+
+        const { rows: pageRows } = await db.query(
+            `
+            SELECT id, page_key, page_type, settings
+            FROM invitation_project_pages
+            WHERE project_id = $1
+              AND page_key = $2
+              AND is_enabled = true
+              AND page_type IN ('poll', 'questionnaire')
+            LIMIT 1
+            `,
+            [recipient.project_id, pageKey]
+        );
+
+        if (!pageRows.length) {
+            throw new AppError('Addon page not found for this recipient', 404, 'NOT_FOUND');
+        }
+
+        const page = pageRows[0];
+        const settings = safeJson(page.settings, {});
+        const snapshot = safeJson(settings.addon_snapshot || settings.poll_snapshot || settings.questionnaire_snapshot, {});
+        const addonId = page.page_type === 'poll'
+            ? (snapshot.poll_id || settings.addon_id || null)
+            : (snapshot.questionnaire_id || settings.addon_id || null);
+        const enabledAt = new Date().toISOString();
+
+        await db.query(
+            `
+            INSERT INTO invitation_addon_guest_state (
+                id,
+                project_id,
+                recipient_id,
+                page_id,
+                page_key,
+                addon_type,
+                addon_id,
+                is_unlocked,
+                unlocked_by,
+                unlocked_at,
+                scanner_manual_enabled,
+                scanner_manual_enabled_by,
+                scanner_manual_enabled_at,
+                metadata
+            )
+            VALUES (
+                $1, $2, $3, $4, $5, $6, $7, true, 'scanner_manual', $8, true, $9, $8, $10::jsonb
+            )
+            ON CONFLICT (project_id, recipient_id, page_id)
+            DO UPDATE SET
+                is_unlocked = true,
+                unlocked_by = 'scanner_manual',
+                unlocked_at = EXCLUDED.unlocked_at,
+                scanner_manual_enabled = true,
+                scanner_manual_enabled_by = EXCLUDED.scanner_manual_enabled_by,
+                scanner_manual_enabled_at = EXCLUDED.scanner_manual_enabled_at,
+                metadata = COALESCE(invitation_addon_guest_state.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+                updated_at = NOW()
+            `,
+            [
+                crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
+                recipient.project_id,
+                recipient.recipient_id,
+                page.id,
+                page.page_key,
+                page.page_type,
+                addonId,
+                enabledAt,
+                req.scannerUser.id,
+                JSON.stringify({
+                    source: 'scanner_manual_enable',
+                    scannerUserId: req.scannerUser.id,
+                    scannerUserName: req.scannerUser.name,
+                    enabledAt
+                })
+            ]
+        );
+
+        await logScannerActivity(db, req, req.scannerUser, 'addon_manual_enable', 'invitation_recipient', recipient.recipient_id, {
+            eventId: recipient.event_id,
+            pageKey: page.page_key,
+            addonType: page.page_type,
+            addonId
+        });
+
+        await db.query('COMMIT');
+
+        sendScannerSuccess(res, {
+            recipientId: recipient.recipient_id,
+            pageKey: page.page_key,
+            addonType: page.page_type,
+            addonId,
+            manuallyEnabled: true,
+            enabledAt
         });
     } catch (error) {
         await db.query('ROLLBACK').catch(() => {});

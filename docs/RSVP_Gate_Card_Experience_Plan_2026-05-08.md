@@ -296,10 +296,10 @@ For each guest + addon page:
 - [x] Post-submit thank-you + auto-return + disable action
 
 #### Phase 4 - Scanner Runtime Integration
-- Status: `pending`
-- [ ] Mark invitation guest as unlocked when QR is scanned (if enabled rule)
-- [ ] Add scanner-user manual enable endpoint/action
-- [ ] Persist unlock source and timestamp
+- Status: `done`
+- [x] Mark invitation guest as unlocked when QR is scanned (if enabled rule)
+- [x] Add scanner-user manual enable endpoint/action
+- [x] Persist unlock source and timestamp
 
 #### Phase 5 - QA Matrix
 - Status: `pending`
