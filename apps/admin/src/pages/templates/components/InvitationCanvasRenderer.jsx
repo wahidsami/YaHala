@@ -415,14 +415,16 @@ export default function InvitationCanvasRenderer({
     language,
     hasRsvpPage,
     rsvpCompleted,
-    onOpenRsvp
+    onOpenRsvp,
+    minCanvasHeight = 0
 }) {
     const coverTemplate = project.cover_template_snapshot || project.cover_template?.design_data;
     const layout = normalizeLayout(coverTemplate?.layout || {});
     const canvasWidgets = getCanvasWidgets(coverTemplate);
     const publicRuleContext = getPublicRuleContext(project, recipient);
     const visibleWidgets = canvasWidgets.filter((widget) => isWidgetVisible(widget, publicRuleContext));
-    const canvasHeight = computeEffectiveCanvasHeight(layout, visibleWidgets);
+    const computedCanvasHeight = computeEffectiveCanvasHeight(layout, visibleWidgets);
+    const canvasHeight = Math.max(computedCanvasHeight, Number(minCanvasHeight) || 0);
     const inlineResponseWidget = canvasWidgets.some((widget) => widget.type === 'response');
 
     if (!visibleWidgets.length) {

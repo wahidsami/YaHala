@@ -1242,10 +1242,20 @@ export default function PublicInvitationPage() {
         }
 
         const horizontalScale = viewportWidth / canvasBaseWidth;
+        if (viewportWidth <= 768) {
+            return horizontalScale;
+        }
         return Math.min(1, horizontalScale);
     }, [guestViewport.width]);
+    const minCanvasHeight = useMemo(() => {
+        const viewportHeight = guestViewport.height || 0;
+        if (!viewportHeight || !fitScale) {
+            return canvasHeight;
+        }
+        return Math.max(canvasHeight, Math.ceil(viewportHeight / fitScale));
+    }, [canvasHeight, fitScale, guestViewport.height]);
     const scaledWidth = canvasBaseWidth * fitScale;
-    const scaledHeight = canvasHeight * fitScale;
+    const scaledHeight = minCanvasHeight * fitScale;
 
     useEffect(() => {
         if (!interactivePages.length) {
@@ -1313,7 +1323,7 @@ export default function PublicInvitationPage() {
                         className="guest-fit-stage"
                         style={{
                             width: `${canvasBaseWidth}px`,
-                            height: `${canvasHeight}px`,
+                            height: `${minCanvasHeight}px`,
                             transform: `scale(${fitScale})`
                         }}
                     >
@@ -1323,6 +1333,7 @@ export default function PublicInvitationPage() {
                             language={activeLanguage}
                             hasRsvpPage={hasRsvpPage}
                             rsvpCompleted={rsvpCompleted}
+                            minCanvasHeight={minCanvasHeight}
                             onOpenRsvp={() => (gateEnabled ? setShowGate(true) : setShowRsvpModal(true))}
                         />
                     </div>
