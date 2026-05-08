@@ -1813,7 +1813,13 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
 
         const { rows: projectRows } = await db.query(
             `
-            SELECT p.id, p.event_id, p.settings AS project_settings, e.template_id AS event_template_id
+            SELECT
+                p.id,
+                p.client_id,
+                p.event_id,
+                p.settings AS project_settings,
+                e.template_id AS event_template_id,
+                e.settings AS event_settings
             FROM invitation_projects p
             JOIN events e ON e.id = p.event_id
             WHERE p.id = $1
@@ -1829,6 +1835,8 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
         const eventTemplateId = projectRow.event_template_id || null;
         const coverTemplatePayload = await loadCoverTemplatePayload(db, eventTemplateId);
         const nextSettings = safeJson(projectRow.project_settings, {});
+        const eventSettings = safeJson(projectRow.event_settings, {});
+        const invitationSetup = safeJson(eventSettings.invitation_setup, {});
         nextSettings.cover_template_id = eventTemplateId;
         nextSettings.cover_template_hash = coverTemplatePayload.hash;
 
@@ -1867,6 +1875,22 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
                 }),
                 projectId
             ]
+        );
+
+        await db.query(
+            `
+            DELETE FROM invitation_project_pages
+            WHERE project_id = $1
+              AND page_type = ANY($2::text[])
+            `,
+            [projectId, ['poll', 'questionnaire', 'instructions', 'quiz', 'guest_book', 'files_downloads']]
+        );
+        await buildAddonPagesFromEventSetup(
+            db,
+            projectId,
+            projectRow.client_id,
+            projectRow.event_id,
+            invitationSetup
         );
 
         await db.query(

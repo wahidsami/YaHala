@@ -79,9 +79,22 @@ function getPublicAssetsBaseUrl() {
 function resolvePublicAssetUrl(assetPath) {
     const value = normalizeText(assetPath);
     if (!value) return '';
-    if (/^https?:\/\//i.test(value)) return value;
-    if (value.startsWith('/')) return `${getPublicAssetsBaseUrl()}${value}`;
-    return `${getPublicAssetsBaseUrl()}/${value}`;
+    const rawUrl = /^https?:\/\//i.test(value)
+        ? value
+        : value.startsWith('/')
+            ? `${getPublicAssetsBaseUrl()}${value}`
+            : `${getPublicAssetsBaseUrl()}/${value}`;
+    try {
+        const parsed = new URL(rawUrl);
+        const host = (parsed.hostname || '').toLowerCase();
+        const isLocal = host === 'localhost' || host === '127.0.0.1';
+        if (!isLocal) {
+            parsed.protocol = 'https:';
+        }
+        return parsed.toString();
+    } catch {
+        return rawUrl;
+    }
 }
 
 export function buildInvitationEmailContent({ project, recipient, publicLink, language = 'ar' }) {
@@ -125,6 +138,7 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
                         <a href="${escapeAttribute(publicLink)}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:14px 24px;border-radius:14px;font-weight:700">${isArabic ? 'فتح الدعوة' : 'Open Invitation'}</a>
                     </div>
                     <p style="margin:0 0 16px;color:#6b7280;font-size:13px;line-height:1.7">${escapeHtml(isArabic ? 'هذا الرابط شخصي ومخصص لك فقط.' : 'This link is personal and unique to you.')}</p>
+                    <p style="margin:8px 0 0;color:#9ca3af;font-size:12px;line-height:1.6;text-align:center">${escapeHtml(isArabic ? 'Ya Hala جميع الحقوق محفوظة 2026' : 'Ya Hala all rights reserved 2026')}</p>
                 </div>
             </div>
         </div>
