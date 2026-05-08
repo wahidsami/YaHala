@@ -18,6 +18,42 @@ const ADDON_CATALOG = [
     { id: 'guest_book', label: 'Guest Book', icon: Layers3, comingSoon: true }
 ];
 
+const DEFAULT_ACTIVATION_RULES = {
+    liveAfterQrScanned: false,
+    liveWhenScannerEnabled: false,
+    liveOnSchedule: false,
+    scheduleStartAt: '',
+    scheduleEndAt: '',
+    unlockLogic: 'any'
+};
+
+const DEFAULT_DISPLAY_RULES = {
+    mode: 'tabs',
+    position: 'top',
+    replaceQrSlot: false,
+    disableAfterSubmission: true,
+    showBackButton: true,
+    autoReturnAfterSubmit: true
+};
+
+function normalizeAddonConfig(config = {}) {
+    const activation = config.activationRules || config.activation_rules || {};
+    const display = config.display || {};
+    return {
+        activationRules: {
+            ...DEFAULT_ACTIVATION_RULES,
+            ...activation,
+            unlockLogic: activation.unlockLogic === 'all' ? 'all' : 'any'
+        },
+        display: {
+            ...DEFAULT_DISPLAY_RULES,
+            ...display,
+            mode: display.mode === 'icons' ? 'icons' : 'tabs',
+            position: ['top', 'left', 'right', 'bottom', 'qr_slot'].includes(display.position) ? display.position : 'top'
+        }
+    };
+}
+
 export default function EventAddonsTab({ event }) {
     const { t, i18n } = useTranslation();
     const eventId = event?.id;
@@ -33,6 +69,7 @@ export default function EventAddonsTab({ event }) {
         pollIds: [],
         questionnaireIds: []
     });
+    const [addonConfigs, setAddonConfigs] = useState({});
 
     const enabledAddonSet = useMemo(() => new Set(formData.addIns), [formData.addIns]);
     const linkedPolls = useMemo(() => {
@@ -68,6 +105,18 @@ export default function EventAddonsTab({ event }) {
                     ? summary.addons.questionnaire.questionnaires.map((item) => item.id)
                     : []
             });
+            const tabs = Array.isArray(summary?.invitationTabs) ? summary.invitationTabs : [];
+            const nextConfigs = {};
+            for (const tab of tabs) {
+                if (!tab?.type || !tab?.addonId) {
+                    continue;
+                }
+                nextConfigs[`${tab.type}:${tab.addonId}`] = normalizeAddonConfig({
+                    activationRules: tab.activationRules,
+                    display: tab.display
+                });
+            }
+            setAddonConfigs(nextConfigs);
         } catch (loadError) {
             console.error('Failed to load event addons summary:', loadError);
             setError(loadError.response?.data?.message || t('events.addons.loadFailed'));
@@ -113,6 +162,27 @@ export default function EventAddonsTab({ event }) {
                 [key]: Array.from(source)
             };
         });
+
+        const type = key === 'pollIds' ? 'poll' : key === 'questionnaireIds' ? 'questionnaire' : null;
+        if (!type) {
+            return;
+        }
+        const configKey = `${type}:${id}`;
+        if (checked) {
+            setAddonConfigs((prev) => ({
+                ...prev,
+                [configKey]: prev[configKey] ? normalizeAddonConfig(prev[configKey]) : normalizeAddonConfig()
+            }));
+            return;
+        }
+        setAddonConfigs((prev) => {
+            if (!prev[configKey]) {
+                return prev;
+            }
+            const next = { ...prev };
+            delete next[configKey];
+            return next;
+        });
     }
 
     function unlinkItem(type, id) {
@@ -133,12 +203,26 @@ export default function EventAddonsTab({ event }) {
             const tabs = [];
             if (formData.addIns.includes('poll')) {
                 formData.pollIds.forEach((pollId, index) => {
-                    tabs.push({ type: 'poll', addonId: pollId, sortOrder: index });
+                    const rules = normalizeAddonConfig(addonConfigs[`poll:${pollId}`]);
+                    tabs.push({
+                        type: 'poll',
+                        addonId: pollId,
+                        sortOrder: index,
+                        activationRules: rules.activationRules,
+                        display: rules.display
+                    });
                 });
             }
             if (formData.addIns.includes('questionnaire')) {
                 formData.questionnaireIds.forEach((questionnaireId, index) => {
-                    tabs.push({ type: 'questionnaire', addonId: questionnaireId, sortOrder: formData.pollIds.length + index });
+                    const rules = normalizeAddonConfig(addonConfigs[`questionnaire:${questionnaireId}`]);
+                    tabs.push({
+                        type: 'questionnaire',
+                        addonId: questionnaireId,
+                        sortOrder: formData.pollIds.length + index,
+                        activationRules: rules.activationRules,
+                        display: rules.display
+                    });
                 });
             }
 
@@ -154,6 +238,173 @@ export default function EventAddonsTab({ event }) {
         } finally {
             setSaving(false);
         }
+    }
+
+    function updateAddonConfig(type, id, patch) {
+        const key = `${type}:${id}`;
+        setAddonConfigs((prev) => {
+            const current = normalizeAddonConfig(prev[key]);
+            const next = {
+                ...current,
+                ...patch,
+                activationRules: {
+                    ...current.activationRules,
+                    ...(patch.activationRules || {})
+                },
+                display: {
+                    ...current.display,
+                    ...(patch.display || {})
+                }
+            };
+            return { ...prev, [key]: next };
+        });
+    }
+
+    function renderAddonRulesEditor(type, itemId) {
+        const cfg = normalizeAddonConfig(addonConfigs[`${type}:${itemId}`]);
+        return (
+            <div className="addon-rules-editor">
+                <div className="addon-rules-block">
+                    <h5>Activation Rules</h5>
+                    <label className="addon-rule-check">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(cfg.activationRules.liveAfterQrScanned)}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                activationRules: { liveAfterQrScanned: event.target.checked }
+                            })}
+                        />
+                        <span>Live after QR scanned</span>
+                    </label>
+                    <label className="addon-rule-check">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(cfg.activationRules.liveWhenScannerEnabled)}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                activationRules: { liveWhenScannerEnabled: event.target.checked }
+                            })}
+                        />
+                        <span>Live if scanner user enables</span>
+                    </label>
+                    <label className="addon-rule-check">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(cfg.activationRules.liveOnSchedule)}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                activationRules: { liveOnSchedule: event.target.checked }
+                            })}
+                        />
+                        <span>Live by date/time schedule</span>
+                    </label>
+                    {cfg.activationRules.liveOnSchedule && (
+                        <div className="addon-schedule-grid">
+                            <label>
+                                <span>Start</span>
+                                <input
+                                    type="datetime-local"
+                                    value={cfg.activationRules.scheduleStartAt || ''}
+                                    onChange={(event) => updateAddonConfig(type, itemId, {
+                                        activationRules: { scheduleStartAt: event.target.value }
+                                    })}
+                                />
+                            </label>
+                            <label>
+                                <span>End</span>
+                                <input
+                                    type="datetime-local"
+                                    value={cfg.activationRules.scheduleEndAt || ''}
+                                    onChange={(event) => updateAddonConfig(type, itemId, {
+                                        activationRules: { scheduleEndAt: event.target.value }
+                                    })}
+                                />
+                            </label>
+                        </div>
+                    )}
+                    <label>
+                        <span>Unlock logic</span>
+                        <select
+                            value={cfg.activationRules.unlockLogic}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                activationRules: { unlockLogic: event.target.value === 'all' ? 'all' : 'any' }
+                            })}
+                        >
+                            <option value="any">Any rule can unlock</option>
+                            <option value="all">All rules required</option>
+                        </select>
+                    </label>
+                </div>
+                <div className="addon-rules-block">
+                    <h5>Display & Submission</h5>
+                    <label>
+                        <span>Display mode</span>
+                        <select
+                            value={cfg.display.mode}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                display: { mode: event.target.value === 'icons' ? 'icons' : 'tabs' }
+                            })}
+                        >
+                            <option value="tabs">Tabs</option>
+                            <option value="icons">Icons</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Position</span>
+                        <select
+                            value={cfg.display.position}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                display: { position: event.target.value }
+                            })}
+                        >
+                            <option value="top">Top</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="qr_slot">QR Slot</option>
+                        </select>
+                    </label>
+                    <label className="addon-rule-check">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(cfg.display.replaceQrSlot)}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                display: { replaceQrSlot: event.target.checked }
+                            })}
+                        />
+                        <span>Show add-on in QR place</span>
+                    </label>
+                    <label className="addon-rule-check">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(cfg.display.showBackButton)}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                display: { showBackButton: event.target.checked }
+                            })}
+                        />
+                        <span>Show back button to card</span>
+                    </label>
+                    <label className="addon-rule-check">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(cfg.display.autoReturnAfterSubmit)}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                display: { autoReturnAfterSubmit: event.target.checked }
+                            })}
+                        />
+                        <span>Auto return after submit</span>
+                    </label>
+                    <label className="addon-rule-check">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(cfg.display.disableAfterSubmission)}
+                            onChange={(event) => updateAddonConfig(type, itemId, {
+                                display: { disableAfterSubmission: event.target.checked }
+                            })}
+                        />
+                        <span>Disable after guest submits</span>
+                    </label>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -323,6 +574,7 @@ export default function EventAddonsTab({ event }) {
                                     <div>
                                         <strong>Poll</strong>
                                         <small>{localizedText(i18n, poll.title, poll.title_ar)}</small>
+                                        {renderAddonRulesEditor('poll', poll.id)}
                                     </div>
                                     <button type="button" className="btn btn-secondary" onClick={() => unlinkItem('poll', poll.id)}>Unlink</button>
                                 </div>
@@ -333,6 +585,7 @@ export default function EventAddonsTab({ event }) {
                                     <div>
                                         <strong>Questionnaire</strong>
                                         <small>{localizedText(i18n, questionnaire.title, questionnaire.title_ar)}</small>
+                                        {renderAddonRulesEditor('questionnaire', questionnaire.id)}
                                     </div>
                                     <button type="button" className="btn btn-secondary" onClick={() => unlinkItem('questionnaire', questionnaire.id)}>Unlink</button>
                                 </div>

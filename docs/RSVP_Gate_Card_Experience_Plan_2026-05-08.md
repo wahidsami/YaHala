@@ -282,10 +282,10 @@ For each guest + addon page:
 - [x] Persist these fields into event invitation setup tabs (poll/questionnaire linked tabs)
 
 #### Phase 2 - Admin UX for Rules & Placement
-- Status: `pending`
-- [ ] Add checkboxes in Poll/Questionnaire link setup for rule toggles
-- [ ] Add schedule datetime controls
-- [ ] Add display mode + placement controls (tabs/icons/qr-slot)
+- Status: `done`
+- [x] Add checkboxes in Poll/Questionnaire link setup for rule toggles
+- [x] Add schedule datetime controls
+- [x] Add display mode + placement controls (tabs/icons/qr-slot)
 
 #### Phase 3 - Public Card Runtime
 - Status: `pending`

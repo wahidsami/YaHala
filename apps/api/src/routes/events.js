@@ -1365,6 +1365,8 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
             addonId: tab?.addon_id || tab?.addonId || null,
             title: tab?.title || '',
             titleAr: tab?.title_ar || tab?.titleAr || '',
+            activationRules: safeJson(tab?.activation_rules || tab?.activationRules, {}),
+            display: safeJson(tab?.display, {}),
             sortOrder: Number.isFinite(Number(tab?.sort_order))
                 ? Number.parseInt(tab.sort_order, 10)
                 : Number.isFinite(Number(tab?.sortOrder))

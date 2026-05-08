@@ -196,7 +196,7 @@
     display: grid;
     grid-template-columns: auto 1fr auto;
     gap: 0.6rem;
-    align-items: center;
+    align-items: start;
     border: 1px solid var(--border-color);
     border-radius: 0.75rem;
     padding: 0.55rem 0.65rem;
@@ -217,6 +217,63 @@
     font-weight: 800;
     color: var(--color-primary);
     background: color-mix(in srgb, var(--color-primary) 14%, white);
+}
+
+.addon-rules-editor {
+    margin-top: 0.65rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.addon-rules-block {
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    padding: 0.6rem;
+    background: var(--bg-secondary);
+}
+
+.addon-rules-block h5 {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+}
+
+.addon-rules-block label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.45rem;
+}
+
+.addon-rules-block label span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.addon-rules-block input[type="datetime-local"],
+.addon-rules-block select {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 0.45rem;
+    padding: 0.35rem 0.45rem;
+    background: var(--bg-primary);
+}
+
+.addon-rule-check {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 0.45rem !important;
+}
+
+.addon-rule-check span {
+    font-size: 0.78rem;
+    color: var(--text-primary);
+}
+
+.addon-schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
 }
 
 .questionnaire-creator {
@@ -253,6 +310,11 @@
     }
 
     .questionnaire-creator-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .addon-rules-editor,
+    .addon-schedule-grid {
         grid-template-columns: 1fr;
     }
 }
