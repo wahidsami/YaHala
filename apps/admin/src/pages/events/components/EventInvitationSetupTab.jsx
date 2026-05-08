@@ -30,21 +30,26 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
     const invitationSetup = event?.settings?.invitation_setup || {};
 
     useEffect(() => {
+        const addIns = Array.isArray(event?.settings?.addIns) ? event.settings.addIns : [];
+        const pollEnabled = addIns.includes('poll');
+        const questionnaireEnabled = addIns.includes('questionnaire');
+        const setupTabs = Array.isArray(invitationSetup.tabs) ? invitationSetup.tabs : [];
+
         setFormData({
             templateId: invitationSetup.templateId || event?.template_id || '',
-            addIns: Array.isArray(event?.settings?.addIns) ? event.settings.addIns : [],
-            pollIds: Array.isArray(invitationSetup.tabs)
-                ? invitationSetup.tabs
+            addIns,
+            pollIds: pollEnabled
+                ? setupTabs
                     .filter((tab) => tab?.type === 'poll')
                     .map((tab) => tab.addon_id || tab.addonId)
                     .filter(Boolean)
                 : [],
-            questionnaireId: Array.isArray(invitationSetup.tabs)
-                ? invitationSetup.tabs
-                    .find((tab) => tab?.type === 'questionnaire')
-                    ?.addon_id
-                    || invitationSetup.tabs.find((tab) => tab?.type === 'questionnaire')?.addonId
+            questionnaireId: questionnaireEnabled
+                ? (
+                    setupTabs.find((tab) => tab?.type === 'questionnaire')?.addon_id
+                    || setupTabs.find((tab) => tab?.type === 'questionnaire')?.addonId
                     || ''
+                )
                 : ''
         });
     }, [event?.id, event?.template_id, event?.settings?.addIns, invitationSetup.templateId, invitationSetup.tabs]);
@@ -159,11 +164,25 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
         setSuccess('');
 
         try {
-            const tabs = formData.pollIds.map((pollId, index) => ({
-                type: 'poll',
-                addonId: pollId,
-                sortOrder: index
-            }));
+            if (formData.addIns.includes('poll') && formData.pollIds.length === 0) {
+                setError(t('events.invitationSetup.noPolls'));
+                return;
+            }
+            if (formData.addIns.includes('questionnaire') && !formData.questionnaireId) {
+                setError('Please select one questionnaire.');
+                return;
+            }
+
+            const tabs = [];
+            if (formData.addIns.includes('poll')) {
+                formData.pollIds.forEach((pollId, index) => {
+                    tabs.push({
+                        type: 'poll',
+                        addonId: pollId,
+                        sortOrder: index
+                    });
+                });
+            }
             if (formData.addIns.includes('questionnaire') && formData.questionnaireId) {
                 tabs.push({
                     type: 'questionnaire',

@@ -96,6 +96,80 @@ async function fetchPollSnapshot(db, pollId, clientId, eventId) {
     };
 }
 
+async function fetchQuestionnaireSnapshot(db, questionnaireId, clientId, eventId) {
+    const { rows: questionnaires } = await db.query(
+        `
+        SELECT *
+        FROM questionnaires
+        WHERE id = $1
+          AND client_id = $2
+          AND event_id = $3
+        LIMIT 1
+        `,
+        [questionnaireId, clientId, eventId]
+    );
+
+    if (!questionnaires.length) {
+        throw new AppError('Selected questionnaire not found', 404, 'QUESTIONNAIRE_NOT_FOUND');
+    }
+
+    const questionnaire = questionnaires[0];
+    const { rows: questions } = await db.query(
+        `
+        SELECT *
+        FROM questionnaire_questions
+        WHERE questionnaire_id = $1
+        ORDER BY sort_order ASC, created_at ASC
+        `,
+        [questionnaire.id]
+    );
+
+    const questionIds = questions.map((item) => item.id);
+    let options = [];
+    if (questionIds.length) {
+        const { rows } = await db.query(
+            `
+            SELECT *
+            FROM questionnaire_options
+            WHERE question_id = ANY($1::uuid[])
+            ORDER BY sort_order ASC, created_at ASC
+            `,
+            [questionIds]
+        );
+        options = rows;
+    }
+
+    const optionsByQuestionId = options.reduce((accumulator, option) => {
+        if (!accumulator[option.question_id]) {
+            accumulator[option.question_id] = [];
+        }
+        accumulator[option.question_id].push({
+            id: option.id,
+            label: option.label,
+            label_ar: option.label_ar,
+            value: option.value,
+            sort_order: option.sort_order
+        });
+        return accumulator;
+    }, {});
+
+    return {
+        questionnaire,
+        questions: questions.map((question) => ({
+            id: question.id,
+            question_type: question.question_type,
+            title: question.title,
+            title_ar: question.title_ar || '',
+            description: question.description || '',
+            description_ar: question.description_ar || '',
+            is_required: question.is_required,
+            sort_order: question.sort_order,
+            settings: safeJson(question.settings, {}),
+            options: optionsByQuestionId[question.id] || []
+        }))
+    };
+}
+
 function stableStringify(value) {
     if (value === null || value === undefined) {
         return 'null';
@@ -633,6 +707,29 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
                     continue;
                 }
 
+                if (tab.type === 'questionnaire') {
+                    const snapshot = await fetchQuestionnaireSnapshot(pool, tab.addon_id, existing.client_id, req.params.id);
+                    selectedTabs.push({
+                        ...tab,
+                        title: tab.title || snapshot.questionnaire.title,
+                        title_ar: tab.title_ar || snapshot.questionnaire.title_ar || '',
+                        addon_snapshot: {
+                            type: 'questionnaire',
+                            questionnaire_id: snapshot.questionnaire.id,
+                            title: snapshot.questionnaire.title,
+                            title_ar: snapshot.questionnaire.title_ar || '',
+                            description: snapshot.questionnaire.description || '',
+                            description_ar: snapshot.questionnaire.description_ar || '',
+                            status: snapshot.questionnaire.status,
+                            start_date: snapshot.questionnaire.start_date,
+                            end_date: snapshot.questionnaire.end_date,
+                            settings: safeJson(snapshot.questionnaire.settings, {}),
+                            questions: snapshot.questions
+                        }
+                    });
+                    continue;
+                }
+
                 selectedTabs.push(tab);
             }
 
@@ -640,6 +737,14 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
                 ...safeJson(nextSettings.invitation_setup, {}),
                 ...safeJson(setup, {}),
                 tabs: selectedTabs
+            };
+        } else if (hasAddIns) {
+            const existingSetup = safeJson(nextSettings.invitation_setup, {});
+            const existingTabs = Array.isArray(existingSetup.tabs) ? existingSetup.tabs : [];
+            const enabledAddIns = new Set(requestedAddIns);
+            nextSettings.invitation_setup = {
+                ...existingSetup,
+                tabs: existingTabs.filter((tab) => enabledAddIns.has(tab?.type))
             };
         }
 
