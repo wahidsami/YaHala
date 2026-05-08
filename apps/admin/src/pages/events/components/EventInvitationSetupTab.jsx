@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, CheckCircle2, CheckSquare2, LayoutTemplate, MessageSquare, Sparkles } from 'lucide-react';
+import { CheckCircle2, LayoutTemplate, Sparkles } from 'lucide-react';
 import api from '../../../services/api';
 import RoleGuard from '../../../components/auth/RoleGuard';
 import './EventInvitationSetupTab.css';
@@ -12,47 +11,17 @@ function localizedText(i18n, primary, secondary) {
 
 export default function EventInvitationSetupTab({ event, onUpdated }) {
     const { t, i18n } = useTranslation();
-    const navigate = useNavigate();
     const [templates, setTemplates] = useState([]);
-    const [polls, setPolls] = useState([]);
-    const [questionnaires, setQuestionnaires] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [formData, setFormData] = useState({
-        templateId: '',
-        addIns: [],
-        pollIds: [],
-        questionnaireId: ''
-    });
-
-    const invitationSetup = event?.settings?.invitation_setup || {};
+    const [templateId, setTemplateId] = useState('');
+    const [addonsSummary, setAddonsSummary] = useState(null);
 
     useEffect(() => {
-        const addIns = Array.isArray(event?.settings?.addIns) ? event.settings.addIns : [];
-        const pollEnabled = addIns.includes('poll');
-        const questionnaireEnabled = addIns.includes('questionnaire');
-        const setupTabs = Array.isArray(invitationSetup.tabs) ? invitationSetup.tabs : [];
-
-        setFormData({
-            templateId: invitationSetup.templateId || event?.template_id || '',
-            addIns,
-            pollIds: pollEnabled
-                ? setupTabs
-                    .filter((tab) => tab?.type === 'poll')
-                    .map((tab) => tab.addon_id || tab.addonId)
-                    .filter(Boolean)
-                : [],
-            questionnaireId: questionnaireEnabled
-                ? (
-                    setupTabs.find((tab) => tab?.type === 'questionnaire')?.addon_id
-                    || setupTabs.find((tab) => tab?.type === 'questionnaire')?.addonId
-                    || ''
-                )
-                : ''
-        });
-    }, [event?.id, event?.template_id, event?.settings?.addIns, invitationSetup.templateId, invitationSetup.tabs]);
+        setTemplateId(event?.settings?.invitation_setup?.templateId || event?.template_id || '');
+    }, [event?.id, event?.template_id, event?.settings?.invitation_setup?.templateId]);
 
     useEffect(() => {
         async function fetchReferences() {
@@ -62,17 +31,13 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
 
             setLoading(true);
             setError('');
-
             try {
-                const [templatesResponse, pollsResponse, questionnairesResponse] = await Promise.all([
+                const [templatesResponse, addonsResponse] = await Promise.all([
                     api.get('/admin/templates?pageSize=200'),
-                    api.get(`/admin/polls?eventId=${event.id}&pageSize=200`),
-                    api.get(`/admin/questionnaires?eventId=${event.id}&pageSize=200`)
+                    api.get(`/admin/events/${event.id}/addons-summary`)
                 ]);
-
-                setTemplates(templatesResponse.data.data || []);
-                setPolls(pollsResponse.data.data || []);
-                setQuestionnaires(questionnairesResponse.data.data || []);
+                setTemplates(templatesResponse.data?.data || []);
+                setAddonsSummary(addonsResponse.data?.data || null);
             } catch (fetchError) {
                 console.error('Failed to load invitation setup references:', fetchError);
                 setError(fetchError.response?.data?.message || t('events.invitationSetup.loadFailed'));
@@ -84,121 +49,32 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
         fetchReferences();
     }, [event?.id, t]);
 
-    const selectedPolls = useMemo(() => {
-        const selected = new Set(formData.pollIds);
-        return polls.filter((poll) => selected.has(poll.id));
-    }, [polls, formData.pollIds]);
-
-    const selectedQuestionnaire = useMemo(
-        () => questionnaires.find((item) => item.id === formData.questionnaireId) || null,
-        [questionnaires, formData.questionnaireId]
-    );
-
-    const setupChecklist = useMemo(() => [
-        {
-            label: t('events.invitationSetup.checklist.template'),
-            done: Boolean(formData.templateId)
-        },
-        {
-            label: t('events.invitationSetup.checklist.pollAddon'),
-            done: formData.addIns.includes('poll')
-        },
-        {
-            label: t('events.invitationSetup.checklist.pollTabs'),
-            done: !formData.addIns.includes('poll') || selectedPolls.length > 0
-        },
-        {
-            label: t('addons.questionnaireTab'),
-            done: !formData.addIns.includes('questionnaire') || Boolean(formData.questionnaireId)
-        },
-        {
-            label: t('events.invitationSetup.checklist.ready'),
-            done: Boolean(
-                formData.templateId
-                && (!formData.addIns.includes('poll') || selectedPolls.length > 0)
-                && (!formData.addIns.includes('questionnaire') || formData.questionnaireId)
-            )
-        }
-    ], [formData.addIns, formData.questionnaireId, formData.templateId, selectedPolls.length, t]);
-
-    function openPoll(pollId) {
-        navigate(`/addons/polls/${pollId}`);
-    }
-
-    function togglePoll(pollId, checked) {
-        setFormData((prev) => {
-            const nextIds = new Set(prev.pollIds);
-            if (checked) {
-                nextIds.add(pollId);
-            } else {
-                nextIds.delete(pollId);
+    const setupStatus = useMemo(() => {
+        const tabs = addonsSummary?.invitationTabs || [];
+        return [
+            {
+                label: t('events.invitationSetup.checklist.template'),
+                done: Boolean(templateId)
+            },
+            {
+                label: 'Add-ons configured',
+                done: Array.isArray(addonsSummary?.addInsEnabled) && addonsSummary.addInsEnabled.length > 0
+            },
+            {
+                label: 'Card tabs linked',
+                done: tabs.length > 0
             }
-
-            return {
-                ...prev,
-                pollIds: polls
-                    .filter((poll) => nextIds.has(poll.id))
-                    .map((poll) => poll.id)
-            };
-        });
-    }
-
-    function toggleAddon(addonId, checked) {
-        setFormData((prev) => {
-            const addIns = checked
-                ? Array.from(new Set([...prev.addIns, addonId]))
-                : prev.addIns.filter((id) => id !== addonId);
-
-            return {
-                ...prev,
-                addIns,
-                pollIds: addonId === 'poll' && !checked ? [] : prev.pollIds,
-                questionnaireId: addonId === 'questionnaire' && !checked ? '' : prev.questionnaireId
-            };
-        });
-    }
+        ];
+    }, [addonsSummary, t, templateId]);
 
     async function saveInvitationSetup() {
         setSaving(true);
         setError('');
         setSuccess('');
-
         try {
-            if (formData.addIns.includes('poll') && formData.pollIds.length === 0) {
-                setError(t('events.invitationSetup.noPolls'));
-                return;
-            }
-            if (formData.addIns.includes('questionnaire') && !formData.questionnaireId) {
-                setError('Please select one questionnaire.');
-                return;
-            }
-
-            const tabs = [];
-            if (formData.addIns.includes('poll')) {
-                formData.pollIds.forEach((pollId, index) => {
-                    tabs.push({
-                        type: 'poll',
-                        addonId: pollId,
-                        sortOrder: index
-                    });
-                });
-            }
-            if (formData.addIns.includes('questionnaire') && formData.questionnaireId) {
-                tabs.push({
-                    type: 'questionnaire',
-                    addonId: formData.questionnaireId,
-                    sortOrder: tabs.length
-                });
-            }
-
             await api.patch(`/admin/events/${event.id}/invitation-setup`, {
-                templateId: formData.templateId || null,
-                addIns: formData.addIns,
-                invitationSetup: {
-                    tabs
-                }
+                templateId: templateId || null
             });
-
             setSuccess(t('events.invitationSetup.saved'));
             await onUpdated?.();
         } catch (saveError) {
@@ -225,29 +101,13 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                 </div>
                 <div className="invitation-setup-summary-chips">
                     <span className="summary-chip summary-chip-soft">
-                        {formData.templateId
+                        {templateId
                             ? t('events.invitationSetup.templateSelected')
                             : t('events.invitationSetup.noTemplateSelected')}
                     </span>
                     <span className="summary-chip">
-                        {t('events.invitationSetup.selectedTabs', { count: selectedPolls.length + (selectedQuestionnaire ? 1 : 0) })}
+                        {t('events.invitationSetup.selectedTabs', { count: addonsSummary?.invitationTabs?.length || 0 })}
                     </span>
-                    {selectedPolls.map((poll) => (
-                        <button
-                            type="button"
-                            key={poll.id}
-                            className="summary-chip summary-chip-soft summary-chip-action"
-                            onClick={() => openPoll(poll.id)}
-                            title={t('events.invitationSetup.openPoll')}
-                        >
-                            {localizedText(i18n, poll.title, poll.title_ar)}
-                        </button>
-                    ))}
-                    {selectedQuestionnaire && (
-                        <span className="summary-chip summary-chip-soft">
-                            {t('addons.questionnaireTab')}: {localizedText(i18n, selectedQuestionnaire.title, selectedQuestionnaire.title_ar)}
-                        </span>
-                    )}
                 </div>
             </div>
 
@@ -255,15 +115,14 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                 <div className="section-header">
                     <div>
                         <h3>{t('events.invitationSetup.checklistTitle')}</h3>
-                        <p>{t('events.invitationSetup.checklistHint')}</p>
+                        <p>Status below reflects Add-ons tab configuration in real-time.</p>
                     </div>
-                    <CheckSquare2 size={18} />
+                    <CheckCircle2 size={18} />
                 </div>
-
                 <div className="setup-checklist-list">
-                    {setupChecklist.map((item) => (
+                    {setupStatus.map((item) => (
                         <div key={item.label} className={`setup-checklist-item ${item.done ? 'is-ready' : 'is-pending'}`}>
-                            {item.done ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                            <CheckCircle2 size={16} />
                             <span>{item.label}</span>
                             <strong>{item.done ? t('settings.ready') : t('common.pending')}</strong>
                         </div>
@@ -272,34 +131,6 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
             </section>
 
             <div className="invitation-setup-grid">
-                <section className="setup-card">
-                    <div className="section-header">
-                        <div>
-                            <h3>Add-ons</h3>
-                            <p>Enable add-ons and they will appear in event tabs.</p>
-                        </div>
-                        <CheckSquare2 size={18} />
-                    </div>
-                    <div className="addon-toggle-row">
-                        <label className="addon-toggle-item">
-                            <input
-                                type="checkbox"
-                                checked={formData.addIns.includes('poll')}
-                                onChange={(event) => toggleAddon('poll', event.target.checked)}
-                            />
-                            <span>{t('events.form.addin.poll.title')}</span>
-                        </label>
-                        <label className="addon-toggle-item">
-                            <input
-                                type="checkbox"
-                                checked={formData.addIns.includes('questionnaire')}
-                                onChange={(event) => toggleAddon('questionnaire', event.target.checked)}
-                            />
-                            <span>{t('events.form.addin.questionnaire.title')}</span>
-                        </label>
-                    </div>
-                </section>
-
                 <section className="setup-card">
                     <div className="section-header">
                         <div>
@@ -313,8 +144,8 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                         <label htmlFor="setupTemplateId">{t('events.invitationSetup.template')}</label>
                         <select
                             id="setupTemplateId"
-                            value={formData.templateId}
-                            onChange={(event) => setFormData((prev) => ({ ...prev, templateId: event.target.value }))}
+                            value={templateId}
+                            onChange={(eventParam) => setTemplateId(eventParam.target.value)}
                         >
                             <option value="">{t('events.dashboardTemplateNotAssigned')}</option>
                             {templates.map((template) => (
@@ -328,7 +159,7 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                     <div className="selected-template-note">
                         <Sparkles size={16} />
                         <span>
-                            {formData.templateId
+                            {templateId
                                 ? t('events.invitationSetup.templateSelected')
                                 : t('events.invitationSetup.noTemplateSelected')}
                         </span>
@@ -338,89 +169,17 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                 <section className="setup-card setup-card--wide">
                     <div className="section-header">
                         <div>
-                            <h3>{t('events.invitationSetup.tabsTitle')}</h3>
-                            <p>{t('events.invitationSetup.tabsHelp')}</p>
+                            <h3>Add-ons Ownership</h3>
+                            <p>Add-ons and card tabs are managed in the Event Add-ons tab.</p>
                         </div>
-                        <CheckSquare2 size={18} />
                     </div>
-
-                    {!formData.addIns.includes('poll') ? (
-                        <div className="setup-empty-state">
-                            <MessageSquare size={20} />
-                            <p>{t('events.invitationSetup.pollDisabled')}</p>
-                        </div>
-                    ) : polls.length === 0 ? (
-                        <div className="setup-empty-state">
-                            <MessageSquare size={20} />
-                            <p>{t('events.invitationSetup.noPolls')}</p>
-                        </div>
-                    ) : (
-                        <div className="addon-selection-grid">
-                            {polls.map((poll) => {
-                                const checked = formData.pollIds.includes(poll.id);
-                                return (
-                                    <label key={poll.id} className={`addon-selection-card ${checked ? 'selected' : ''}`}>
-                                        <input
-                                            type="checkbox"
-                                            checked={checked}
-                                            onChange={(event) => togglePoll(poll.id, event.target.checked)}
-                                        />
-                                        <div className="addon-selection-copy">
-                                            <span className="addon-selection-kind">
-                                                <MessageSquare size={11} />
-                                                <span>{t('addons.pollTab')}</span>
-                                            </span>
-                                            <strong>{localizedText(i18n, poll.title, poll.title_ar)}</strong>
-                                            <span>{localizedText(i18n, event?.client_name, event?.client_name_ar)}</span>
-                                            <small>{t(`addons.polls.status.${poll.status}`) || poll.status}</small>
-                                        </div>
-                                        <div className="addon-selection-meta">
-                                            <span>{poll.participants_count || 0}</span>
-                                            <small>{t('addons.polls.participants')}</small>
-                                        </div>
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    )}
-                </section>
-
-                <section className="setup-card setup-card--wide">
-                    <div className="section-header">
-                        <div>
-                            <h3>{t('addons.questionnaireTab')}</h3>
-                            <p>Select one questionnaire for the event invitation tab.</p>
-                        </div>
-                        <CheckSquare2 size={18} />
+                    <div className="setup-empty-state">
+                        <p>
+                            Use <strong>Event &gt; Add-ons</strong> to enable add-ons, select polls/questionnaires,
+                            and control which tabs appear on the invitation card.
+                        </p>
+                        <p className="event-addons-empty">Switch to the Add-ons tab above to manage these links.</p>
                     </div>
-
-                    {!formData.addIns.includes('questionnaire') ? (
-                        <div className="setup-empty-state">
-                            <MessageSquare size={20} />
-                            <p>Enable Questionnaire addon to add this tab.</p>
-                        </div>
-                    ) : questionnaires.length === 0 ? (
-                        <div className="setup-empty-state">
-                            <MessageSquare size={20} />
-                            <p>No questionnaires found for this event.</p>
-                        </div>
-                    ) : (
-                        <div className="form-group">
-                            <label htmlFor="setupQuestionnaireId">{t('addons.questionnaireTab')}</label>
-                            <select
-                                id="setupQuestionnaireId"
-                                value={formData.questionnaireId}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, questionnaireId: event.target.value }))}
-                            >
-                                <option value="">Select questionnaire</option>
-                                {questionnaires.map((questionnaire) => (
-                                    <option key={questionnaire.id} value={questionnaire.id}>
-                                        {localizedText(i18n, questionnaire.title, questionnaire.title_ar)}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
                 </section>
             </div>
 

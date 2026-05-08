@@ -77,11 +77,11 @@
 
 ## Phase 4 - Invitation Setup Simplification
 - Goal: Remove duplicate add-on controls from Invitation Setup.
-- Status: `pending`
+- Status: `done`
 - Tracking:
-  - [ ] Remove add-ons section from Invitation Setup
-  - [ ] Remove or replace checklist with live computed status
-  - [ ] Keep template and card-tab-specific controls only
+  - [x] Remove add-ons section from Invitation Setup
+  - [x] Remove or replace checklist with live computed status
+  - [x] Keep template and card-tab-specific controls only
 
 ## Phase 5 - Multi-Instance Add-on Experience
 - Goal: Support multiple resources per add-on type from Add-ons workspace.
@@ -105,3 +105,4 @@
 - 2026-05-08: Phase 1 completed (top-level duplicated tabs removed from Event Dashboard).
 - 2026-05-08: Phase 2 completed (event Add-ons tab converted to left-menu control center with multi-select content linking and save flow).
 - 2026-05-08: Phase 3 completed (deduplicated add-on/tab persistence, deterministic sort ordering, and post-save reload to prevent stale UI state).
+- 2026-05-08: Phase 4 completed (Invitation Setup now focuses on template and read-only status; add-on ownership moved to Add-ons tab).
