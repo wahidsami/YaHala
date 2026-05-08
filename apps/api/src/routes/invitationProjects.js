@@ -1022,6 +1022,7 @@ async function buildInvitationEmailSendContext(db, projectId, requestedRecipient
             p.status,
             c.name AS client_name,
             c.name_ar AS client_name_ar,
+            c.logo_path AS client_logo_path,
             e.name AS event_name,
             e.name_ar AS event_name_ar,
             e.start_datetime,

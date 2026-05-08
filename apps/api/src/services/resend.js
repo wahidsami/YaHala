@@ -47,6 +47,22 @@ export function getPublicInvitationBaseUrl() {
     return normalizeText(process.env.PUBLIC_INVITATION_BASE_URL || 'http://localhost:5173').replace(/\/+$/, '');
 }
 
+function getPublicAssetsBaseUrl() {
+    const configured = normalizeText(process.env.PUBLIC_ASSETS_BASE_URL || process.env.PUBLIC_API_BASE_URL || '');
+    if (configured) {
+        return configured.replace(/\/+$/, '');
+    }
+    return getPublicInvitationBaseUrl();
+}
+
+function resolvePublicAssetUrl(assetPath) {
+    const value = normalizeText(assetPath);
+    if (!value) return '';
+    if (/^https?:\/\//i.test(value)) return value;
+    if (value.startsWith('/')) return `${getPublicAssetsBaseUrl()}${value}`;
+    return `${getPublicAssetsBaseUrl()}/${value}`;
+}
+
 export function buildInvitationEmailContent({ project, recipient, publicLink, language = 'ar' }) {
     const guestName = localizedText(language, recipient.display_name, recipient.display_name_ar) || recipient.display_name || recipient.display_name_ar || 'Guest';
     const clientName = localizedText(language, project.client?.name || project.client_name, project.client?.name_ar || project.client_name_ar);
@@ -54,6 +70,8 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
     const eventDate = formatDateTime(language, project.event?.start_datetime || project.start_datetime);
     const eventLocation = formatEventLocation(language, project.event || project);
     const invitationTitle = localizedText(language, project.name, project.name_ar);
+    const clientLogoPath = project.client?.logo_path || project.client_logo_path || '';
+    const clientLogoUrl = resolvePublicAssetUrl(clientLogoPath);
     const isArabic = language === 'ar';
     const subject = isArabic
         ? `دعوة إلى ${eventName || invitationTitle || clientName || ''}`.trim()
@@ -67,6 +85,7 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
         <div style="direction:${isArabic ? 'rtl' : 'ltr'};font-family:Arial,sans-serif;background:#f6f7fb;padding:32px">
             <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 18px 50px rgba(15,23,42,.08)">
                 <div style="padding:26px 30px;background:linear-gradient(135deg,#0f172a,#1e293b 55%,#0f766e);color:#fff">
+                    ${clientLogoUrl ? `<div style="margin:0 0 14px"><img src="${escapeAttribute(clientLogoUrl)}" alt="${escapeAttribute(clientName || 'Client logo')}" style="max-width:140px;max-height:56px;object-fit:contain;display:block" /></div>` : ''}
                     <p style="margin:0 0 10px;opacity:.82;letter-spacing:.12em;text-transform:uppercase;font-size:12px">${isArabic ? 'دعوة رقمية' : 'Digital Invitation'}</p>
                     <h1 style="margin:0;font-size:28px;line-height:1.2">${escapeHtml(invitationTitle || eventName || clientName || (isArabic ? 'دعوة' : 'Invitation'))}</h1>
                     <p style="margin:14px 0 0;opacity:.9;line-height:1.7">${escapeHtml(isArabic ? `مرحباً ${guestName}` : `Hello ${guestName}`)}</p>
@@ -80,11 +99,10 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
                     </div>
                     <p style="margin:0 0 12px;color:#374151;line-height:1.8">${escapeHtml(isArabic ? `لديك دعوة جديدة من ${clientName || 'Rawaj'}.` : `You have a new invitation from ${clientName || 'Rawaj'}.`)}</p>
                     <p style="margin:0 0 22px;color:#374151;line-height:1.8">${escapeHtml(isArabic ? 'افتح بطاقة الدعوة من الرابط التالي:' : 'Open your invitation card using the link below:')}</p>
-                    <div style="margin:24px 0 18px">
+                    <div style="margin:24px 0 18px;text-align:center">
                         <a href="${escapeAttribute(publicLink)}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:14px 24px;border-radius:14px;font-weight:700">${isArabic ? 'فتح الدعوة' : 'Open Invitation'}</a>
                     </div>
                     <p style="margin:0 0 16px;color:#6b7280;font-size:13px;line-height:1.7">${escapeHtml(isArabic ? 'هذا الرابط شخصي ومخصص لك فقط.' : 'This link is personal and unique to you.')}</p>
-                    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.7;word-break:break-all">${escapeHtml(publicLink)}</p>
                 </div>
             </div>
         </div>
