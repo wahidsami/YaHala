@@ -48,11 +48,32 @@ export function getPublicInvitationBaseUrl() {
 }
 
 function getPublicAssetsBaseUrl() {
-    const configured = normalizeText(process.env.PUBLIC_ASSETS_BASE_URL || process.env.PUBLIC_API_BASE_URL || '');
+    const configured = normalizeText(
+        process.env.PUBLIC_ASSETS_BASE_URL
+        || process.env.PUBLIC_API_BASE_URL
+        || process.env.API_BASE_URL
+        || process.env.PUBLIC_BACKEND_BASE_URL
+        || ''
+    );
     if (configured) {
         return configured.replace(/\/+$/, '');
     }
-    return getPublicInvitationBaseUrl();
+    const inviteBase = getPublicInvitationBaseUrl();
+    try {
+        const url = new URL(inviteBase);
+        const host = url.hostname || '';
+        const nextHost = host
+            .replace(/^yinvite\./i, 'yapi.')
+            .replace(/^invite\./i, 'api.')
+            .replace(/^invitation\./i, 'api.');
+        if (nextHost !== host) {
+            url.hostname = nextHost;
+            return `${url.origin}`;
+        }
+    } catch {
+        // fallback below
+    }
+    return inviteBase;
 }
 
 function resolvePublicAssetUrl(assetPath) {
