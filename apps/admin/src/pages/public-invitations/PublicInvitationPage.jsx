@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Loader2, Sparkles, MapPin, X } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import api from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { normalizeLayout } from '../templates/backgroundUtils';
@@ -301,15 +302,11 @@ function getCanvasWidgets(coverTemplate) {
     return orderedSections.flatMap((section) => section.widgets || []);
 }
 
-function buildQrImageUrl(token, qrContent = {}, widgetStyle = {}) {
+function buildInvitationUrl(token) {
     if (!token) {
-        return null;
+        return '';
     }
-
-    const invitationUrl = `${window.location.origin}/invite/${token}`;
-    const colorHex = (qrContent?.qrColor || widgetStyle?.color || '#111827').replace('#', '');
-    const backgroundHex = (qrContent?.qrBackground || widgetStyle?.backgroundColor || '#ffffff').replace('#', '');
-    return `https://api.qrserver.com/v1/create-qr-code/?size=384x384&margin=24&color=${encodeURIComponent(colorHex)}&bgcolor=${encodeURIComponent(backgroundHex)}&data=${encodeURIComponent(invitationUrl)}`;
+    return `${window.location.origin}/invite/${token}`;
 }
 
 function WidgetPreview({ widget, language, project, recipient }) {
@@ -404,13 +401,22 @@ function WidgetPreview({ widget, language, project, recipient }) {
             );
         }
         case 'qr_code': {
-            const qrImageUrl = buildQrImageUrl(recipient.public_token, content, widget?.style || {});
+            const invitationUrl = buildInvitationUrl(recipient.public_token);
+            const qrColor = content?.qrColor || widget?.style?.color || '#111827';
+            const qrBackground = content?.qrBackground || widget?.style?.backgroundColor || '#ffffff';
 
             return (
                 <div style={style} className="preview-widget qr-widget">
                     {content.label && <div className="qr-label">{content.label}</div>}
-                    {qrImageUrl ? (
-                        <img src={qrImageUrl} alt="Invitation QR Code" className="qr-image" />
+                    {invitationUrl ? (
+                        <QRCode
+                            value={invitationUrl}
+                            size={256}
+                            fgColor={qrColor}
+                            bgColor={qrBackground}
+                            level="M"
+                            className="qr-image"
+                        />
                     ) : (
                         <div className="qr-placeholder">QR CODE</div>
                     )}
