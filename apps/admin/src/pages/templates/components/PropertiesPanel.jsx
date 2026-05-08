@@ -1045,15 +1045,35 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                             </div>
                         )}
                         {widget.type === 'qr_code' && (
-                            <div className="form-group">
-                                <label>Label</label>
-                                <input
-                                    type="text"
-                                    value={content.label || ''}
-                                    onChange={(e) => updateContent('label', e.target.value)}
-                                    dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}
-                                />
-                            </div>
+                            <>
+                                <div className="form-group">
+                                    <label>Label</label>
+                                    <input
+                                        type="text"
+                                        value={content.label || ''}
+                                        onChange={(e) => updateContent('label', e.target.value)}
+                                        dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}
+                                    />
+                                </div>
+                                <div className="form-group-row">
+                                    <div className="form-group tiny">
+                                        <label>QR Color</label>
+                                        <input
+                                            type="color"
+                                            value={widget.style?.color || '#111827'}
+                                            onChange={(e) => updateStyle('color', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="form-group tiny">
+                                        <label>QR Background</label>
+                                        <input
+                                            type="color"
+                                            value={widget.style?.backgroundColor || '#ffffff'}
+                                            onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </>
                         )}
                         {widget.type === 'voice_recorder' && (
                             <>

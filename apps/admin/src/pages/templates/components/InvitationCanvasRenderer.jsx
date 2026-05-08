@@ -94,13 +94,15 @@ function getGuestPosition(recipient, content) {
     ).trim();
 }
 
-function buildQrImageUrl(token) {
+function buildQrImageUrl(token, widgetStyle = {}) {
     if (!token) {
         return null;
     }
 
     const invitationUrl = `${window.location.origin}/invite/${token}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=384x384&margin=24&data=${encodeURIComponent(invitationUrl)}`;
+    const colorHex = (widgetStyle?.color || '#111827').replace('#', '');
+    const backgroundHex = (widgetStyle?.backgroundColor || '#ffffff').replace('#', '');
+    return `https://api.qrserver.com/v1/create-qr-code/?size=384x384&margin=24&color=${encodeURIComponent(colorHex)}&bgcolor=${encodeURIComponent(backgroundHex)}&data=${encodeURIComponent(invitationUrl)}`;
 }
 
 function getWidgetFrameStyle(widget, index = 0) {
@@ -343,7 +345,7 @@ export function InvitationWidgetPreview({ widget, language, project, recipient, 
             );
         }
         case 'qr_code': {
-            const qrImageUrl = mode === 'builder' ? null : buildQrImageUrl(recipient.public_token);
+            const qrImageUrl = mode === 'builder' ? null : buildQrImageUrl(recipient.public_token, widget?.style || {});
 
             return (
                 <div style={style} className="preview-widget qr-widget">
