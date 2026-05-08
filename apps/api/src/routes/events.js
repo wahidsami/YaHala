@@ -37,6 +37,39 @@ function normalizeAddIns(addIns) {
 }
 
 function normalizeInvitationSetupTabs(tabs) {
+    const normalizeActivationRules = (input) => {
+        const source = safeJson(input, {});
+        const hasSchedule = Boolean(source.liveOnSchedule);
+        const scheduleStartAt = typeof source.scheduleStartAt === 'string' ? source.scheduleStartAt.trim() : '';
+        const scheduleEndAt = typeof source.scheduleEndAt === 'string' ? source.scheduleEndAt.trim() : '';
+
+        return {
+            liveAfterQrScanned: Boolean(source.liveAfterQrScanned),
+            liveWhenScannerEnabled: Boolean(source.liveWhenScannerEnabled),
+            liveOnSchedule: hasSchedule,
+            scheduleStartAt: hasSchedule ? scheduleStartAt : '',
+            scheduleEndAt: hasSchedule ? scheduleEndAt : '',
+            unlockLogic: source.unlockLogic === 'all' ? 'all' : 'any'
+        };
+    };
+
+    const normalizeDisplay = (input) => {
+        const source = safeJson(input, {});
+        const mode = source.mode === 'tabs' || source.mode === 'icons' ? source.mode : 'tabs';
+        const position = ['top', 'left', 'right', 'bottom', 'qr_slot'].includes(source.position)
+            ? source.position
+            : (mode === 'icons' ? 'top' : 'top');
+
+        return {
+            mode,
+            position,
+            replaceQrSlot: Boolean(source.replaceQrSlot),
+            disableAfterSubmission: source.disableAfterSubmission !== false,
+            showBackButton: source.showBackButton !== false,
+            autoReturnAfterSubmit: source.autoReturnAfterSubmit !== false
+        };
+    };
+
     if (!Array.isArray(tabs)) {
         return [];
     }
@@ -55,6 +88,8 @@ function normalizeInvitationSetupTabs(tabs) {
                 addon_id: addonId,
                 title: typeof tab?.title === 'string' ? tab.title.trim() : '',
                 title_ar: typeof tab?.titleAr === 'string' ? tab.titleAr.trim() : typeof tab?.title_ar === 'string' ? tab.title_ar.trim() : '',
+                activation_rules: normalizeActivationRules(tab?.activationRules || tab?.activation_rules),
+                display: normalizeDisplay(tab?.display),
                 sort_order: Number.isFinite(Number(tab?.sortOrder))
                     ? Number.parseInt(tab.sortOrder, 10)
                     : Number.isFinite(Number(tab?.sort_order))
@@ -808,6 +843,8 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
                         ...tab,
                         title: tab.title || snapshot.poll.title,
                         title_ar: tab.title_ar || snapshot.poll.title_ar || '',
+                        activation_rules: safeJson(tab.activation_rules, {}),
+                        display: safeJson(tab.display, {}),
                         addon_snapshot: {
                             type: 'poll',
                             poll_id: snapshot.poll.id,
@@ -849,6 +886,8 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
                         ...tab,
                         title: tab.title || snapshot.questionnaire.title,
                         title_ar: tab.title_ar || snapshot.questionnaire.title_ar || '',
+                        activation_rules: safeJson(tab.activation_rules, {}),
+                        display: safeJson(tab.display, {}),
                         addon_snapshot: {
                             type: 'questionnaire',
                             questionnaire_id: snapshot.questionnaire.id,

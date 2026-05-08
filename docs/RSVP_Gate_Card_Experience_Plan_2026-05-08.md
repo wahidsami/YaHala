@@ -202,3 +202,114 @@ No new SQL table required for V1.
 - 2026-05-08: Phase C implemented.
   - Invitation Setup now includes full RSVP Gate editor (content + appearance + behavior).
   - Added live preview and proper toggle dependency (`Require reason` disabled when `Ask reason` is off).
+
+## 10) Add-ons Orchestration Expansion (Poll + Questionnaire)
+
+- Date Added: 2026-05-08
+- Status: In Progress
+- Scope: Admin + API + Public Card + Scanner Mobile
+- Goal: Add rule-driven addon activation and configurable addon entry placement so addons can become event-stage experiences.
+
+### 10.1 Confirmed Product Scenario
+
+1. Guest receives invitation and opens card.
+2. Guest confirms attendance via RSVP gate.
+3. Addon visibility/availability is controlled by rules:
+   - live after QR scan
+   - live when scanner user manually enables
+   - live on configured date/time window
+4. Addon entry can appear:
+   - in QR slot (replace QR area)
+   - as tabs
+   - as icons (top/left/right/bottom)
+5. Poll/Questionnaire pages include back-to-card behavior.
+6. After submission:
+   - show thank-you
+   - auto return to main card
+   - disable addon action for that guest (already answered).
+
+### 10.2 Addon Rule Contract (Per Linked Addon Tab)
+
+```json
+{
+  "activation_rules": {
+    "liveAfterQrScanned": true,
+    "liveWhenScannerEnabled": false,
+    "liveOnSchedule": false,
+    "scheduleStartAt": "",
+    "scheduleEndAt": "",
+    "unlockLogic": "any"
+  },
+  "display": {
+    "mode": "tabs",
+    "position": "top",
+    "replaceQrSlot": false,
+    "disableAfterSubmission": true,
+    "showBackButton": true,
+    "autoReturnAfterSubmit": true
+  }
+}
+```
+
+### 10.3 Data Model Additions
+
+New table for guest-level addon runtime state:
+
+- `invitation_addon_guest_state`
+  - tracks unlock/complete/manual-enable state per recipient + addon page
+  - supports scanner/manual/scheduled unlocking and completion lock
+
+### 10.4 Runtime Rule Evaluation (Planned Behavior)
+
+For each guest + addon page:
+
+1. If `is_completed` and `disableAfterSubmission = true`: render disabled.
+2. Else evaluate unlock by configured logic (`any` or `all`) over:
+   - check-in signal (`liveAfterQrScanned`)
+   - scanner manual enable signal (`liveWhenScannerEnabled`)
+   - schedule window (`liveOnSchedule`)
+3. If unlocked:
+   - render as configured (`qr_slot`, tabs, or icons + position)
+4. If not unlocked:
+   - hide or show disabled badge (to be finalized in UI pass).
+
+### 10.5 Implementation Phases (Addons Expansion)
+
+#### Phase 1 - Backend Foundations
+- Status: `done`
+- [x] Add DB migration for `invitation_addon_guest_state`
+- [x] Extend invitation setup tab normalization to include `activation_rules` and `display` payload
+- [x] Persist these fields into event invitation setup tabs (poll/questionnaire linked tabs)
+
+#### Phase 2 - Admin UX for Rules & Placement
+- Status: `pending`
+- [ ] Add checkboxes in Poll/Questionnaire link setup for rule toggles
+- [ ] Add schedule datetime controls
+- [ ] Add display mode + placement controls (tabs/icons/qr-slot)
+
+#### Phase 3 - Public Card Runtime
+- Status: `pending`
+- [ ] Evaluate activation rules at card runtime
+- [ ] Render addon entry in selected placement
+- [ ] Replace QR slot when configured
+- [ ] Add back button in poll/questionnaire panels
+- [ ] Post-submit thank-you + auto-return + disable action
+
+#### Phase 4 - Scanner Runtime Integration
+- Status: `pending`
+- [ ] Mark invitation guest as unlocked when QR is scanned (if enabled rule)
+- [ ] Add scanner-user manual enable endpoint/action
+- [ ] Persist unlock source and timestamp
+
+#### Phase 5 - QA Matrix
+- Status: `pending`
+- [ ] RSVP yes/maybe/no vs addon availability
+- [ ] Checked-in vs not checked-in behavior
+- [ ] Scanner manual enable override behavior
+- [ ] Schedule window start/end behavior
+- [ ] Completed guest lock behavior
+
+### 10.6 Notes
+
+- This expansion intentionally keeps current RSVP behavior intact.
+- Existing events/addons remain backward compatible; missing rule payload defaults to current behavior.
