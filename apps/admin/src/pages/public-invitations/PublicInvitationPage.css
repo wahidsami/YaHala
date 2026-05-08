@@ -257,6 +257,10 @@
     margin-top: 10px;
 }
 
+.questionnaire-addon-shell {
+    display: flex;
+}
+
 .guest-fit-stage {
     position: absolute;
     top: 0;
@@ -845,6 +849,10 @@
 .questionnaire-panel {
     border-radius: 16px;
     border: 1px solid rgba(148, 163, 184, 0.25);
+    width: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    background-origin: border-box;
 }
 
 .questionnaire-success-modal .rsvp-modal-actions {

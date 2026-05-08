@@ -1616,7 +1616,7 @@ export default function PublicInvitationPage() {
                     }
                     if (activeAddonPage.page_type === 'questionnaire') {
                         return (
-                            <div className="guest-addon-shell" style={{ width: `${scaledWidth}px` }}>
+                            <div className="guest-addon-shell questionnaire-addon-shell" style={{ width: `${scaledWidth}px`, minHeight: `${scaledHeight}px` }}>
                                 <QuestionnairePanel
                                     language={activeLanguage}
                                     page={activeAddonPage}
