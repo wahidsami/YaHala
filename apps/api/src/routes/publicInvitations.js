@@ -613,6 +613,54 @@ async function fetchPublicInvitationBundle(db, token) {
                 questionnaire_snapshot: liveSnapshot,
                 runtime: runtimeState
             };
+        } else if (
+            (snapshot && snapshot.type === 'instructions' && snapshot.instruction_id)
+            || (settings.addon_type === 'instructions' && settings.addon_id)
+        ) {
+            const instructionId = snapshot?.instruction_id || settings.addon_id;
+            const { rows: instructionsRows } = await db.query(
+                `
+                SELECT id, name, name_ar, status, content_schema, editor_settings
+                FROM instructions
+                WHERE id = $1
+                  AND client_id = $2
+                LIMIT 1
+                `,
+                [instructionId, recipient.client_id]
+            );
+
+            if (!instructionsRows.length) {
+                continue;
+            }
+
+            const instruction = instructionsRows[0];
+            const contentSchema = safeJson(instruction.content_schema, {});
+            const content = safeJson(contentSchema.content, {});
+            const style = safeJson(contentSchema.style, {});
+            const liveSnapshot = {
+                type: 'instructions',
+                instruction_id: instruction.id,
+                title: instruction.name || 'Instructions',
+                title_ar: instruction.name_ar || 'تعليمات',
+                status: instruction.status || 'draft',
+                content: {
+                    en: safeJson(content.en, {}),
+                    ar: safeJson(content.ar, {})
+                },
+                style: {
+                    backgroundColor: typeof style?.backgroundColor === 'string' ? style.backgroundColor : '#FFFFFF',
+                    textColor: typeof style?.textColor === 'string' ? style.textColor : '#0F172A',
+                    accentColor: typeof style?.accentColor === 'string' ? style.accentColor : '#0A7EA4'
+                },
+                editor_settings: safeJson(instruction.editor_settings, {})
+            };
+            const runtimeState = evaluateAddonRuntime({ recipient, pageSettings: settings, stateRow, completedFromContent: false });
+            page.settings = {
+                ...settings,
+                addon_snapshot: liveSnapshot,
+                instructions: contentSchema,
+                runtime: runtimeState
+            };
         } else if (settings.activation_rules || settings.activationRules || settings.display) {
             const runtimeState = evaluateAddonRuntime({ recipient, pageSettings: settings, stateRow, completedFromContent: false });
             page.settings = {

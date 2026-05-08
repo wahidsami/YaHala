@@ -308,6 +308,33 @@ async function fetchQuestionnaireSnapshot(db, questionnaireId, clientId, eventId
     };
 }
 
+async function fetchInstructionsSnapshot(db, instructionId, clientId) {
+    const { rows } = await db.query(
+        `
+        SELECT id, name, name_ar, status, content_schema, editor_settings
+        FROM instructions
+        WHERE id = $1
+          AND client_id = $2
+        LIMIT 1
+        `,
+        [instructionId, clientId]
+    );
+
+    if (!rows.length) {
+        throw new AppError('Selected instructions not found', 404, 'INSTRUCTIONS_NOT_FOUND');
+    }
+
+    const instruction = rows[0];
+    const contentSchema = safeJson(instruction.content_schema, {});
+    const editorSettings = safeJson(instruction.editor_settings, {});
+
+    return {
+        instruction,
+        contentSchema,
+        editorSettings
+    };
+}
+
 function stableStringify(value) {
     if (value === null || value === undefined) {
         return 'null';
@@ -947,6 +974,37 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
                             end_date: snapshot.questionnaire.end_date,
                             settings: safeJson(snapshot.questionnaire.settings, {}),
                             questions: snapshot.questions
+                        }
+                    });
+                    continue;
+                }
+
+                if (tab.type === 'instructions') {
+                    const snapshot = await fetchInstructionsSnapshot(pool, tab.addon_id, existing.client_id);
+                    const content = safeJson(snapshot.contentSchema?.content, {});
+                    const style = safeJson(snapshot.contentSchema?.style, {});
+                    selectedTabs.push({
+                        ...tab,
+                        title: tab.title || snapshot.instruction.name || 'Instructions',
+                        title_ar: tab.title_ar || snapshot.instruction.name_ar || 'تعليمات',
+                        activation_rules: safeJson(tab.activation_rules, {}),
+                        display: safeJson(tab.display, {}),
+                        addon_snapshot: {
+                            type: 'instructions',
+                            instruction_id: snapshot.instruction.id,
+                            title: snapshot.instruction.name || 'Instructions',
+                            title_ar: snapshot.instruction.name_ar || 'تعليمات',
+                            status: snapshot.instruction.status || 'draft',
+                            content: {
+                                en: safeJson(content.en, {}),
+                                ar: safeJson(content.ar, {})
+                            },
+                            style: {
+                                backgroundColor: typeof style?.backgroundColor === 'string' ? style.backgroundColor : '#FFFFFF',
+                                textColor: typeof style?.textColor === 'string' ? style.textColor : '#0F172A',
+                                accentColor: typeof style?.accentColor === 'string' ? style.accentColor : '#0A7EA4'
+                            },
+                            editor_settings: snapshot.editorSettings
                         }
                     });
                     continue;

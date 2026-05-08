@@ -865,25 +865,44 @@ async function buildAddonPagesFromEventSetup(db, projectId, clientId, eventId, i
                 }
             };
         } else if (type === 'instructions') {
-            const instructions = safeJson(tab?.instructions, {});
-            const content = safeJson(instructions.content, {});
-            const style = safeJson(instructions.style, {});
-            const resolvedTitle = title
-                || (typeof content?.en?.title === 'string' ? content.en.title.trim() : '')
-                || 'Instructions';
-            const resolvedTitleAr = titleAr
-                || (typeof content?.ar?.title === 'string' ? content.ar.title.trim() : '')
-                || 'تعليمات';
+            const { rows: instructionsRows } = await db.query(
+                `
+                SELECT id, name, name_ar, status, content_schema, editor_settings
+                FROM instructions
+                WHERE id = $1
+                  AND client_id = $2
+                LIMIT 1
+                `,
+                [addonId, clientId]
+            );
 
-            title = resolvedTitle;
-            titleAr = resolvedTitleAr;
+            if (!instructionsRows.length) {
+                console.warn('[invitationProjects] Skipping missing instructions addon during project creation', {
+                    projectId,
+                    eventId,
+                    addonId
+                });
+                continue;
+            }
+
+            const instruction = instructionsRows[0];
+            const contentSchema = safeJson(instruction.content_schema, {});
+            const content = safeJson(contentSchema.content, {});
+            const style = safeJson(contentSchema.style, {});
+
+            title = title || instruction.name || 'Instructions';
+            titleAr = titleAr || instruction.name_ar || 'تعليمات';
             description = typeof content?.en?.body === 'string' ? content.en.body.trim() : '';
             descriptionAr = typeof content?.ar?.body === 'string' ? content.ar.body.trim() : '';
             settings = {
                 ...settings,
-                instructions,
+                instructions: contentSchema,
                 addon_snapshot: {
                     type: 'instructions',
+                    instruction_id: instruction.id,
+                    title: instruction.name || 'Instructions',
+                    title_ar: instruction.name_ar || 'تعليمات',
+                    status: instruction.status || 'draft',
                     content: {
                         en: safeJson(content.en, {}),
                         ar: safeJson(content.ar, {})
@@ -892,7 +911,8 @@ async function buildAddonPagesFromEventSetup(db, projectId, clientId, eventId, i
                         backgroundColor: typeof style?.backgroundColor === 'string' ? style.backgroundColor : '#FFFFFF',
                         textColor: typeof style?.textColor === 'string' ? style.textColor : '#0F172A',
                         accentColor: typeof style?.accentColor === 'string' ? style.accentColor : '#0A7EA4'
-                    }
+                    },
+                    editor_settings: safeJson(instruction.editor_settings, {})
                 }
             };
         }
