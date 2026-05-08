@@ -342,13 +342,14 @@ export function InvitationWidgetPreview({ widget, language, project, recipient, 
             );
         }
         case 'qr_code': {
-            const invitationUrl = mode === 'builder' ? '' : buildInvitationUrl(recipient.public_token);
+            const invitationUrl = mode === 'builder'
+                ? `${window.location.origin}/invite/preview-token`
+                : buildInvitationUrl(recipient.public_token);
             const qrColor = content?.qrColor || widget?.style?.color || '#111827';
             const qrBackground = content?.qrBackground || widget?.style?.backgroundColor || '#ffffff';
 
             return (
                 <div style={style} className="preview-widget qr-widget">
-                    {content.label && <div className="qr-label">{content.label}</div>}
                     <div className="qr-artwork">
                         {invitationUrl ? (
                             <QRCode
@@ -363,7 +364,6 @@ export function InvitationWidgetPreview({ widget, language, project, recipient, 
                             <div className="qr-placeholder">QR CODE</div>
                         )}
                     </div>
-                    {mode !== 'builder' && recipient.public_token ? <small className="qr-token">{recipient.public_token}</small> : null}
                 </div>
             );
         }

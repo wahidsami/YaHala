@@ -407,20 +407,20 @@ function WidgetPreview({ widget, language, project, recipient }) {
 
             return (
                 <div style={style} className="preview-widget qr-widget">
-                    {content.label && <div className="qr-label">{content.label}</div>}
-                    {invitationUrl ? (
-                        <QRCode
-                            value={invitationUrl}
-                            size={256}
-                            fgColor={qrColor}
-                            bgColor={qrBackground}
-                            level="M"
-                            className="qr-image"
-                        />
-                    ) : (
-                        <div className="qr-placeholder">QR CODE</div>
-                    )}
-                    <small className="qr-token">{recipient.public_token}</small>
+                    <div className="qr-artwork">
+                        {invitationUrl ? (
+                            <QRCode
+                                value={invitationUrl}
+                                size={256}
+                                fgColor={qrColor}
+                                bgColor={qrBackground}
+                                level="M"
+                                className="qr-image"
+                            />
+                        ) : (
+                            <div className="qr-placeholder">QR CODE</div>
+                        )}
+                    </div>
                 </div>
             );
         }
