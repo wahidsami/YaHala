@@ -471,13 +471,16 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     textDecoration: widget.style.underline ? 'underline' : 'none',
                     color: widget.style.color,
                     direction: dir,
-                    flexDirection: isRTL ? 'row-reverse' : 'row'
+                    display: 'grid',
+                    gridTemplateColumns: isRTL ? '1fr auto' : 'auto 1fr',
+                    alignItems: 'center'
                 }}>
                     <span
                         className="item-block-icon"
                         style={{
                             color: widget.style.iconColor,
-                            fontSize: `${widget.style.iconSize || 24}px`
+                            fontSize: `${widget.style.iconSize || 24}px`,
+                            gridColumn: isRTL ? 2 : 1
                         }}
                     >
                         {widget.content.useIconImage && widget.content.iconImage
@@ -487,6 +490,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     <span
                         className="item-block-text"
                         style={{
+                            gridColumn: isRTL ? 1 : 2,
                             alignItems:
                                 widget.style.textVerticalAlign === 'top'
                                     ? 'flex-start'

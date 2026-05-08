@@ -245,18 +245,18 @@
 }
 
 .item-block {
-    display: flex;
-    align-items: center;
+    display: grid;
+    align-items: stretch;
     gap: 10px;
-    justify-content: flex-start;
     padding: 10px 12px;
     border-radius: 10px;
 }
 
 .item-block-icon {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 44px;
 }
 
 .item-block-icon-image {
