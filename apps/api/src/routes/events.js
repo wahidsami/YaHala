@@ -114,7 +114,7 @@ function normalizeRsvpGateConfig(input) {
         },
         behavior: {
             showReasonOnNo: behavior.showReasonOnNo !== false,
-            requireReasonOnNo: Boolean(behavior.requireReasonOnNo)
+            requireReasonOnNo: behavior.showReasonOnNo === false ? false : Boolean(behavior.requireReasonOnNo)
         }
     };
 }

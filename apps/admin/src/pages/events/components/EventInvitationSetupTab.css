@@ -287,6 +287,52 @@
     gap: 0.75rem;
 }
 
+.rsvp-gate-preview {
+    margin-top: 0.9rem;
+    padding: 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 111, 167, 0.2);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--rsvp-primary, #946FA7) 16%, #fff), color-mix(in srgb, var(--rsvp-secondary, #FF9D00) 14%, #fff));
+}
+
+.rsvp-gate-preview.variant-minimal {
+    background: #fff;
+}
+
+.rsvp-gate-preview.variant-card {
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.rsvp-gate-preview strong {
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.rsvp-gate-preview p {
+    margin: 0;
+    font-weight: 700;
+}
+
+.rsvp-gate-preview small {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-secondary);
+}
+
+.rsvp-gate-preview-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+.rsvp-gate-preview-actions button {
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(135deg, var(--rsvp-primary, #946FA7), var(--rsvp-secondary, #FF9D00));
+    color: #fff;
+    font-weight: 700;
+}
+
 @media (max-width: 1100px) {
     .invitation-setup-grid {
         grid-template-columns: 1fr;

@@ -142,10 +142,10 @@ No new SQL table required for V1.
 - [x] Persist one-time behavior based on session + backend state
 
 ## Phase C - Admin Gate Design Editor
-- Status: `pending`
-- [ ] Add RSVP Gate editor UI in event admin
-- [ ] Add live mini preview (EN/AR, Yes/No/Maybe outcomes)
-- [ ] Save config to `events.settings.rsvp_gate`
+- Status: `done`
+- [x] Add RSVP Gate editor UI in event admin
+- [x] Add live mini preview (EN/AR, Yes/No/Maybe outcomes)
+- [x] Save config to `events.settings.rsvp_gate`
 
 ## Phase D - API Validation & Security
 - Status: `pending`
@@ -199,3 +199,6 @@ No new SQL table required for V1.
     - first open requires decision when gate is enabled
     - `attending`/`maybe` unlock after thank-you confirm
     - `not_attending` keeps card locked and shows farewell state.
+- 2026-05-08: Phase C implemented.
+  - Invitation Setup now includes full RSVP Gate editor (content + appearance + behavior).
+  - Added live preview and proper toggle dependency (`Require reason` disabled when `Ask reason` is off).

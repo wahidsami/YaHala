@@ -1447,6 +1447,7 @@ function getGateCopy(config, language, copy) {
     const bucket = config?.copy?.[language] || {};
     return {
         attendanceTitle: bucket.attendanceTitle || copy.rsvpGateIntro,
+        attendanceBody: bucket.attendanceBody || '',
         reasonLabel: bucket.reasonLabel || copy.rsvpGateReasonLabel,
         reasonPlaceholder: bucket.reasonPlaceholder || copy.rsvpGateReasonPlaceholder,
         positiveTitle: bucket.positiveTitle || copy.rsvpGatePositiveTitle,
@@ -1468,6 +1469,12 @@ function RsvpGateModal({ token, language, sessionToken, setSessionToken, gateCon
     const [error, setError] = useState('');
     const showReasonOnNo = gateConfig?.behavior?.showReasonOnNo !== false;
     const requireReasonOnNo = Boolean(gateConfig?.behavior?.requireReasonOnNo);
+    const gateStyle = gateConfig?.style || {};
+    const gateVariant = gateStyle.variant || 'brand';
+    const gateCssVars = {
+        '--rsvp-gate-primary': gateStyle.primaryColor || '#946FA7',
+        '--rsvp-gate-secondary': gateStyle.secondaryColor || '#FF9D00'
+    };
 
     async function submitDecision(nextAttendance, nextNotes = '') {
         setSubmitting(true);
@@ -1503,13 +1510,14 @@ function RsvpGateModal({ token, language, sessionToken, setSessionToken, gateCon
 
     return (
         <div className="rsvp-modal-overlay" role="presentation">
-            <div className="rsvp-modal" role="dialog" aria-modal="true" aria-label={copy.confirmAttendance}>
+            <div className={`rsvp-modal rsvp-gate-modal variant-${gateVariant}`} style={gateCssVars} role="dialog" aria-modal="true" aria-label={copy.confirmAttendance}>
                 {step === 'choose_attendance' && (
                     <>
                         <div className="rsvp-modal-header">
                             <div>
                                 <span className="eyebrow">{copy.rsvp}</span>
                                 <h3>{gateCopy.attendanceTitle}</h3>
+                                {gateCopy.attendanceBody ? <p>{gateCopy.attendanceBody}</p> : null}
                             </div>
                         </div>
                         <div className="rsvp-form">
@@ -1532,7 +1540,7 @@ function RsvpGateModal({ token, language, sessionToken, setSessionToken, gateCon
                             </div>
                         </div>
                         <div className="rsvp-form">
-                            <textarea rows="4" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={gateCopy.reasonPlaceholder} />
+                            <textarea rows="4" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={gateCopy.reasonPlaceholder || copy.rsvpGateReasonPlaceholder} />
                             {error && <div className="form-error">{error}</div>}
                             <button
                                 className="submit-btn"

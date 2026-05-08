@@ -609,6 +609,21 @@
     gap: 8px;
 }
 
+.rsvp-gate-modal.variant-brand .choice-card.selected,
+.rsvp-gate-modal.variant-brand .submit-btn {
+    background: linear-gradient(135deg, var(--rsvp-gate-primary, #946FA7), var(--rsvp-gate-secondary, #FF9D00));
+    border-color: color-mix(in srgb, var(--rsvp-gate-primary, #946FA7) 55%, transparent);
+}
+
+.rsvp-gate-modal.variant-minimal {
+    box-shadow: none;
+    border-width: 1px;
+}
+
+.rsvp-gate-modal.variant-card {
+    box-shadow: 0 20px 42px rgba(15, 23, 42, 0.22);
+}
+
 .template-canvas-stage .public-text,
 .template-canvas-stage .public-image,
 .template-canvas-stage .public-logo,
