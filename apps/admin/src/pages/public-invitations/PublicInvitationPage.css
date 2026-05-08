@@ -216,7 +216,7 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 12px;
+    padding: 6px;
     overflow-x: hidden;
     overflow-y: auto;
 }
@@ -1166,16 +1166,16 @@
 
 @media (max-width: 720px) {
     .public-invitation-shell {
-        padding: 18px;
+        padding: 10px;
     }
 
     .public-guest-page {
-        padding: 12px 8px 24px;
+        padding: 0 0 20px;
     }
 
     .guest-invitation-view {
         min-height: calc(100vh - 24px);
-        padding: 8px 4px;
+        padding: 0;
     }
 
     .public-topbar {

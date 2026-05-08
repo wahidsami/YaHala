@@ -1241,7 +1241,7 @@ export default function PublicInvitationPage() {
             return 1;
         }
 
-        const horizontalScale = (viewportWidth - 16) / canvasBaseWidth;
+        const horizontalScale = viewportWidth / canvasBaseWidth;
         return Math.min(1, horizontalScale);
     }, [guestViewport.width]);
     const scaledWidth = canvasBaseWidth * fitScale;
