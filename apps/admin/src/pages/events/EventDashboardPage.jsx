@@ -46,9 +46,30 @@ export default function EventDashboardPage() {
 
     async function fetchEvent() {
         try {
-            const response = await api.get(`/admin/events/${id}`);
-            setEvent(response.data.data);
-            setStats(response.data.stats);
+            const [eventResponse, invitationSummaryResponse, attendanceSummaryResponse] = await Promise.all([
+                api.get(`/admin/events/${id}`),
+                api.get(`/admin/events/${id}/invitation-summary`),
+                api.get(`/admin/events/${id}/attendance-summary`)
+            ]);
+
+            const eventData = eventResponse.data?.data || null;
+            const invitationTotals = invitationSummaryResponse.data?.data?.totals || {};
+            const attendanceTotals = attendanceSummaryResponse.data?.data?.totals || {};
+
+            const invitesSent = Number(invitationTotals.sent || 0)
+                + Number(invitationTotals.delivered || 0)
+                + Number(invitationTotals.opened || 0)
+                + Number(invitationTotals.responded || 0);
+
+            const overviewStats = {
+                totalGuests: Number(attendanceTotals.invitedTotal || 0) + Number(attendanceTotals.walkInTotal || 0),
+                checkedIn: Number(attendanceTotals.checkedInTotal || 0),
+                invitesSent,
+                pending: Number(attendanceTotals.invitedPending || 0)
+            };
+
+            setEvent(eventData);
+            setStats(overviewStats);
         } catch (error) {
             console.error('Failed to fetch event:', error);
         } finally {
