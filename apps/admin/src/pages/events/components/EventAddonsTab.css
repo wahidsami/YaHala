@@ -24,6 +24,76 @@
     gap: 0.75rem;
 }
 
+.event-addons-workspace {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 0.8rem;
+}
+
+.event-addons-sidebar,
+.event-addons-panel {
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 1rem;
+    background: var(--bg-primary);
+}
+
+.event-addons-sidebar h4 {
+    margin: 0 0 0.75rem;
+}
+
+.event-addon-nav-item {
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0.55rem 0.65rem;
+    margin-bottom: 0.6rem;
+    background: var(--bg-secondary);
+}
+
+.event-addon-nav-btn {
+    width: 100%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 0.25rem 0;
+    cursor: pointer;
+}
+
+.event-addon-nav-btn.active {
+    color: var(--color-primary);
+}
+
+.event-addon-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.event-addon-coming-soon {
+    margin-top: 0.8rem;
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+}
+
+.event-addons-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.event-addons-meta {
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+}
+
 .event-addons-card {
     border: 1px solid var(--border-color);
     border-radius: 1rem;
@@ -82,7 +152,25 @@
     margin-top: 0.2rem;
 }
 
+.event-addon-poll-item.selectable {
+    grid-template-columns: auto 1fr auto;
+}
+
+.event-addon-poll-item.selectable input {
+    width: 18px;
+    height: 18px;
+}
+
+.event-addon-poll-item.selectable.selected {
+    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
 @media (max-width: 900px) {
+    .event-addons-workspace {
+        grid-template-columns: 1fr;
+    }
+
     .event-addons-grid {
         grid-template-columns: 1fr;
     }

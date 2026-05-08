@@ -61,11 +61,11 @@
 
 ## Phase 2 - Add-ons Control Center Layout
 - Goal: Rebuild event `Add-ons` tab into left-menu + right-content workspace.
-- Status: `pending`
+- Status: `done`
 - Tracking:
-  - [ ] Add side menu with add-on checkboxes/toggles
-  - [ ] Add right-panel content containers
-  - [ ] Preserve multilingual labels and clear helper text
+  - [x] Add side menu with add-on checkboxes/toggles
+  - [x] Add right-panel content containers
+  - [x] Preserve multilingual labels and clear helper text
 
 ## Phase 3 - State & Persistence Unification
 - Goal: Add-ons tab becomes source-of-truth for enabling and linking.
@@ -103,3 +103,4 @@
 
 - 2026-05-08: Plan created.
 - 2026-05-08: Phase 1 completed (top-level duplicated tabs removed from Event Dashboard).
+- 2026-05-08: Phase 2 completed (event Add-ons tab converted to left-menu control center with multi-select content linking and save flow).
