@@ -406,6 +406,20 @@ async function syncEventTemplateToProject(db, eventId, eventTemplateId) {
         ]
     );
 
+    // Invalidate cached recipient snapshots so public links reflect latest cover template/settings.
+    await db.query(
+        `
+        UPDATE invitation_recipients
+        SET
+            invitation_snapshot = NULL,
+            invitation_snapshot_hash = NULL,
+            invitation_snapshot_at = NULL,
+            updated_at = NOW()
+        WHERE project_id = $1
+        `,
+        [project.id]
+    );
+
     return {
         projectId: project.id,
         coverTemplateHash
@@ -896,6 +910,21 @@ router.patch('/:id/invitation-setup', requirePermission('events.edit'), async (r
 
         if (hasTemplateId) {
             await syncEventTemplateToProject(pool, req.params.id, nextTemplateId);
+        }
+        if (hasRsvpGate) {
+            const { project } = await resolvePrimaryInvitationProject(pool, req.params.id);
+            await pool.query(
+                `
+                UPDATE invitation_recipients
+                SET
+                    invitation_snapshot = NULL,
+                    invitation_snapshot_hash = NULL,
+                    invitation_snapshot_at = NULL,
+                    updated_at = NOW()
+                WHERE project_id = $1
+                `,
+                [project.id]
+            );
         }
 
         const { rows: updated } = await pool.query(
