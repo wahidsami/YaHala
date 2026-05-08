@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Save, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckSquare, CircleDot, ListChecks, MessageSquareText, Plus, Star, Save, Send, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import './QuestionnaireBuilderPage.css';
 
 const QUESTION_TYPES = [
-    { id: 'yes_no', label: 'Yes / No' },
-    { id: 'single_choice', label: 'Single Choice' },
-    { id: 'multiple_choice', label: 'Multiple Choice' },
-    { id: 'short_text', label: 'Short Text' },
-    { id: 'rating', label: 'Rating' }
+    { id: 'yes_no', label: 'Yes / No', icon: CheckSquare },
+    { id: 'single_choice', label: 'Single Choice', icon: CircleDot },
+    { id: 'multiple_choice', label: 'Multiple Choice', icon: ListChecks },
+    { id: 'short_text', label: 'Short Text', icon: MessageSquareText },
+    { id: 'rating', label: 'Rating', icon: Star }
 ];
 
 function createId() {
@@ -63,7 +63,6 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [activeStep, setActiveStep] = useState(1);
-    const [selectedType, setSelectedType] = useState('short_text');
 
     const [formData, setFormData] = useState({
         clientId: initialData.client_id || searchParams.get('clientId') || '',
@@ -131,10 +130,10 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
         setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
-    function addQuestion() {
+    function addQuestion(type = 'short_text') {
         setFormData((prev) => ({
             ...prev,
-            questions: [...prev.questions, createQuestion(selectedType, prev.questions.length)]
+            questions: [...prev.questions, createQuestion(type, prev.questions.length)]
         }));
     }
 
@@ -346,13 +345,22 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
             {activeStep === 2 && (
                 <section className="builder-card">
                     <div className="question-add-row">
-                        <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
-                            {QUESTION_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
-                        </select>
-                        <button type="button" className="btn btn-primary" onClick={addQuestion}>
-                            <Plus size={16} />
-                            <span>Add New Question</span>
-                        </button>
+                        {QUESTION_TYPES.map((type) => {
+                            const Icon = type.icon;
+                            return (
+                                <button
+                                    key={type.id}
+                                    type="button"
+                                    className="question-type-btn"
+                                    onClick={() => addQuestion(type.id)}
+                                    title={`Add ${type.label}`}
+                                >
+                                    <Icon size={16} />
+                                    <span>{type.label}</span>
+                                    <Plus size={14} />
+                                </button>
+                            );
+                        })}
                     </div>
 
                     <div className="question-list">
