@@ -242,7 +242,7 @@
 
 .guest-invitation-view.addon-mode {
     justify-content: flex-start;
-    padding-top: 12px;
+    padding-top: 0;
 }
 
 .guest-fit-shell {
@@ -259,6 +259,7 @@
 
 .questionnaire-addon-shell {
     display: flex;
+    margin-top: 0;
 }
 
 .guest-fit-stage {

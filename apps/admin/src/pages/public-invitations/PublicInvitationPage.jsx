@@ -1134,11 +1134,6 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
                 ) : (
                     <div className="poll-empty-state">{submitted ? copy.questionnaireSubmitSuccess : copy.questionnaireUnavailable}</div>
                 )}
-                {page?._runtime?.showBackButton !== false && (
-                    <button type="button" className="ghost-link" onClick={onBack}>
-                        {copy.close}
-                    </button>
-                )}
             </div>
 
             {showSuccessModal && (
