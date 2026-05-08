@@ -979,6 +979,10 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
         background: questionnaireTheme.buttonColor || '#334155',
         color: questionnaireTheme.buttonTextColor || '#ffffff'
     };
+    const questionnaireChoiceVars = {
+        '--questionnaire-choice-selected-bg': questionnaireTheme.selectedAnswerColor || '#22c55e',
+        '--questionnaire-choice-selected-text': questionnaireTheme.selectedAnswerTextColor || '#ffffff'
+    };
 
     function setAnswer(questionId, value) {
         setError('');
@@ -1046,14 +1050,13 @@ function QuestionnairePanel({ language, page, token, sessionToken, setSessionTok
     }
 
     return (
-        <div className="module-panel questionnaire-panel" style={questionnaireSurfaceStyle}>
+        <div className="module-panel questionnaire-panel" style={{ ...questionnaireSurfaceStyle, ...questionnaireChoiceVars }}>
             <div className="module-top-actions">
                 <button type="button" className="ghost-link module-back-btn" onClick={onBack}>
                     {copy.close}
                 </button>
             </div>
             <div className="panel-header">
-                <span className="eyebrow">{copy.questionnaire}</span>
                 <h2>{localizedText(language, page.title || questionnaireState.title || copy.questionnaire, page.title_ar || questionnaireState.title_ar || copy.questionnaire)}</h2>
                 <p>{localizedText(language, page.description || questionnaireState.description || '', page.description_ar || questionnaireState.description_ar || '')}</p>
             </div>
@@ -1516,7 +1519,7 @@ export default function PublicInvitationPage() {
 
     return (
         <div className="public-invitation-shell public-guest-page" dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}>
-            <main className="guest-invitation-view" ref={guestViewportRef}>
+            <main className={`guest-invitation-view ${showCoverPage ? '' : 'addon-mode'}`} ref={guestViewportRef}>
                 {showCoverPage && (
                     <div
                         className="guest-fit-shell"

@@ -240,6 +240,11 @@
     overflow-y: auto;
 }
 
+.guest-invitation-view.addon-mode {
+    justify-content: flex-start;
+    padding-top: 12px;
+}
+
 .guest-fit-shell {
     position: relative;
     flex: 0 0 auto;
@@ -1137,9 +1142,9 @@
 }
 
 .choice-card.selected {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.92), rgba(22, 163, 74, 0.88));
-    color: white;
-    border-color: rgba(34, 197, 94, 0.36);
+    background: var(--questionnaire-choice-selected-bg, linear-gradient(135deg, rgba(34, 197, 94, 0.92), rgba(22, 163, 74, 0.88)));
+    color: var(--questionnaire-choice-selected-text, #fff);
+    border-color: color-mix(in srgb, var(--questionnaire-choice-selected-bg, #22c55e) 40%, transparent);
 }
 
 .submit-btn {

@@ -93,7 +93,9 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                 backgroundPosition: initialData.settings?.theme?.backgroundPosition || 'center center',
                 textColor: initialData.settings?.theme?.textColor || '#0f172a',
                 buttonColor: initialData.settings?.theme?.buttonColor || '#334155',
-                buttonTextColor: initialData.settings?.theme?.buttonTextColor || '#ffffff'
+                buttonTextColor: initialData.settings?.theme?.buttonTextColor || '#ffffff',
+                selectedAnswerColor: initialData.settings?.theme?.selectedAnswerColor || '#22c55e',
+                selectedAnswerTextColor: initialData.settings?.theme?.selectedAnswerTextColor || '#ffffff'
             }
         },
         questions: Array.isArray(initialData.questions) && initialData.questions.length
@@ -480,6 +482,24 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                                     type="color"
                                     value={formData.settings?.theme?.buttonTextColor || '#ffffff'}
                                     onChange={(e) => updateTheme({ buttonTextColor: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Selected Answer Color</label>
+                                <input
+                                    type="color"
+                                    value={formData.settings?.theme?.selectedAnswerColor || '#22c55e'}
+                                    onChange={(e) => updateTheme({ selectedAnswerColor: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Selected Answer Text Color</label>
+                                <input
+                                    type="color"
+                                    value={formData.settings?.theme?.selectedAnswerTextColor || '#ffffff'}
+                                    onChange={(e) => updateTheme({ selectedAnswerTextColor: e.target.value })}
                                 />
                             </div>
                         </div>
