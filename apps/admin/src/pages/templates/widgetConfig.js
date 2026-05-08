@@ -6,18 +6,13 @@ export const WIDGET_TYPES = [
     { type: 'logo', label: 'Entity Logo', icon: 'Shield', category: 'content' },
     { type: 'event_details', label: 'Event Details', icon: 'Calendar', category: 'event' },
     { type: 'qr_code', label: 'QR Code', icon: 'QrCode', category: 'event' },
-    { type: 'guest_name', label: 'Guest Name', icon: 'User', category: 'guest' },
-    { type: 'response', label: 'Response', icon: 'Reply', category: 'guest' },
-    { type: 'voice_recorder', label: 'Voice Recorder', icon: 'Mic', category: 'post_event' },
-    { type: 'text_submission', label: 'Text Submission', icon: 'MessageSquare', category: 'post_event' },
-    { type: 'survey', label: 'Survey', icon: 'ClipboardList', category: 'post_event' }
+    { type: 'guest_name', label: 'Guest Name', icon: 'User', category: 'guest' }
 ];
 
 export const WIDGET_CATEGORIES = [
     { id: 'content', label: 'Content' },
     { id: 'event', label: 'Event' },
-    { id: 'guest', label: 'Guest' },
-    { id: 'post_event', label: 'Post-Event' }
+    { id: 'guest', label: 'Guest' }
 ];
 
 export const DEFAULT_WIDGET_CONTENT = {
@@ -42,12 +37,8 @@ export const DEFAULT_WIDGET_CONTENT = {
         en: { label: 'Entry QR Code' }
     },
     guest_name: {
-        ar: { prefix: 'مرحباً', position: '' },
-        en: { prefix: 'Welcome', position: '' }
-    },
-    response: {
-        ar: { label: 'تأكيد الحضور' },
-        en: { label: 'Confirm attendance' }
+        ar: { prefix: 'مرحباً', position: '', placeholderName: 'اسم الضيف', placeholderPosition: 'المسمى الوظيفي' },
+        en: { prefix: 'Welcome', position: '', placeholderName: 'Guest Name', placeholderPosition: 'Position / Job Title' }
     },
     voice_recorder: {
         ar: { label: 'سجل رسالة صوتية', maxDuration: 60 },

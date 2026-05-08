@@ -300,6 +300,53 @@
     justify-content: flex-end;
 }
 
+.instructions-builder {
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+}
+
+.instructions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.instructions-grid label,
+.instructions-style-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.instructions-grid label span,
+.instructions-style-grid label span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.instructions-grid input,
+.instructions-grid textarea,
+.instructions-style-grid input {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 0.45rem;
+    padding: 0.4rem 0.5rem;
+    background: var(--bg-primary);
+}
+
+.instructions-grid textarea {
+    resize: vertical;
+}
+
+.instructions-style-grid {
+    margin-top: 0.65rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
 @media (max-width: 900px) {
     .event-addons-workspace {
         grid-template-columns: 1fr;
@@ -314,7 +361,9 @@
     }
 
     .addon-rules-editor,
-    .addon-schedule-grid {
+    .addon-schedule-grid,
+    .instructions-grid,
+    .instructions-style-grid {
         grid-template-columns: 1fr;
     }
 }

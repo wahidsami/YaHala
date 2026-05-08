@@ -376,7 +376,7 @@ async function syncRecipientAddonStatesOnScan(db, recipient, scannerUser, scanne
         FROM invitation_project_pages
         WHERE project_id = $1
           AND is_enabled = true
-          AND page_type IN ('poll', 'questionnaire')
+          AND page_type IN ('poll', 'questionnaire', 'instructions')
         ORDER BY sort_order ASC, created_at ASC
         `,
         [recipient.project_id]
@@ -1460,6 +1460,141 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
     }
 });
 
+// GET /api/scanner/events/:eventId/addons
+router.get('/events/:eventId/addons', authenticateScanner, async (req, res, next) => {
+    try {
+        const eventId = normalizeText(req.params.eventId);
+        if (!eventId) {
+            throw new AppError('Event is required', 400, 'VALIDATION_ERROR');
+        }
+        if (req.scannerUser.session_event_id && eventId !== req.scannerUser.session_event_id) {
+            throw new AppError('This event is outside your current scanner session', 403, 'EVENT_SCOPE_VIOLATION');
+        }
+
+        const { rows: eventRows } = await pool.query(
+            `
+            SELECT id, settings
+            FROM events
+            WHERE id = $1
+              AND client_id = $2
+            LIMIT 1
+            `,
+            [eventId, req.scannerUser.client_id]
+        );
+
+        if (!eventRows.length) {
+            throw new AppError('Event not found', 404, 'EVENT_NOT_FOUND');
+        }
+
+        const settings = safeJson(eventRows[0].settings, {});
+        const addInsEnabled = Array.isArray(settings.addIns) ? settings.addIns : [];
+        const invitationSetup = safeJson(settings.invitation_setup, {});
+        const tabs = Array.isArray(invitationSetup.tabs) ? invitationSetup.tabs : [];
+
+        const addons = tabs
+            .map((tab, index) => ({
+                type: normalizeText(tab?.type),
+                addonId: normalizeText(tab?.addon_id || tab?.addonId),
+                title: normalizeText(tab?.title),
+                titleAr: normalizeText(tab?.title_ar || tab?.titleAr),
+                activationRules: safeJson(tab?.activation_rules || tab?.activationRules, {}),
+                display: safeJson(tab?.display, {}),
+                sortOrder: Number.isFinite(Number(tab?.sort_order))
+                    ? Number.parseInt(tab.sort_order, 10)
+                    : Number.isFinite(Number(tab?.sortOrder))
+                        ? Number.parseInt(tab.sortOrder, 10)
+                        : index
+            }))
+            .filter((addon) => addon.type && addon.addonId && ['poll', 'questionnaire', 'instructions'].includes(addon.type))
+            .sort((a, b) => a.sortOrder - b.sortOrder);
+
+        sendScannerSuccess(res, {
+            eventId,
+            addInsEnabled,
+            addons
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// GET /api/scanner/recipients/:recipientId/addons
+router.get('/recipients/:recipientId/addons', authenticateScanner, async (req, res, next) => {
+    try {
+        const recipientId = normalizeText(req.params.recipientId);
+        if (!recipientId) {
+            throw new AppError('Recipient is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const { rows: recipientRows } = await pool.query(
+            `
+            SELECT
+                r.id AS recipient_id,
+                r.project_id,
+                p.event_id,
+                p.client_id
+            FROM invitation_recipients r
+            JOIN invitation_projects p ON p.id = r.project_id
+            WHERE r.id = $1
+            LIMIT 1
+            `,
+            [recipientId]
+        );
+
+        if (!recipientRows.length) {
+            throw new AppError('Recipient not found', 404, 'NOT_FOUND');
+        }
+
+        const recipient = recipientRows[0];
+        if (recipient.client_id !== req.scannerUser.client_id) {
+            throw new AppError('Recipient belongs to a different client', 403, 'CLIENT_MISMATCH');
+        }
+        if (req.scannerUser.session_event_id && recipient.event_id !== req.scannerUser.session_event_id) {
+            throw new AppError('Recipient event is outside your current scanner session', 403, 'EVENT_SCOPE_VIOLATION');
+        }
+
+        const { rows } = await pool.query(
+            `
+            SELECT
+                page_key,
+                page_type,
+                title,
+                title_ar,
+                settings
+            FROM invitation_project_pages
+            WHERE project_id = $1
+              AND is_enabled = true
+              AND page_type IN ('poll', 'questionnaire', 'instructions')
+            ORDER BY sort_order ASC, created_at ASC
+            `,
+            [recipient.project_id]
+        );
+
+        const addons = rows.map((row) => {
+            const settings = safeJson(row.settings, {});
+            const activationRules = safeJson(settings.activation_rules || settings.activationRules, {});
+            const display = safeJson(settings.display, {});
+            return {
+                pageKey: row.page_key,
+                pageType: row.page_type,
+                title: row.title || '',
+                titleAr: row.title_ar || '',
+                addonId: normalizeText(settings.addon_id),
+                activationRules,
+                display
+            };
+        });
+
+        sendScannerSuccess(res, {
+            recipientId,
+            eventId: recipient.event_id,
+            addons
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // POST /api/scanner/recipients/:recipientId/addons/:pageKey/enable
 router.post('/recipients/:recipientId/addons/:pageKey/enable', authenticateScanner, async (req, res, next) => {
     const db = await pool.connect();
@@ -1508,7 +1643,7 @@ router.post('/recipients/:recipientId/addons/:pageKey/enable', authenticateScann
             WHERE project_id = $1
               AND page_key = $2
               AND is_enabled = true
-              AND page_type IN ('poll', 'questionnaire')
+              AND page_type IN ('poll', 'questionnaire', 'instructions')
             LIMIT 1
             `,
             [recipient.project_id, pageKey]

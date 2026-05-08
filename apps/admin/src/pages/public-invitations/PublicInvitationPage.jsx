@@ -160,6 +160,7 @@ const PAGE_LABELS = {
     rsvp: { en: 'RSVP', ar: 'تأكيد الحضور' },
     poll: { en: 'Poll', ar: 'استطلاع' },
     questionnaire: { en: 'Questionnaire', ar: 'الاستبيان' },
+    instructions: { en: 'Instructions', ar: 'تعليمات' },
     quiz: { en: 'Quiz', ar: 'الاختبار' },
     competition: { en: 'Competition', ar: 'المسابقة' },
     terms: { en: 'Terms', ar: 'الشروط' },
@@ -1535,6 +1536,15 @@ export default function PublicInvitationPage() {
                             />
                         );
                     }
+                    if (activePage.page_type === 'instructions') {
+                        return (
+                            <InstructionsPanel
+                                language={activeLanguage}
+                                page={activePage}
+                                onBack={() => setActivePageKey('cover')}
+                            />
+                        );
+                    }
                     return <PlaceholderPanel language={activeLanguage} page={activePage} />;
                 })()}
 
@@ -1657,6 +1667,55 @@ export default function PublicInvitationPage() {
                 </div>
             )}
             </main>
+        </div>
+    );
+}
+
+function InstructionsPanel({ language, page, onBack }) {
+    const copy = COPY[language];
+    const settings = page?.settings || {};
+    const payload = settings.instructions || settings.addon_snapshot || {};
+    const content = payload.content || {};
+    const style = payload.style || {};
+    const bucket = language === 'ar' ? (content.ar || content.en || {}) : (content.en || content.ar || {});
+    const title = bucket.title || localizedText(language, page.title || PAGE_LABELS.instructions.en, page.title_ar || PAGE_LABELS.instructions.ar);
+    const body = bucket.body || '';
+    const bullets = Array.isArray(bucket.bullets) ? bucket.bullets.filter(Boolean) : [];
+    const images = Array.isArray(bucket.images) ? bucket.images.filter(Boolean) : [];
+
+    return (
+        <div
+            className="module-panel instructions-panel"
+            style={{
+                backgroundColor: style.backgroundColor || '#FFFFFF',
+                color: style.textColor || '#0F172A',
+                borderColor: style.accentColor || '#0A7EA4'
+            }}
+        >
+            <div className="panel-header">
+                <span className="eyebrow" style={{ color: style.accentColor || '#0A7EA4' }}>{PAGE_LABELS.instructions[language]}</span>
+                <h2>{title}</h2>
+                {body ? <p>{body}</p> : null}
+            </div>
+            {bullets.length > 0 && (
+                <ul className="instructions-bullets">
+                    {bullets.map((item, index) => (
+                        <li key={`${index}-${item}`}>{item}</li>
+                    ))}
+                </ul>
+            )}
+            {images.length > 0 && (
+                <div className="instructions-images">
+                    {images.map((imagePath, index) => (
+                        <img key={`${index}-${imagePath}`} src={resolveStorageUrl(imagePath)} alt={title || `instruction-${index + 1}`} />
+                    ))}
+                </div>
+            )}
+            {page?._runtime?.showBackButton !== false && (
+                <button type="button" className="ghost-link" onClick={onBack}>
+                    {copy.close}
+                </button>
+            )}
         </div>
     );
 }

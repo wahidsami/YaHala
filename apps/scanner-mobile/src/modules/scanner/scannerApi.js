@@ -38,6 +38,23 @@ export async function submitScan({ token, eventId, mode = 'manual' }) {
     return unwrap(response);
 }
 
+export async function fetchEventAddons(eventId) {
+    if (!eventId) return [];
+    const response = await api.get(`/scanner/events/${eventId}/addons`);
+    return unwrap(response) || [];
+}
+
+export async function fetchRecipientAddons(recipientId) {
+    if (!recipientId) return [];
+    const response = await api.get(`/scanner/recipients/${recipientId}/addons`);
+    return unwrap(response) || [];
+}
+
+export async function enableRecipientAddon({ recipientId, pageKey }) {
+    const response = await api.post(`/scanner/recipients/${recipientId}/addons/${encodeURIComponent(pageKey)}/enable`);
+    return unwrap(response);
+}
+
 export async function extractVisitorFromTranscript({ transcript, language = 'en' }) {
     const response = await api.post('/scanner/visitor-intake/voice-extract', {
         transcript,

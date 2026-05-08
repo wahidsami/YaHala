@@ -962,6 +962,22 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                     onChange={(e) => updateContent('prefix', e.target.value)}
                                     dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}
                                 />
+                                <label className="mt-3">Name Placeholder (Builder preview)</label>
+                                <input
+                                    type="text"
+                                    value={content.placeholderName || ''}
+                                    onChange={(e) => updateContent('placeholderName', e.target.value)}
+                                    dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}
+                                    placeholder={activeLanguage === 'ar' ? 'اسم الضيف' : 'Guest Name'}
+                                />
+                                <label className="mt-3">Position Placeholder (Builder preview)</label>
+                                <input
+                                    type="text"
+                                    value={content.placeholderPosition || ''}
+                                    onChange={(e) => updateContent('placeholderPosition', e.target.value)}
+                                    dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}
+                                    placeholder={activeLanguage === 'ar' ? 'المسمى الوظيفي' : 'Position / Job Title'}
+                                />
                                 <div className="typography-toolbar mt-3">
                                     <div className="toolbar-row">
                                         <div className="form-group tiny">
@@ -980,11 +996,28 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
 
                                     <div className="toolbar-row">
                                         <div className="form-group tiny">
-                                            <label>Size</label>
+                                            <label>Name Size</label>
                                             <input
                                                 type="number"
-                                                value={widget.style?.fontSize || 16}
-                                                onChange={(e) => updateStyle('fontSize', parseInt(e.target.value))}
+                                                value={widget.style?.guestNameFontSize || widget.style?.fontSize || 16}
+                                                onChange={(e) => {
+                                                    const nextValue = parseInt(e.target.value, 10) || 16;
+                                                    onUpdate({
+                                                        style: {
+                                                            ...(widget.style || {}),
+                                                            fontSize: nextValue,
+                                                            guestNameFontSize: nextValue
+                                                        }
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="form-group tiny">
+                                            <label>Position Size</label>
+                                            <input
+                                                type="number"
+                                                value={widget.style?.guestPositionFontSize || Math.max(12, (widget.style?.guestNameFontSize || widget.style?.fontSize || 16) - 3)}
+                                                onChange={(e) => updateStyle('guestPositionFontSize', parseInt(e.target.value, 10) || 13)}
                                             />
                                         </div>
                                         <div className="form-group tiny">
@@ -1030,18 +1063,6 @@ export default function PropertiesPanel({ widget, activeLanguage, onUpdate, desi
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                        {widget.type === 'response' && (
-                            <div className="form-group">
-                                <label>Button Label</label>
-                                <input
-                                    type="text"
-                                    value={content.label || ''}
-                                    onChange={(e) => updateContent('label', e.target.value)}
-                                    dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}
-                                />
-                                <p className="info-text">This button opens the attendance popup on the guest card and hides after the guest replies.</p>
                             </div>
                         )}
                         {widget.type === 'qr_code' && (

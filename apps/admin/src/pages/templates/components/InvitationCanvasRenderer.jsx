@@ -341,38 +341,25 @@ export function InvitationWidgetPreview({
             );
         }
         case 'guest_name': {
-            const guestPosition = getGuestPosition(recipient, content);
+            const guestPosition = mode === 'builder'
+                ? (content.placeholderPosition || localizedText(language, 'Position / Job Title', 'المسمى الوظيفي'))
+                : getGuestPosition(recipient, content);
             const guestLabel = mode === 'builder'
-                ? localizedText(language, 'Guest Name', 'اسم الضيف')
+                ? (content.placeholderName || localizedText(language, 'Guest Name', 'اسم الضيف'))
                 : localizedText(language, recipient.display_name, recipient.display_name_ar);
+            const nameSize = Number(widget?.style?.guestNameFontSize || widget?.style?.fontSize || 16);
+            const positionSize = Number(widget?.style?.guestPositionFontSize || Math.max(12, nameSize - 3));
 
             return (
                 <div style={style} className="preview-widget guest-widget">
                     <span className="guest-prefix" style={{ font: 'inherit', color: 'inherit' }}>{content.prefix || localizedText(language, 'Welcome', 'مرحباً')} </span>
-                    <span className="guest-name" style={{ font: 'inherit', color: 'inherit' }}>{guestLabel}</span>
-                    {guestPosition && <span className="guest-position" style={{ font: 'inherit', color: 'inherit' }}>{guestPosition}</span>}
+                    <span className="guest-name" style={{ color: 'inherit', fontFamily: widget?.style?.fontFamily, fontWeight: widget?.style?.fontWeight || '700', fontSize: `${nameSize}px` }}>{guestLabel}</span>
+                    {guestPosition && <span className="guest-position" style={{ color: 'inherit', fontFamily: widget?.style?.fontFamily, fontWeight: widget?.style?.fontWeight || '500', fontSize: `${positionSize}px` }}>{guestPosition}</span>}
                 </div>
             );
         }
         case 'response': {
-            const label = content.label || localizedText(language, 'Confirm attendance', 'تأكيد الحضور');
-
-            if (mode !== 'builder' && (!hasRsvpPage || rsvpCompleted || recipient?.overall_status === 'responded')) {
-                return null;
-            }
-
-            return (
-                <div style={style} className="preview-widget response-widget">
-                    <button
-                        type="button"
-                        className="response-btn"
-                        style={{ font: 'inherit' }}
-                        onClick={mode === 'public' ? onOpenRsvp : undefined}
-                    >
-                        {label}
-                    </button>
-                </div>
-            );
+            return null;
         }
         case 'qr_code': {
             const invitationUrl = mode === 'builder'
@@ -478,7 +465,7 @@ export default function InvitationCanvasRenderer({
     const visibleWidgets = canvasWidgets.filter((widget) => isWidgetVisible(widget, publicRuleContext));
     const computedCanvasHeight = computeEffectiveCanvasHeight(layout, visibleWidgets);
     const canvasHeight = Math.max(computedCanvasHeight, Number(minCanvasHeight) || 0);
-    const inlineResponseWidget = canvasWidgets.some((widget) => widget.type === 'response');
+    const inlineResponseWidget = false;
 
     if (!visibleWidgets.length) {
         return null;

@@ -70,6 +70,52 @@ function normalizeInvitationSetupTabs(tabs) {
         };
     };
 
+    const normalizeInstructions = (input) => {
+        const source = safeJson(input, {});
+        const content = safeJson(source.content, {});
+        const style = safeJson(source.style, {});
+        const normalizeBulletList = (value) => {
+            if (!Array.isArray(value)) {
+                return [];
+            }
+            return value
+                .map((item) => (typeof item === 'string' ? item.trim() : ''))
+                .filter(Boolean)
+                .slice(0, 12);
+        };
+        const normalizeImageList = (value) => {
+            if (!Array.isArray(value)) {
+                return [];
+            }
+            return value
+                .map((item) => (typeof item === 'string' ? item.trim() : ''))
+                .filter(Boolean)
+                .slice(0, 8);
+        };
+
+        return {
+            content: {
+                en: {
+                    title: clampText(content?.en?.title, 140),
+                    body: clampText(content?.en?.body, 1200),
+                    bullets: normalizeBulletList(content?.en?.bullets),
+                    images: normalizeImageList(content?.en?.images)
+                },
+                ar: {
+                    title: clampText(content?.ar?.title, 140),
+                    body: clampText(content?.ar?.body, 1200),
+                    bullets: normalizeBulletList(content?.ar?.bullets),
+                    images: normalizeImageList(content?.ar?.images)
+                }
+            },
+            style: {
+                backgroundColor: typeof style?.backgroundColor === 'string' ? style.backgroundColor : '#FFFFFF',
+                textColor: typeof style?.textColor === 'string' ? style.textColor : '#0F172A',
+                accentColor: typeof style?.accentColor === 'string' ? style.accentColor : '#0A7EA4'
+            }
+        };
+    };
+
     if (!Array.isArray(tabs)) {
         return [];
     }
@@ -90,6 +136,7 @@ function normalizeInvitationSetupTabs(tabs) {
                 title_ar: typeof tab?.titleAr === 'string' ? tab.titleAr.trim() : typeof tab?.title_ar === 'string' ? tab.title_ar.trim() : '',
                 activation_rules: normalizeActivationRules(tab?.activationRules || tab?.activation_rules),
                 display: normalizeDisplay(tab?.display),
+                instructions: type === 'instructions' ? normalizeInstructions(tab?.instructions) : undefined,
                 sort_order: Number.isFinite(Number(tab?.sortOrder))
                     ? Number.parseInt(tab.sortOrder, 10)
                     : Number.isFinite(Number(tab?.sort_order))
@@ -1367,6 +1414,7 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
             titleAr: tab?.title_ar || tab?.titleAr || '',
             activationRules: safeJson(tab?.activation_rules || tab?.activationRules, {}),
             display: safeJson(tab?.display, {}),
+            instructions: safeJson(tab?.instructions, {}),
             sortOrder: Number.isFinite(Number(tab?.sort_order))
                 ? Number.parseInt(tab.sort_order, 10)
                 : Number.isFinite(Number(tab?.sortOrder))
@@ -1382,6 +1430,9 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
         const questionnaireTabIds = normalizedTabs
             .filter((tab) => tab.type === 'questionnaire' && tab.addonId)
             .map((tab) => tab.addonId);
+        const instructionsAddonEnabled = addIns.includes('instructions');
+        const instructionTabs = normalizedTabs
+            .filter((tab) => tab.type === 'instructions' && tab.addonId);
 
         let pollDetails = [];
         if (pollTabIds.length) {
@@ -1432,6 +1483,16 @@ router.get('/:id/addons-summary', requirePermission('events.view'), async (req, 
                         enabled: questionnaireAddonEnabled,
                         tabCount: questionnaireTabIds.length,
                         questionnaires: questionnaireDetails
+                    },
+                    instructions: {
+                        enabled: instructionsAddonEnabled,
+                        tabCount: instructionTabs.length,
+                        instructions: instructionTabs.map((tab) => ({
+                            id: tab.addonId,
+                            title: tab.title || '',
+                            title_ar: tab.titleAr || '',
+                            instructions: safeJson(tab.instructions, {})
+                        }))
                     }
                 },
                 lastUpdatedAt: new Date().toISOString()

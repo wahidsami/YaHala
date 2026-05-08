@@ -11,7 +11,7 @@ const router = Router();
 router.use(authenticate);
 
 const PROJECT_STATUSES = new Set(['draft', 'active', 'paused', 'archived', 'completed']);
-const PAGE_TYPES = new Set(['cover', 'rsvp', 'poll', 'questionnaire', 'quiz', 'competition', 'terms', 'custom']);
+const PAGE_TYPES = new Set(['cover', 'rsvp', 'poll', 'questionnaire', 'instructions', 'quiz', 'competition', 'terms', 'custom']);
 const CHANNELS = new Set(['email', 'whatsapp', 'sms', 'all']);
 const LANGUAGES = new Set(['ar', 'en']);
 
@@ -862,6 +862,37 @@ async function buildAddonPagesFromEventSetup(db, projectId, clientId, eventId, i
                         settings: safeJson(question.settings, {}),
                         options: optionsByQuestionId[question.id] || []
                     }))
+                }
+            };
+        } else if (type === 'instructions') {
+            const instructions = safeJson(tab?.instructions, {});
+            const content = safeJson(instructions.content, {});
+            const style = safeJson(instructions.style, {});
+            const resolvedTitle = title
+                || (typeof content?.en?.title === 'string' ? content.en.title.trim() : '')
+                || 'Instructions';
+            const resolvedTitleAr = titleAr
+                || (typeof content?.ar?.title === 'string' ? content.ar.title.trim() : '')
+                || 'تعليمات';
+
+            title = resolvedTitle;
+            titleAr = resolvedTitleAr;
+            description = typeof content?.en?.body === 'string' ? content.en.body.trim() : '';
+            descriptionAr = typeof content?.ar?.body === 'string' ? content.ar.body.trim() : '';
+            settings = {
+                ...settings,
+                instructions,
+                addon_snapshot: {
+                    type: 'instructions',
+                    content: {
+                        en: safeJson(content.en, {}),
+                        ar: safeJson(content.ar, {})
+                    },
+                    style: {
+                        backgroundColor: typeof style?.backgroundColor === 'string' ? style.backgroundColor : '#FFFFFF',
+                        textColor: typeof style?.textColor === 'string' ? style.textColor : '#0F172A',
+                        accentColor: typeof style?.accentColor === 'string' ? style.accentColor : '#0A7EA4'
+                    }
                 }
             };
         }

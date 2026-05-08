@@ -12,7 +12,7 @@ function localizedText(i18n, enText, arText) {
 const ADDON_CATALOG = [
     { id: 'poll', label: 'Poll', icon: MessageSquare, comingSoon: false },
     { id: 'questionnaire', label: 'Questionnaire', icon: ClipboardList, comingSoon: false },
-    { id: 'instructions', label: 'Instructions', icon: Layers3, comingSoon: true },
+    { id: 'instructions', label: 'Instructions', icon: Layers3, comingSoon: false },
     { id: 'quiz', label: 'Quiz', icon: Layers3, comingSoon: true },
     { id: 'files_downloads', label: 'Files & Downloads', icon: Layers3, comingSoon: true },
     { id: 'guest_book', label: 'Guest Book', icon: Layers3, comingSoon: true }
@@ -36,6 +36,18 @@ const DEFAULT_DISPLAY_RULES = {
     autoReturnAfterSubmit: true
 };
 
+const DEFAULT_INSTRUCTIONS_PAYLOAD = {
+    content: {
+        en: { title: 'Instructions', body: '', bullets: [], images: [] },
+        ar: { title: 'تعليمات', body: '', bullets: [], images: [] }
+    },
+    style: {
+        backgroundColor: '#FFFFFF',
+        textColor: '#0F172A',
+        accentColor: '#0A7EA4'
+    }
+};
+
 function normalizeAddonConfig(config = {}) {
     const activation = config.activationRules || config.activation_rules || {};
     const display = config.display || {};
@@ -50,6 +62,26 @@ function normalizeAddonConfig(config = {}) {
             ...display,
             mode: display.mode === 'icons' ? 'icons' : 'tabs',
             position: ['top', 'left', 'right', 'bottom', 'qr_slot'].includes(display.position) ? display.position : 'top'
+        },
+        instructions: {
+            ...DEFAULT_INSTRUCTIONS_PAYLOAD,
+            ...(config.instructions || {}),
+            content: {
+                ...DEFAULT_INSTRUCTIONS_PAYLOAD.content,
+                ...(config.instructions?.content || {}),
+                en: {
+                    ...DEFAULT_INSTRUCTIONS_PAYLOAD.content.en,
+                    ...(config.instructions?.content?.en || {})
+                },
+                ar: {
+                    ...DEFAULT_INSTRUCTIONS_PAYLOAD.content.ar,
+                    ...(config.instructions?.content?.ar || {})
+                }
+            },
+            style: {
+                ...DEFAULT_INSTRUCTIONS_PAYLOAD.style,
+                ...(config.instructions?.style || {})
+            }
         }
     };
 }
@@ -67,7 +99,8 @@ export default function EventAddonsTab({ event }) {
     const [formData, setFormData] = useState({
         addIns: [],
         pollIds: [],
-        questionnaireIds: []
+        questionnaireIds: [],
+        instructionIds: []
     });
     const [addonConfigs, setAddonConfigs] = useState({});
 
@@ -80,6 +113,13 @@ export default function EventAddonsTab({ event }) {
         const byId = new Map(questionnaires.map((item) => [item.id, item]));
         return formData.questionnaireIds.map((id) => byId.get(id)).filter(Boolean);
     }, [formData.questionnaireIds, questionnaires]);
+    const linkedInstructions = useMemo(() => {
+        return formData.instructionIds.map((id) => ({
+            id,
+            title: id === 'instructions-main' ? 'Instructions' : id,
+            title_ar: id === 'instructions-main' ? 'تعليمات' : id
+        }));
+    }, [formData.instructionIds]);
 
     async function loadAddons() {
         setLoading(true);
@@ -103,6 +143,9 @@ export default function EventAddonsTab({ event }) {
                     : [],
                 questionnaireIds: Array.isArray(summary?.addons?.questionnaire?.questionnaires)
                     ? summary.addons.questionnaire.questionnaires.map((item) => item.id)
+                    : [],
+                instructionIds: Array.isArray(summary?.addons?.instructions?.instructions)
+                    ? summary.addons.instructions.instructions.map((item) => item.id)
                     : []
             });
             const tabs = Array.isArray(summary?.invitationTabs) ? summary.invitationTabs : [];
@@ -113,7 +156,8 @@ export default function EventAddonsTab({ event }) {
                 }
                 nextConfigs[`${tab.type}:${tab.addonId}`] = normalizeAddonConfig({
                     activationRules: tab.activationRules,
-                    display: tab.display
+                    display: tab.display,
+                    instructions: tab.instructions
                 });
             }
             setAddonConfigs(nextConfigs);
@@ -144,7 +188,8 @@ export default function EventAddonsTab({ event }) {
                 ...prev,
                 addIns: nextAddIns,
                 pollIds: addonId === 'poll' && !checked ? [] : prev.pollIds,
-                questionnaireIds: addonId === 'questionnaire' && !checked ? [] : prev.questionnaireIds
+                questionnaireIds: addonId === 'questionnaire' && !checked ? [] : prev.questionnaireIds,
+                instructionIds: addonId === 'instructions' && !checked ? [] : prev.instructionIds
             };
         });
     }
@@ -163,7 +208,7 @@ export default function EventAddonsTab({ event }) {
             };
         });
 
-        const type = key === 'pollIds' ? 'poll' : key === 'questionnaireIds' ? 'questionnaire' : null;
+        const type = key === 'pollIds' ? 'poll' : key === 'questionnaireIds' ? 'questionnaire' : key === 'instructionIds' ? 'instructions' : null;
         if (!type) {
             return;
         }
@@ -192,6 +237,10 @@ export default function EventAddonsTab({ event }) {
         }
         if (type === 'questionnaire') {
             toggleSelection('questionnaireIds', id, false);
+            return;
+        }
+        if (type === 'instructions') {
+            toggleSelection('instructionIds', id, false);
         }
     }
 
@@ -225,6 +274,21 @@ export default function EventAddonsTab({ event }) {
                     });
                 });
             }
+            if (formData.addIns.includes('instructions')) {
+                formData.instructionIds.forEach((instructionId, index) => {
+                    const rules = normalizeAddonConfig(addonConfigs[`instructions:${instructionId}`]);
+                    tabs.push({
+                        type: 'instructions',
+                        addonId: instructionId,
+                        title: rules.instructions.content?.en?.title || 'Instructions',
+                        titleAr: rules.instructions.content?.ar?.title || 'تعليمات',
+                        sortOrder: formData.pollIds.length + formData.questionnaireIds.length + index,
+                        activationRules: rules.activationRules,
+                        display: rules.display,
+                        instructions: rules.instructions
+                    });
+                });
+            }
 
             await api.patch(`/admin/events/${eventId}/invitation-setup`, {
                 addIns: formData.addIns,
@@ -254,6 +318,26 @@ export default function EventAddonsTab({ event }) {
                 display: {
                     ...current.display,
                     ...(patch.display || {})
+                },
+                instructions: {
+                    ...current.instructions,
+                    ...(patch.instructions || {}),
+                    content: {
+                        ...current.instructions.content,
+                        ...(patch.instructions?.content || {}),
+                        en: {
+                            ...current.instructions.content.en,
+                            ...(patch.instructions?.content?.en || {})
+                        },
+                        ar: {
+                            ...current.instructions.content.ar,
+                            ...(patch.instructions?.content?.ar || {})
+                        }
+                    },
+                    style: {
+                        ...current.instructions.style,
+                        ...(patch.instructions?.style || {})
+                    }
                 }
             };
             return { ...prev, [key]: next };
@@ -522,7 +606,162 @@ export default function EventAddonsTab({ event }) {
                         </>
                     )}
 
-                    {!['poll', 'questionnaire'].includes(activeAddon) && (
+                    {activeAddon === 'instructions' && (
+                        <>
+                            <div className="event-addons-card-header">
+                                <h4>Instructions page builder</h4>
+                            </div>
+                            {!enabledAddonSet.has('instructions') ? (
+                                <p className="event-addons-empty">Enable Instructions addon from the left menu first.</p>
+                            ) : (
+                                <div className="event-addons-polls">
+                                    <label className={`event-addon-poll-item selectable ${formData.instructionIds.includes('instructions-main') ? 'selected' : ''}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.instructionIds.includes('instructions-main')}
+                                            onChange={(event) => toggleSelection('instructionIds', 'instructions-main', event.target.checked)}
+                                        />
+                                        <div>
+                                            <strong>Instructions</strong>
+                                            <small>Bilingual content + styling + activation rules</small>
+                                        </div>
+                                        {formData.instructionIds.includes('instructions-main') && <span className="linked-pill">Linked</span>}
+                                    </label>
+                                    {formData.instructionIds.includes('instructions-main') && (
+                                        <div className="instructions-builder">
+                                            {(() => {
+                                                const cfg = normalizeAddonConfig(addonConfigs['instructions:instructions-main']);
+                                                const enBullets = Array.isArray(cfg.instructions.content.en.bullets) ? cfg.instructions.content.en.bullets.join('\n') : '';
+                                                const arBullets = Array.isArray(cfg.instructions.content.ar.bullets) ? cfg.instructions.content.ar.bullets.join('\n') : '';
+                                                const enImages = Array.isArray(cfg.instructions.content.en.images) ? cfg.instructions.content.en.images.join('\n') : '';
+                                                const arImages = Array.isArray(cfg.instructions.content.ar.images) ? cfg.instructions.content.ar.images.join('\n') : '';
+                                                return (
+                                                    <>
+                                                        <div className="instructions-grid">
+                                                            <label>
+                                                                <span>Title (EN)</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={cfg.instructions.content.en.title || ''}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { en: { ...cfg.instructions.content.en, title: event.target.value } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Title (AR)</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={cfg.instructions.content.ar.title || ''}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { ar: { ...cfg.instructions.content.ar, title: event.target.value } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Body (EN)</span>
+                                                                <textarea
+                                                                    rows="4"
+                                                                    value={cfg.instructions.content.en.body || ''}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { en: { ...cfg.instructions.content.en, body: event.target.value } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Body (AR)</span>
+                                                                <textarea
+                                                                    rows="4"
+                                                                    value={cfg.instructions.content.ar.body || ''}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { ar: { ...cfg.instructions.content.ar, body: event.target.value } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Bullet points (EN, one per line)</span>
+                                                                <textarea
+                                                                    rows="5"
+                                                                    value={enBullets}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { en: { ...cfg.instructions.content.en, bullets: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Bullet points (AR, one per line)</span>
+                                                                <textarea
+                                                                    rows="5"
+                                                                    value={arBullets}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { ar: { ...cfg.instructions.content.ar, bullets: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Image URLs (EN, one per line)</span>
+                                                                <textarea
+                                                                    rows="4"
+                                                                    value={enImages}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { en: { ...cfg.instructions.content.en, images: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Image URLs (AR, one per line)</span>
+                                                                <textarea
+                                                                    rows="4"
+                                                                    value={arImages}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { content: { ar: { ...cfg.instructions.content.ar, images: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                        </div>
+                                                        <div className="instructions-style-grid">
+                                                            <label>
+                                                                <span>Background color</span>
+                                                                <input
+                                                                    type="color"
+                                                                    value={cfg.instructions.style.backgroundColor || '#FFFFFF'}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { style: { ...cfg.instructions.style, backgroundColor: event.target.value } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Text color</span>
+                                                                <input
+                                                                    type="color"
+                                                                    value={cfg.instructions.style.textColor || '#0F172A'}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { style: { ...cfg.instructions.style, textColor: event.target.value } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                            <label>
+                                                                <span>Accent color</span>
+                                                                <input
+                                                                    type="color"
+                                                                    value={cfg.instructions.style.accentColor || '#0A7EA4'}
+                                                                    onChange={(event) => updateAddonConfig('instructions', 'instructions-main', {
+                                                                        instructions: { style: { ...cfg.instructions.style, accentColor: event.target.value } }
+                                                                    })}
+                                                                />
+                                                            </label>
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {!['poll', 'questionnaire', 'instructions'].includes(activeAddon) && (
                         <>
                             <div className="event-addons-card-header">
                                 <h4>{ADDON_CATALOG.find((item) => item.id === activeAddon)?.label || 'Addon'} setup</h4>
@@ -540,7 +779,7 @@ export default function EventAddonsTab({ event }) {
                     {saving ? t('common.loading') : 'Save Add-ons Setup'}
                 </button>
                 <span className="event-addons-meta">
-                    Enabled: {formData.addIns.length} · Linked tabs: {formData.pollIds.length + formData.questionnaireIds.length}
+                    Enabled: {formData.addIns.length} · Linked tabs: {formData.pollIds.length + formData.questionnaireIds.length + formData.instructionIds.length}
                 </span>
             </div>
 
@@ -566,7 +805,7 @@ export default function EventAddonsTab({ event }) {
                         <h4>Card Tabs Preview</h4>
                         <MessageSquare size={16} />
                     </div>
-                    {(formData.pollIds.length + formData.questionnaireIds.length) > 0 ? (
+                    {(formData.pollIds.length + formData.questionnaireIds.length + formData.instructionIds.length) > 0 ? (
                         <div className="linked-preview-list">
                             {linkedPolls.map((poll, index) => (
                                 <div key={`poll-${poll.id}`} className="linked-preview-item">
@@ -588,6 +827,17 @@ export default function EventAddonsTab({ event }) {
                                         {renderAddonRulesEditor('questionnaire', questionnaire.id)}
                                     </div>
                                     <button type="button" className="btn btn-secondary" onClick={() => unlinkItem('questionnaire', questionnaire.id)}>Unlink</button>
+                                </div>
+                            ))}
+                            {linkedInstructions.map((instruction, index) => (
+                                <div key={`instructions-${instruction.id}`} className="linked-preview-item">
+                                    <span className="linked-order">{linkedPolls.length + linkedQuestionnaires.length + index + 1}</span>
+                                    <div>
+                                        <strong>Instructions</strong>
+                                        <small>{localizedText(i18n, instruction.title, instruction.title_ar)}</small>
+                                        {renderAddonRulesEditor('instructions', instruction.id)}
+                                    </div>
+                                    <button type="button" className="btn btn-secondary" onClick={() => unlinkItem('instructions', instruction.id)}>Unlink</button>
                                 </div>
                             ))}
                         </div>

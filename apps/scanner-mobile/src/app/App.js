@@ -62,7 +62,7 @@ function HomeScreen({ scannerUser, client, events, onLogout }) {
             case 'reports':
                 return <ReportsScreen activeEvent={activeEvent} />;
             case 'addons':
-                return <AddonsScreen activeEvent={activeEvent} />;
+                return <AddonsScreen activeEvent={activeEvent} scanResult={scanResult} />;
             case 'account':
                 return (
                     <AccountScreen

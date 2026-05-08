@@ -1,10 +1,10 @@
 import { useDraggable } from '@dnd-kit/core';
-import { Type, Image, Calendar, QrCode, User, Mic, MessageSquare, ClipboardList, Reply } from 'lucide-react';
+import { Type, Image, Calendar, QrCode, User } from 'lucide-react';
 import { WIDGET_TYPES, WIDGET_CATEGORIES } from '../widgetConfig';
 import './WidgetPalette.css';
 
 const ICONS = {
-    Type, Image, Calendar, QrCode, User, Mic, MessageSquare, ClipboardList, Reply
+    Type, Image, Calendar, QrCode, User
 };
 
 function DraggableWidget({ type, label, icon }) {
