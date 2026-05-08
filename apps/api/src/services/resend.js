@@ -71,7 +71,8 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
     const eventLocation = formatEventLocation(language, project.event || project);
     const invitationTitle = localizedText(language, project.name, project.name_ar);
     const clientLogoPath = project.client?.logo_path || project.client_logo_path || '';
-    const clientLogoUrl = resolvePublicAssetUrl(clientLogoPath);
+    const eventLogoPath = project.event?.event_logo_path || project.event_logo_path || '';
+    const headerLogoUrl = resolvePublicAssetUrl(clientLogoPath || eventLogoPath);
     const isArabic = language === 'ar';
     const subject = isArabic
         ? `دعوة إلى ${eventName || invitationTitle || clientName || ''}`.trim()
@@ -85,7 +86,7 @@ export function buildInvitationEmailContent({ project, recipient, publicLink, la
         <div style="direction:${isArabic ? 'rtl' : 'ltr'};font-family:Arial,sans-serif;background:#f6f7fb;padding:32px">
             <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 18px 50px rgba(15,23,42,.08)">
                 <div style="padding:26px 30px;background:linear-gradient(135deg,#0f172a,#1e293b 55%,#0f766e);color:#fff">
-                    ${clientLogoUrl ? `<div style="margin:0 0 14px"><img src="${escapeAttribute(clientLogoUrl)}" alt="${escapeAttribute(clientName || 'Client logo')}" style="max-width:140px;max-height:56px;object-fit:contain;display:block" /></div>` : ''}
+                    ${headerLogoUrl ? `<div style="margin:0 0 14px"><img src="${escapeAttribute(headerLogoUrl)}" alt="${escapeAttribute(clientName || eventName || 'Logo')}" style="max-width:140px;max-height:56px;object-fit:contain;display:block" /></div>` : ''}
                     <p style="margin:0 0 10px;opacity:.82;letter-spacing:.12em;text-transform:uppercase;font-size:12px">${isArabic ? 'دعوة رقمية' : 'Digital Invitation'}</p>
                     <h1 style="margin:0;font-size:28px;line-height:1.2">${escapeHtml(invitationTitle || eventName || clientName || (isArabic ? 'دعوة' : 'Invitation'))}</h1>
                     <p style="margin:14px 0 0;opacity:.9;line-height:1.7">${escapeHtml(isArabic ? `مرحباً ${guestName}` : `Hello ${guestName}`)}</p>

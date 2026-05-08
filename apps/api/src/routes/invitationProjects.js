@@ -1028,7 +1028,8 @@ async function buildInvitationEmailSendContext(db, projectId, requestedRecipient
             e.start_datetime,
             e.end_datetime,
             e.venue,
-            e.venue_ar
+            e.venue_ar,
+            e.event_logo_path
         FROM invitation_projects p
         JOIN clients c ON c.id = p.client_id
         JOIN events e ON e.id = p.event_id
