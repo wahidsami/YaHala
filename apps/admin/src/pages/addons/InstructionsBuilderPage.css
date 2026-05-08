@@ -116,6 +116,47 @@
     color: #334155;
 }
 
+.panel-divider {
+    margin: 0.75rem 0 0.5rem;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+.page-tools-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.page-tools-compact h4 {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #334155;
+}
+
+.switch-row {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row !important;
+}
+
+.compact-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+}
+
+.compact-widget-card {
+    border: 1px solid #dbe3ef;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 .instructions-canvas-wrap {
     border: 1px solid var(--border-color, #d7deea);
     border-radius: 14px;

@@ -397,6 +397,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
     const widgets = formData.contentSchema.widgets || [];
     const selectedWidget = widgets.find((item) => item.id === selectedWidgetId) || null;
+    const activeLanguage = formData.editorSettings.activeLanguage || 'en';
+    const previewMode = formData.editorSettings.previewMode || 'desktop';
     const canvasHeight = formData.editorSettings.pageHeight || 1600;
     const canvasGrid = clamp(Number(formData.editorSettings.gridSize) || 16, GRID_MIN, GRID_MAX);
     const direction = localeDirection(activeLanguage);
@@ -540,6 +542,16 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         <span>{Math.round(canvasZoom * 100)}%</span>
                         <button type="button" onClick={() => setCanvasZoom((prev) => clamp(Number((prev + 0.1).toFixed(2)), 0.4, 1.6))}><ZoomIn size={14} /></button>
                     </div>
+                    <div className="panel-divider" />
+                    <div className="page-tools-compact">
+                        <h4>Canvas</h4>
+                        <label className="switch-row"><span>Show Grid</span><input type="checkbox" checked={Boolean(formData.editorSettings.showGrid)} onChange={(event) => updateEditorSettings({ showGrid: event.target.checked })} /></label>
+                        <label className="switch-row"><span>Snap</span><input type="checkbox" checked={Boolean(formData.editorSettings.snapToGrid)} onChange={(event) => updateEditorSettings({ snapToGrid: event.target.checked })} /></label>
+                        <div className="compact-grid-2">
+                            <label><span>Grid</span><input type="number" min={GRID_MIN} max={GRID_MAX} value={canvasGrid} onChange={(event) => updateEditorSettings({ gridSize: clamp(Number.parseInt(event.target.value, 10) || 16, GRID_MIN, GRID_MAX) })} /></label>
+                            <label><span>Height</span><input type="number" min="600" max="6000" value={canvasHeight} onChange={(event) => { const nextHeight = clamp(Number.parseInt(event.target.value, 10) || 1600, 600, 6000); updateEditorSettings({ pageHeight: nextHeight }); updatePage({ height: nextHeight }); }} /></label>
+                        </div>
+                    </div>
                 </aside>
 
                 <div className="instructions-canvas-wrap">
@@ -603,32 +615,6 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
                 <aside className="instructions-panel instructions-settings-panel">
                     <h3>Settings</h3>
-                    <label>
-                        <span>Show grid</span>
-                        <input type="checkbox" checked={Boolean(formData.editorSettings.showGrid)} onChange={(event) => updateEditorSettings({ showGrid: event.target.checked })} />
-                    </label>
-                    <label>
-                        <span>Snap to grid</span>
-                        <input type="checkbox" checked={Boolean(formData.editorSettings.snapToGrid)} onChange={(event) => updateEditorSettings({ snapToGrid: event.target.checked })} />
-                    </label>
-                    <label>
-                        <span>Grid size</span>
-                        <input type="number" min={GRID_MIN} max={GRID_MAX} value={canvasGrid} onChange={(event) => updateEditorSettings({ gridSize: clamp(Number.parseInt(event.target.value, 10) || 16, GRID_MIN, GRID_MAX) })} />
-                    </label>
-                    <label>
-                        <span>Page height (px)</span>
-                        <input
-                            type="number"
-                            min="600"
-                            max="6000"
-                            value={canvasHeight}
-                            onChange={(event) => {
-                                const nextHeight = clamp(Number.parseInt(event.target.value, 10) || 1600, 600, 6000);
-                                updateEditorSettings({ pageHeight: nextHeight });
-                                updatePage({ height: nextHeight });
-                            }}
-                        />
-                    </label>
 
                     {!selectedWidget && (
                         <>
@@ -757,24 +743,30 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             )}
 
                             {selectedWidget.type === 'image' && (
-                                <>
-                                    <label><span>Upload image</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'src')} /></label>
-                                    <label><span>Image URL / Data URL</span><input type="text" value={selectedWidget.content.src || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { src: e.target.value } })} /></label>
-                                    <label><span>Object fit</span><select value={selectedWidget.style.objectFit || 'cover'} onChange={(e) => updateWidget(selectedWidget.id, { style: { objectFit: e.target.value } })}><option value="cover">cover</option><option value="contain">fit/contain</option><option value="fill">fill</option></select></label>
-                                    <label><span>Lock ratio</span><input type="checkbox" checked={Boolean(selectedWidget.style.lockRatio)} onChange={(e) => updateWidget(selectedWidget.id, { style: { lockRatio: e.target.checked } })} /></label>
-                                </>
+                                <div className="compact-widget-card">
+                                    <label><span>Upload</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'src')} /></label>
+                                    <label><span>Image Source</span><input type="text" value={selectedWidget.content.src || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { src: e.target.value } })} /></label>
+                                    <div className="compact-grid-2">
+                                        <label><span>Fit</span><select value={selectedWidget.style.objectFit || 'cover'} onChange={(e) => updateWidget(selectedWidget.id, { style: { objectFit: e.target.value } })}><option value="cover">cover</option><option value="contain">contain</option><option value="fill">fill</option></select></label>
+                                        <label className="switch-row"><span>Lock Ratio</span><input type="checkbox" checked={Boolean(selectedWidget.style.lockRatio)} onChange={(e) => updateWidget(selectedWidget.id, { style: { lockRatio: e.target.checked } })} /></label>
+                                    </div>
+                                </div>
                             )}
 
                             {selectedWidget.type === 'item_block' && (
-                                <>
-                                    <label><span>Icon text</span><input type="text" value={selectedWidget.content.icon || '•'} onChange={(e) => updateWidget(selectedWidget.id, { content: { icon: e.target.value } })} /></label>
-                                    <label><span>Icon image upload</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'iconImage')} /></label>
-                                    <label><span>Use icon image</span><input type="checkbox" checked={Boolean(selectedWidget.content.useIconImage)} onChange={(e) => updateWidget(selectedWidget.id, { content: { useIconImage: e.target.checked } })} /></label>
-                                    <label><span>Block mode</span><select value={selectedWidget.style.blockMode || 'boxed'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockMode: e.target.value } })}><option value="boxed">Boxed</option><option value="transparent">Transparent</option></select></label>
-                                    <label><span>Block color</span><input type="color" value={selectedWidget.style.blockColor || '#e2e8f0'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockColor: e.target.value } })} /></label>
-                                    <label><span>Corners Radius</span><input type="number" min="0" max="80" value={selectedWidget.style.borderRadius ?? 10} onChange={(e) => updateWidget(selectedWidget.id, { style: { borderRadius: Number.parseInt(e.target.value, 10) || 0 } })} /></label>
-                                    <label><span>Icon color</span><input type="color" value={selectedWidget.style.iconColor || '#0f766e'} onChange={(e) => updateWidget(selectedWidget.id, { style: { iconColor: e.target.value } })} /></label>
-                                </>
+                                <div className="compact-widget-card">
+                                    <div className="compact-grid-2">
+                                        <label><span>Icon</span><input type="text" value={selectedWidget.content.icon || '•'} onChange={(e) => updateWidget(selectedWidget.id, { content: { icon: e.target.value } })} /></label>
+                                        <label><span>Mode</span><select value={selectedWidget.style.blockMode || 'boxed'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockMode: e.target.value } })}><option value="boxed">Boxed</option><option value="transparent">Transparent</option></select></label>
+                                    </div>
+                                    <label><span>Icon Image</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'iconImage')} /></label>
+                                    <label className="switch-row"><span>Use Icon Image</span><input type="checkbox" checked={Boolean(selectedWidget.content.useIconImage)} onChange={(e) => updateWidget(selectedWidget.id, { content: { useIconImage: e.target.checked } })} /></label>
+                                    <div className="compact-grid-2">
+                                        <label><span>Block</span><input type="color" value={selectedWidget.style.blockColor || '#e2e8f0'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockColor: e.target.value } })} /></label>
+                                        <label><span>Icon</span><input type="color" value={selectedWidget.style.iconColor || '#0f766e'} onChange={(e) => updateWidget(selectedWidget.id, { style: { iconColor: e.target.value } })} /></label>
+                                    </div>
+                                    <label><span>Corners</span><input type="number" min="0" max="80" value={selectedWidget.style.borderRadius ?? 10} onChange={(e) => updateWidget(selectedWidget.id, { style: { borderRadius: Number.parseInt(e.target.value, 10) || 0 } })} /></label>
+                                </div>
                             )}
 
                             <div className="layer-controls">
@@ -799,5 +791,3 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         </div>
     );
 }
-    const activeLanguage = formData.editorSettings.activeLanguage || 'en';
-    const previewMode = formData.editorSettings.previewMode || 'desktop';
