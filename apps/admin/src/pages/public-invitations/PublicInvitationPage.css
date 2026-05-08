@@ -249,7 +249,8 @@
 .guest-fit-stage {
     position: absolute;
     top: 0;
-    inset-inline-start: 0;
+    left: 0;
+    right: auto;
     transform-origin: top left;
     will-change: transform;
 }
