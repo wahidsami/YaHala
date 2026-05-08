@@ -247,6 +247,11 @@
     max-width: 100%;
 }
 
+.guest-addon-shell {
+    max-width: 100%;
+    margin-top: 10px;
+}
+
 .guest-fit-stage {
     position: absolute;
     top: 0;

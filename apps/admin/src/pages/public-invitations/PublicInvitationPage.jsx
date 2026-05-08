@@ -1397,6 +1397,10 @@ export default function PublicInvitationPage() {
     }, [canvasHeight, fitScale, guestViewport.height]);
     const scaledWidth = canvasBaseWidth * fitScale;
     const scaledHeight = minCanvasHeight * fitScale;
+    const activeAddonPage = cardUnlocked && activePageKey !== 'cover'
+        ? interactivePages.find((page) => page.page_key === activePageKey) || null
+        : null;
+    const showCoverPage = !cardUnlocked || !activeAddonPage || showInstructionsModal;
 
     useEffect(() => {
         if (!interactivePages.length) {
@@ -1468,46 +1472,48 @@ export default function PublicInvitationPage() {
     return (
         <div className="public-invitation-shell public-guest-page" dir={activeLanguage === 'ar' ? 'rtl' : 'ltr'}>
             <main className="guest-invitation-view" ref={guestViewportRef}>
-                <div
-                    className="guest-fit-shell"
-                    style={{
-                        width: `${scaledWidth}px`,
-                        height: `${scaledHeight}px`
-                    }}
-                >
+                {showCoverPage && (
                     <div
-                        className="guest-fit-stage"
+                        className="guest-fit-shell"
                         style={{
-                            width: `${canvasBaseWidth}px`,
-                            height: `${minCanvasHeight}px`,
-                            transform: `scale(${fitScale})`
+                            width: `${scaledWidth}px`,
+                            height: `${scaledHeight}px`
                         }}
                     >
-                        <InvitationCanvasRenderer
-                            project={invitation.project}
-                            recipient={invitation.recipient}
-                            language={activeLanguage}
-                            hasRsvpPage={hasRsvpPage}
-                            rsvpCompleted={rsvpCompleted}
-                            onOpenAddon={openAddonPage}
-                            addonLaunchTargets={addonLaunchTargets}
-                            qrSlotActions={qrSlotPages.map((page) => {
-                                const runtime = page?._runtime || {};
-                                const disableAfterSubmission = runtime.disableAfterSubmission !== false;
-                                const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
-                                return {
-                                    pageKey: page.page_key,
-                                    label: localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type),
-                                    disabled: disableAfterSubmission && completed
-                                };
-                            })}
-                            minCanvasHeight={minCanvasHeight}
-                            onOpenRsvp={() => (gateEnabled ? setShowGate(true) : setShowRsvpModal(true))}
-                        />
+                        <div
+                            className="guest-fit-stage"
+                            style={{
+                                width: `${canvasBaseWidth}px`,
+                                height: `${minCanvasHeight}px`,
+                                transform: `scale(${fitScale})`
+                            }}
+                        >
+                            <InvitationCanvasRenderer
+                                project={invitation.project}
+                                recipient={invitation.recipient}
+                                language={activeLanguage}
+                                hasRsvpPage={hasRsvpPage}
+                                rsvpCompleted={rsvpCompleted}
+                                onOpenAddon={openAddonPage}
+                                addonLaunchTargets={addonLaunchTargets}
+                                qrSlotActions={qrSlotPages.map((page) => {
+                                    const runtime = page?._runtime || {};
+                                    const disableAfterSubmission = runtime.disableAfterSubmission !== false;
+                                    const completed = Boolean(runtime.completed || completedAddonPages[page.page_key]);
+                                    return {
+                                        pageKey: page.page_key,
+                                        label: localizedText(activeLanguage, page.title || PAGE_LABELS[page.page_type]?.en || page.page_type, page.title_ar || PAGE_LABELS[page.page_type]?.ar || page.page_type),
+                                        disabled: disableAfterSubmission && completed
+                                    };
+                                })}
+                                minCanvasHeight={minCanvasHeight}
+                                onOpenRsvp={() => (gateEnabled ? setShowGate(true) : setShowRsvpModal(true))}
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {cardUnlocked && topIconPages.length > 0 && (
+                {cardUnlocked && showCoverPage && topIconPages.length > 0 && (
                     <div className="addon-icons addon-icons-top">
                         {topIconPages.map((page) => {
                             const runtime = page?._runtime || {};
@@ -1522,7 +1528,7 @@ export default function PublicInvitationPage() {
                     </div>
                 )}
 
-                {cardUnlocked && topTabPages.length > 0 && (
+                {cardUnlocked && showCoverPage && topTabPages.length > 0 && (
                     <div className="card-tabs">
                         {topTabPages.map((page) => {
                             const runtime = page?._runtime || {};
@@ -1544,44 +1550,48 @@ export default function PublicInvitationPage() {
                     </div>
                 )}
 
-                {cardUnlocked && interactivePages.length > 0 && (() => {
-                    const activePage = interactivePages.find((page) => page.page_key === activePageKey);
-                    if (!activePage) {
-                        return null;
-                    }
-                    if (activePage.page_type === 'poll') {
+                {cardUnlocked && !showCoverPage && activeAddonPage && (() => {
+                    if (activeAddonPage.page_type === 'poll') {
                         return (
-                            <PollPanel
-                                language={activeLanguage}
-                                page={activePage}
-                                token={token}
-                                sessionToken={sessionToken}
-                                setSessionToken={setSessionToken}
-                                onBack={() => setActivePageKey('cover')}
-                                onSubmitted={markAddonSubmitted}
-                            />
+                            <div className="guest-addon-shell" style={{ width: `${scaledWidth}px` }}>
+                                <PollPanel
+                                    language={activeLanguage}
+                                    page={activeAddonPage}
+                                    token={token}
+                                    sessionToken={sessionToken}
+                                    setSessionToken={setSessionToken}
+                                    onBack={() => setActivePageKey('cover')}
+                                    onSubmitted={markAddonSubmitted}
+                                />
+                            </div>
                         );
                     }
-                    if (activePage.page_type === 'questionnaire') {
+                    if (activeAddonPage.page_type === 'questionnaire') {
                         return (
-                            <QuestionnairePanel
-                                language={activeLanguage}
-                                page={activePage}
-                                token={token}
-                                sessionToken={sessionToken}
-                                setSessionToken={setSessionToken}
-                                onBack={() => setActivePageKey('cover')}
-                                onSubmitted={markAddonSubmitted}
-                            />
+                            <div className="guest-addon-shell" style={{ width: `${scaledWidth}px` }}>
+                                <QuestionnairePanel
+                                    language={activeLanguage}
+                                    page={activeAddonPage}
+                                    token={token}
+                                    sessionToken={sessionToken}
+                                    setSessionToken={setSessionToken}
+                                    onBack={() => setActivePageKey('cover')}
+                                    onSubmitted={markAddonSubmitted}
+                                />
+                            </div>
                         );
                     }
-                    if (activePage.page_type === 'instructions') {
+                    if (activeAddonPage.page_type === 'instructions') {
                         return null;
                     }
-                    return <PlaceholderPanel language={activeLanguage} page={activePage} />;
+                    return (
+                        <div className="guest-addon-shell" style={{ width: `${scaledWidth}px` }}>
+                            <PlaceholderPanel language={activeLanguage} page={activeAddonPage} />
+                        </div>
+                    );
                 })()}
 
-                {cardUnlocked && bottomTabPages.length > 0 && (
+                {cardUnlocked && showCoverPage && bottomTabPages.length > 0 && (
                     <div className="card-tabs card-tabs-bottom">
                         {bottomTabPages.map((page) => {
                             const runtime = page?._runtime || {};
@@ -1597,7 +1607,7 @@ export default function PublicInvitationPage() {
                     </div>
                 )}
 
-                {cardUnlocked && (leftIconPages.length > 0 || rightIconPages.length > 0 || bottomIconPages.length > 0) && (
+                {cardUnlocked && showCoverPage && (leftIconPages.length > 0 || rightIconPages.length > 0 || bottomIconPages.length > 0) && (
                     <div className="addon-icons-wrap">
                         {leftIconPages.length > 0 && (
                             <div className="addon-icons addon-icons-left">
@@ -1638,7 +1648,7 @@ export default function PublicInvitationPage() {
                     const popupStyle = popupPayload?.popupStyle || popupPayload?.editor_settings?.popupStyle || {};
                     const popupBackgroundColor = popupStyle.backgroundColor || '#F8FAFC';
                     return (
-                        <div className="rsvp-modal-overlay" role="presentation" onClick={() => setShowInstructionsModal(false)}>
+                        <div className="rsvp-modal-overlay" role="presentation" onClick={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }}>
                             <div
                                 className="rsvp-modal instructions-modal"
                                 role="dialog"
@@ -1650,12 +1660,12 @@ export default function PublicInvitationPage() {
                                     <div>
                                         <h3>{localizedText(activeLanguage, activeInstructionsPage.title || 'Instructions', activeInstructionsPage.title_ar || 'تعليمات')}</h3>
                                     </div>
-                                    <button type="button" className="rsvp-modal-close" onClick={() => setShowInstructionsModal(false)}>
+                                    <button type="button" className="rsvp-modal-close" onClick={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }}>
                                         <X size={18} />
                                     </button>
                                 </div>
                                 <div className="instructions-modal-body">
-                                    <InstructionsPanel language={activeLanguage} page={activeInstructionsPage} onBack={() => setShowInstructionsModal(false)} />
+                                    <InstructionsPanel language={activeLanguage} page={activeInstructionsPage} onBack={() => { setShowInstructionsModal(false); setActivePageKey('cover'); }} />
                                 </div>
                             </div>
                         </div>
