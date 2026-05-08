@@ -78,7 +78,7 @@ function normalizeStatus(value) {
     return text;
 }
 
-async function findDuplicateGuest(db, clientId, { email, mobileNumber }, excludeGuestId = null) {
+async function findDuplicateGuest(db, clientId, { name, organization, email, mobileNumber }, excludeGuestId = null) {
     const clauses = ['client_id = $1'];
     const params = [clientId];
     let paramIndex = 2;
@@ -89,25 +89,26 @@ async function findDuplicateGuest(db, clientId, { email, mobileNumber }, exclude
         paramIndex += 1;
     }
 
-    const duplicateClauses = [];
+    const normalizedName = normalizeText(name);
+    const normalizedOrganization = normalizeOptionalText(organization);
+    const normalizedEmail = normalizeOptionalText(email);
+    const normalizedMobile = normalizeOptionalText(mobileNumber);
 
-    if (email) {
-        duplicateClauses.push(`LOWER(email) = LOWER($${paramIndex})`);
-        params.push(email);
-        paramIndex += 1;
-    }
+    clauses.push(`LOWER(name) = LOWER($${paramIndex})`);
+    params.push(normalizedName);
+    paramIndex += 1;
 
-    if (mobileNumber) {
-        duplicateClauses.push(`mobile_number = $${paramIndex}`);
-        params.push(mobileNumber);
-        paramIndex += 1;
-    }
+    clauses.push(`COALESCE(LOWER(organization), '') = COALESCE(LOWER($${paramIndex}), '')`);
+    params.push(normalizedOrganization);
+    paramIndex += 1;
 
-    if (!duplicateClauses.length) {
-        return null;
-    }
+    clauses.push(`COALESCE(LOWER(email), '') = COALESCE(LOWER($${paramIndex}), '')`);
+    params.push(normalizedEmail);
+    paramIndex += 1;
 
-    clauses.push(`(${duplicateClauses.join(' OR ')})`);
+    clauses.push(`COALESCE(mobile_number, '') = COALESCE($${paramIndex}, '')`);
+    params.push(normalizedMobile);
+    paramIndex += 1;
 
     const { rows } = await db.query(
         `SELECT id, name, email, mobile_number FROM client_guests WHERE ${clauses.join(' AND ')} LIMIT 1`,
@@ -238,7 +239,7 @@ router.post('/:id/guests', requirePermission('clients.edit'), async (req, res, n
         const duplicateGuest = await findDuplicateGuest(pool, clientId, payload);
 
         if (duplicateGuest) {
-            throw new AppError('Guest already exists with the same email or mobile number', 409, 'DUPLICATE_GUEST');
+            throw new AppError('Guest already exists with the same details for this client', 409, 'DUPLICATE_GUEST');
         }
 
         const guestId = uuidv4();
@@ -300,7 +301,7 @@ router.post('/:id/guests/import', requirePermission('clients.edit'), async (req,
             const duplicateGuest = await findDuplicateGuest(db, clientId, payload);
 
             if (duplicateGuest) {
-                throw new AppError('Guest already exists with the same email or mobile number', 409, 'DUPLICATE_GUEST');
+                throw new AppError('Guest already exists with the same details for this client', 409, 'DUPLICATE_GUEST');
             }
 
             const guestId = uuidv4();
