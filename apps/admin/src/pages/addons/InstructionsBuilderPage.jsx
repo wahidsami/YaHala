@@ -40,6 +40,38 @@ const DEFAULT_EDITOR_SETTINGS = {
     activeLanguage: 'en'
 };
 
+function toBulletArray(value) {
+    if (Array.isArray(value)) return value.map((item) => `${item || ''}`.trim()).filter(Boolean);
+    if (typeof value === 'string') return value.split('\n').map((item) => item.trim()).filter(Boolean);
+    return [];
+}
+
+function extractSimpleInstructionData(schema, settings) {
+    const safeSchema = schema && typeof schema === 'object' ? schema : {};
+    const safeSettings = settings && typeof settings === 'object' ? settings : {};
+    const content = safeSchema.content && typeof safeSchema.content === 'object' ? safeSchema.content : {};
+    const style = safeSchema.style && typeof safeSchema.style === 'object' ? safeSchema.style : {};
+    const popupStyle = safeSettings.popupStyle && typeof safeSettings.popupStyle === 'object' ? safeSettings.popupStyle : {};
+    const widgets = Array.isArray(safeSchema.widgets) ? safeSchema.widgets : [];
+    const firstTextWidget = widgets.find((item) => item?.type === 'text') || null;
+    const widgetContent = firstTextWidget?.content && typeof firstTextWidget.content === 'object' ? firstTextWidget.content : {};
+    const widgetStyle = firstTextWidget?.style && typeof firstTextWidget.style === 'object' ? firstTextWidget.style : {};
+
+    const bulletsEn = toBulletArray(content?.en?.bullets).length
+        ? toBulletArray(content?.en?.bullets)
+        : toBulletArray(widgetContent?.bullets || widgetContent?.bulletsEn);
+    const bulletsAr = toBulletArray(content?.ar?.bullets).length
+        ? toBulletArray(content?.ar?.bullets)
+        : toBulletArray(widgetContent?.bulletsAr);
+
+    return {
+        bulletsEn,
+        bulletsAr,
+        popupBackground: popupStyle.backgroundColor || style.backgroundColor || '#FFFFFF',
+        popupTextColor: popupStyle.textColor || style.textColor || widgetStyle.color || '#0F172A'
+    };
+}
+
 function createId() {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
         return `wid-${crypto.randomUUID()}`;
@@ -152,6 +184,15 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
     const [error, setError] = useState('');
     const [selectedWidgetId, setSelectedWidgetId] = useState(null);
     const [canvasZoom, setCanvasZoom] = useState(1);
+    const [simpleInstructions, setSimpleInstructions] = useState(() => {
+        const extracted = extractSimpleInstructionData(initialData?.content_schema, initialData?.editor_settings);
+        return {
+            bulletsEn: extracted.bulletsEn.join('\n'),
+            bulletsAr: extracted.bulletsAr.join('\n'),
+            popupBackground: extracted.popupBackground,
+            popupTextColor: extracted.popupTextColor
+        };
+    });
 
     const [formData, setFormData] = useState(() => {
         const schema = initialData?.content_schema || DEFAULT_SCHEMA;
@@ -369,13 +410,32 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
         setError('');
         setSaveSuccessOpen(false);
         try {
+            const bulletsEn = toBulletArray(simpleInstructions.bulletsEn);
+            const bulletsAr = toBulletArray(simpleInstructions.bulletsAr);
+            const popupBackground = simpleInstructions.popupBackground || '#FFFFFF';
+            const popupTextColor = simpleInstructions.popupTextColor || '#0F172A';
             const payload = {
                 name,
                 nameAr: formData.nameAr,
                 clientId: formData.clientId,
                 status: formData.status,
-                contentSchema: formData.contentSchema,
-                editorSettings: formData.editorSettings
+                contentSchema: {
+                    content: {
+                        en: { bullets: bulletsEn },
+                        ar: { bullets: bulletsAr }
+                    },
+                    style: {
+                        backgroundColor: popupBackground,
+                        textColor: popupTextColor
+                    }
+                },
+                editorSettings: {
+                    ...formData.editorSettings,
+                    popupStyle: {
+                        backgroundColor: popupBackground,
+                        textColor: popupTextColor
+                    }
+                }
             };
 
             if (mode === 'edit' && initialData?.id) {
@@ -532,6 +592,48 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
             {error && <div className="form-error">{error}</div>}
             <section className="instructions-editor-layout">
+                <div className="instructions-panel simple-instructions-panel">
+                    <h3>Instructions Popup Content</h3>
+                    <p className="text-muted">Unified popup mode: use bullets and popup colors only.</p>
+                    <label>
+                        <span>Bullets (EN)</span>
+                        <textarea
+                            rows="8"
+                            value={simpleInstructions.bulletsEn}
+                            onChange={(e) => setSimpleInstructions((prev) => ({ ...prev, bulletsEn: e.target.value }))}
+                            placeholder={'First point\nSecond point'}
+                        />
+                    </label>
+                    <label>
+                        <span>Bullets (AR)</span>
+                        <textarea
+                            rows="8"
+                            dir="rtl"
+                            value={simpleInstructions.bulletsAr}
+                            onChange={(e) => setSimpleInstructions((prev) => ({ ...prev, bulletsAr: e.target.value }))}
+                            placeholder={'النقطة الأولى\nالنقطة الثانية'}
+                        />
+                    </label>
+                    <div className="compact-grid-2">
+                        <label>
+                            <span>Popup background</span>
+                            <input
+                                type="color"
+                                value={simpleInstructions.popupBackground}
+                                onChange={(e) => setSimpleInstructions((prev) => ({ ...prev, popupBackground: e.target.value }))}
+                            />
+                        </label>
+                        <label>
+                            <span>Popup text color</span>
+                            <input
+                                type="color"
+                                value={simpleInstructions.popupTextColor}
+                                onChange={(e) => setSimpleInstructions((prev) => ({ ...prev, popupTextColor: e.target.value }))}
+                            />
+                        </label>
+                    </div>
+                </div>
+
                 <aside className="instructions-panel instructions-widgets-panel">
                     <h3>Widgets</h3>
                     <ul>

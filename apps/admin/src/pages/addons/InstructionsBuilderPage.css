@@ -36,9 +36,28 @@
 
 .instructions-editor-layout {
     display: grid;
-    grid-template-columns: 240px 1fr 320px;
+    grid-template-columns: 1fr;
     gap: 1rem;
     align-items: start;
+}
+
+.simple-instructions-panel {
+    max-width: 920px;
+}
+
+.simple-instructions-panel textarea {
+    width: 100%;
+    border: 1px solid var(--border-color, #d7deea);
+    border-radius: 10px;
+    padding: 0.6rem 0.7rem;
+    background: #fff;
+    resize: vertical;
+}
+
+.instructions-editor-layout .instructions-widgets-panel,
+.instructions-editor-layout .instructions-canvas-wrap,
+.instructions-editor-layout .instructions-settings-panel {
+    display: none;
 }
 
 .instructions-panel {

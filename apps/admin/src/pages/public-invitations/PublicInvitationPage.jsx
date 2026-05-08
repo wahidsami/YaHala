@@ -1152,6 +1152,7 @@ export default function PublicInvitationPage() {
     const [loading, setLoading] = useState(true);
     const [submittingOpen, setSubmittingOpen] = useState(false);
     const [showRsvpModal, setShowRsvpModal] = useState(false);
+    const [showInstructionsModal, setShowInstructionsModal] = useState(false);
     const [rsvpCompleted, setRsvpCompleted] = useState(false);
     const [gateDecision, setGateDecision] = useState(null);
     const [showGate, setShowGate] = useState(false);
@@ -1406,6 +1407,10 @@ export default function PublicInvitationPage() {
     }
 
     function openAddonPage(pageKey) {
+        const target = interactivePages.find((page) => page.page_key === pageKey);
+        if (target?.page_type === 'instructions') {
+            setShowInstructionsModal(true);
+        }
         setActivePageKey(pageKey);
     }
 
@@ -1562,13 +1567,7 @@ export default function PublicInvitationPage() {
                         );
                     }
                     if (activePage.page_type === 'instructions') {
-                        return (
-                            <InstructionsPanel
-                                language={activeLanguage}
-                                page={activePage}
-                                onBack={() => setActivePageKey('cover')}
-                            />
-                        );
+                        return null;
                     }
                     return <PlaceholderPanel language={activeLanguage} page={activePage} />;
                 })()}
@@ -1620,6 +1619,30 @@ export default function PublicInvitationPage() {
                         )}
                     </div>
                 )}
+
+                {showInstructionsModal && (() => {
+                    const activeInstructionsPage = interactivePages.find((page) => page.page_key === activePageKey && page.page_type === 'instructions');
+                    if (!activeInstructionsPage) {
+                        return null;
+                    }
+                    return (
+                        <div className="rsvp-modal-overlay" role="presentation" onClick={() => setShowInstructionsModal(false)}>
+                            <div className="rsvp-modal instructions-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                                <div className="rsvp-modal-header">
+                                    <div>
+                                        <h3>{localizedText(activeLanguage, activeInstructionsPage.title || 'Instructions', activeInstructionsPage.title_ar || 'تعليمات')}</h3>
+                                    </div>
+                                    <button type="button" className="rsvp-modal-close" onClick={() => setShowInstructionsModal(false)}>
+                                        <X size={18} />
+                                    </button>
+                                </div>
+                                <div className="instructions-modal-body">
+                                    <InstructionsPanel language={activeLanguage} page={activeInstructionsPage} onBack={() => setShowInstructionsModal(false)} />
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
 
             {cardLockedByDecline && (
                 <div className="module-panel">
@@ -1700,125 +1723,33 @@ function InstructionsPanel({ language, page, onBack }) {
     const copy = COPY[language];
     const settings = page?.settings || {};
     const payload = settings.instructions || settings.addon_snapshot || {};
-    const hasSchemaWidgets = Array.isArray(payload?.widgets) && payload.widgets.length > 0;
-    const isArabic = language === 'ar';
-
-    if (hasSchemaWidgets) {
-        const schemaWidgets = payload.widgets;
-        const pageConfig = payload.page || {};
-        const pageBg = pageConfig.background || {};
-        const designWidth = Math.max(280, Number(pageConfig.width) || 360);
-        const designHeight = Math.max(420, Number(pageConfig.height) || 1200);
-        return (
-            <div className="module-panel instructions-panel" style={{ backgroundColor: '#fff', color: '#0f172a', borderColor: '#0A7EA4' }}>
-                <div
-                    className="instructions-schema-canvas"
-                    dir={isArabic ? 'rtl' : 'ltr'}
-                    style={{
-                        position: 'relative',
-                        width: '100%',
-                        aspectRatio: `${designWidth} / ${designHeight}`,
-                        minHeight: '420px',
-                        backgroundColor: pageBg.color || '#ffffff',
-                        backgroundImage: pageBg.image ? `url(${resolveStorageUrl(pageBg.image)})` : undefined,
-                        backgroundSize: pageBg.size || 'cover',
-                        backgroundRepeat: pageBg.repeat || 'no-repeat',
-                        backgroundPosition: pageBg.position || 'center center'
-                    }}
-                >
-                    {schemaWidgets.map((widget) => {
-                        const x = Number(widget?.x) || 0;
-                        const y = Number(widget?.y) || 0;
-                        const w = Number(widget?.w) || 300;
-                        const h = Number(widget?.h) || 80;
-                        const z = Number(widget?.z) || 1;
-                        const style = widget?.style || {};
-                        const content = widget?.content || {};
-                        const text = isArabic ? (content.textAr || content.text || '') : (content.text || content.textAr || '');
-                        const blockText = isArabic ? (content.textAr || content.text || '') : (content.text || content.textAr || '');
-                        const rawBullets = isArabic
-                            ? (content.bulletsAr ?? content.bullets ?? content.bulletsEn ?? '')
-                            : (content.bulletsEn ?? content.bullets ?? content.bulletsAr ?? '');
-                        const bulletList = Array.isArray(rawBullets)
-                            ? rawBullets.filter(Boolean)
-                            : typeof rawBullets === 'string'
-                                ? rawBullets.split('\n').map((item) => item.trim()).filter(Boolean)
-                                : [];
-                        const asBullets = Boolean(content.asBullets) && bulletList.length > 0;
-                        return (
-                            <div
-                                key={widget.id}
-                                style={{
-                                    position: 'absolute',
-                                    left: `${(x / designWidth) * 100}%`,
-                                    top: `${(y / designHeight) * 100}%`,
-                                    width: `${(w / designWidth) * 100}%`,
-                                    height: `${(h / designHeight) * 100}%`,
-                                    zIndex: z,
-                                    color: style.color || '#0f172a',
-                                    fontFamily: style.fontFamily || 'Cairo',
-                                    fontSize: `${Number(style.fontSize) || 24}px`,
-                                    fontWeight: style.fontWeight || 500,
-                                    textAlign: style.textAlign || 'start',
-                                    lineHeight: style.lineHeight || 1.4
-                                }}
-                            >
-                                {widget.type === 'image' ? (
-                                    content.src ? <img src={resolveStorageUrl(content.src)} alt={content.alt || 'Instruction'} style={{ width: '100%', height: '100%', objectFit: style.objectFit || 'cover', borderRadius: `${Number(style.borderRadius) || 0}px` }} /> : null
-                                ) : widget.type === 'item_block' ? (
-                                    <div style={{ display: 'flex', flexDirection: isArabic ? 'row-reverse' : 'row', alignItems: 'center', gap: '10px', width: '100%', height: '100%', padding: '10px', background: style.blockMode === 'boxed' ? (style.blockColor || '#e2e8f0') : 'transparent', borderRadius: `${Number(style.borderRadius) || 0}px` }}>
-                                        {content.useIconImage && content.iconImage ? (
-                                            <img src={resolveStorageUrl(content.iconImage)} alt="icon" style={{ width: `${Number(style.iconSize) || 24}px`, height: `${Number(style.iconSize) || 24}px`, objectFit: 'contain' }} />
-                                        ) : (
-                                            <span style={{ color: style.iconColor || '#0f766e', fontSize: `${Number(style.iconSize) || 24}px` }}>{content.icon || '•'}</span>
-                                        )}
-                                        <span style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{blockText}</span>
-                                    </div>
-                                ) : (
-                                    asBullets ? (
-                                        <ul className="instructions-schema-bullets">
-                                            {bulletList.map((item, index) => (
-                                                <li key={`${widget.id}-bullet-${index}`}>{item}</li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <div>{text}</div>
-                                    )
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-                {page?._runtime?.showBackButton !== false && (
-                    <button type="button" className="ghost-link" onClick={onBack}>
-                        {copy.close}
-                    </button>
-                )}
-            </div>
-        );
-    }
-
     const content = payload.content || {};
     const style = payload.style || {};
+    const popupStyle = payload.popupStyle || payload.editor_settings?.popupStyle || {};
+    const schemaWidgets = Array.isArray(payload?.widgets) ? payload.widgets : [];
+    const textWidget = schemaWidgets.find((widget) => widget?.type === 'text') || null;
+    const textWidgetContent = textWidget?.content || {};
     const bucket = language === 'ar' ? (content.ar || content.en || {}) : (content.en || content.ar || {});
-    const title = bucket.title || localizedText(language, page.title || PAGE_LABELS.instructions.en, page.title_ar || PAGE_LABELS.instructions.ar);
-    const body = bucket.body || '';
-    const bullets = Array.isArray(bucket.bullets) ? bucket.bullets.filter(Boolean) : [];
-    const images = Array.isArray(bucket.images) ? bucket.images.filter(Boolean) : [];
+    const bulletsFromContent = Array.isArray(bucket.bullets) ? bucket.bullets.filter(Boolean) : [];
+    const bulletsFromWidget = language === 'ar'
+        ? (Array.isArray(textWidgetContent.bulletsAr) ? textWidgetContent.bulletsAr.filter(Boolean) : [])
+        : (Array.isArray(textWidgetContent.bullets) ? textWidgetContent.bullets.filter(Boolean) : []);
+    const bullets = bulletsFromContent.length ? bulletsFromContent : bulletsFromWidget;
+    const title = localizedText(language, page.title || PAGE_LABELS.instructions.en, page.title_ar || PAGE_LABELS.instructions.ar);
+    const panelBackground = popupStyle.backgroundColor || style.backgroundColor || '#FFFFFF';
+    const panelText = popupStyle.textColor || style.textColor || '#0F172A';
 
     return (
         <div
             className="module-panel instructions-panel"
             style={{
-                backgroundColor: style.backgroundColor || '#FFFFFF',
-                color: style.textColor || '#0F172A',
-                borderColor: style.accentColor || '#0A7EA4'
+                backgroundColor: panelBackground,
+                color: panelText,
+                borderColor: 'transparent'
             }}
         >
             <div className="panel-header">
-                <span className="eyebrow" style={{ color: style.accentColor || '#0A7EA4' }}>{PAGE_LABELS.instructions[language]}</span>
                 <h2>{title}</h2>
-                {body ? <p>{body}</p> : null}
             </div>
             {bullets.length > 0 && (
                 <ul className="instructions-bullets">
@@ -1827,18 +1758,10 @@ function InstructionsPanel({ language, page, onBack }) {
                     ))}
                 </ul>
             )}
-            {images.length > 0 && (
-                <div className="instructions-images">
-                    {images.map((imagePath, index) => (
-                        <img key={`${index}-${imagePath}`} src={resolveStorageUrl(imagePath)} alt={title || `instruction-${index + 1}`} />
-                    ))}
-                </div>
-            )}
-            {page?._runtime?.showBackButton !== false && (
-                <button type="button" className="ghost-link" onClick={onBack}>
-                    {copy.close}
-                </button>
-            )}
+            {bullets.length === 0 && <p>{localizedText(language, 'No instructions provided.', 'لا توجد تعليمات.')}</p>}
+            <button type="button" className="ghost-link" onClick={onBack}>
+                {copy.close}
+            </button>
         </div>
     );
 }

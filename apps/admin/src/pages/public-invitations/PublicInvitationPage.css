@@ -987,18 +987,20 @@
 }
 
 .instructions-panel {
-    border: 1px solid currentColor;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    box-shadow: none;
 }
 
 .instructions-bullets {
-    margin: 0.5rem 0 0.85rem;
-    padding-inline-start: 1.2rem;
+    margin: 0.5rem 0 1rem;
+    padding-inline-start: 1.35rem;
     display: grid;
-    gap: 0.35rem;
+    gap: 0.45rem;
 }
 
 .instructions-bullets li {
-    line-height: 1.5;
+    line-height: 1.65;
 }
 
 .instructions-images {
@@ -1032,18 +1034,15 @@
     cursor: not-allowed;
 }
 
-.instructions-schema-canvas {
-    overflow: hidden;
-    border-radius: 12px;
-    border: 1px solid rgba(10, 126, 164, 0.2);
+.instructions-modal {
+    width: min(520px, 95vw);
+    max-height: min(85vh, 760px);
 }
 
-.instructions-schema-bullets {
-    margin: 0;
-    padding-inline-start: 1.15rem;
-    display: grid;
-    gap: 0.25rem;
-    line-height: 1.5;
+.instructions-modal-body {
+    max-height: min(68vh, 620px);
+    overflow: auto;
+    padding-right: 4px;
 }
 
 .rsvp-form {
