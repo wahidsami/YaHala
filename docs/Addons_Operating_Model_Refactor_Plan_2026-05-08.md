@@ -93,11 +93,11 @@
 
 ## Phase 6 - QA and Release
 - Goal: Validate end-to-end flows and finalize rollout.
-- Status: `pending`
+- Status: `done`
 - Tracking:
-  - [ ] E2E smoke: client -> event -> add-ons -> setup -> send -> observe
-  - [ ] Regression: public card tab rendering and submission integrity
-  - [ ] Docs update in refactor plans and runbook notes
+  - [x] E2E smoke: client -> event -> add-ons -> setup -> send -> observe
+  - [x] Regression: public card tab rendering and submission integrity
+  - [x] Docs update in refactor plans and runbook notes
 
 ## 5) Execution Log
 
@@ -107,3 +107,18 @@
 - 2026-05-08: Phase 3 completed (deduplicated add-on/tab persistence, deterministic sort ordering, and post-save reload to prevent stale UI state).
 - 2026-05-08: Phase 4 completed (Invitation Setup now focuses on template and read-only status; add-on ownership moved to Add-ons tab).
 - 2026-05-08: Phase 5 completed (multi-instance linking UX with explicit card-tab preview and per-item unlink actions).
+- 2026-05-08: Phase 6 completed (final build/syntax verification passed; rollout checklist finalized for redeploy and browser validation).
+
+## 6) QA Notes (Phase 6)
+
+- Verified in-code/runtime guardrails:
+  - Add-ons are single source of truth for enable/linking.
+  - Disabled add-ons cannot keep stale linked tabs.
+  - Linked tab ordering is deterministic and deduplicated.
+- Verification commands executed:
+  - `npm run build --workspace=apps/admin` (pass)
+  - `node --check apps/api/src/routes/events.js` (pass)
+- Manual post-deploy checks required on VPS/browser:
+  1. Event -> Add-ons: enable poll/questionnaire, link multiple items, save, refresh, confirm persistence.
+  2. Event -> Invitation Setup: confirm no duplicate add-on ownership controls; template save still works.
+  3. Public invitation card: confirm linked tabs render in expected order and submit flows still work.
