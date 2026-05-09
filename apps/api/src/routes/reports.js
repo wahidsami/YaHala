@@ -279,7 +279,8 @@ router.get('/events/:eventId', requirePermission('reports.view'), async (req, re
                 COUNT(*) FILTER (WHERE LOWER(COALESCE(mr.response_data->>'attendance', '')) = 'maybe')::int AS maybe_count
             FROM invitation_module_responses mr
             JOIN invitation_modules m ON m.id = mr.module_id AND m.module_type = 'rsvp'
-            WHERE mr.event_id = $1
+            JOIN invitation_projects p ON p.id = mr.project_id
+            WHERE p.event_id = $1
         `, [eventId]);
 
         let walkInStats = { walk_in_count: 0 };
