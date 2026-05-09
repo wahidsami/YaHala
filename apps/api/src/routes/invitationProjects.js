@@ -978,6 +978,7 @@ function classifyEmailRecipient(recipient, requestedRecipientIds = []) {
     const selectedByRule = requestedRecipientIds.length
         ? requestedRecipientIds.includes(recipient.id)
         : ['email', 'all'].includes(preferredChannel);
+    const defaultEligibleStatuses = new Set(['draft', 'failed']);
 
     if (!requestedRecipientIds.length && !selectedByRule) {
         reasons.push('channel_not_email');
@@ -993,6 +994,12 @@ function classifyEmailRecipient(recipient, requestedRecipientIds = []) {
 
     if (overallStatus === 'opted_out' || overallStatus === 'bounced') {
         reasons.push(`status_${overallStatus}`);
+    }
+
+    // Default "Send Invitations" should only target new/unsent recipients.
+    // Explicit recipient selection can still resend intentionally.
+    if (!requestedRecipientIds.length && !defaultEligibleStatuses.has(overallStatus)) {
+        reasons.push('status_already_sent');
     }
 
     return {

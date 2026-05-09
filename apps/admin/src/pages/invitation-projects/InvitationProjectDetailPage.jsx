@@ -295,13 +295,14 @@ export default function InvitationProjectDetailPage() {
     }
 
     function debugReasonLabel(reason) {
-        const reasonMap = {
-            missing_email: 'invitationProjects.debugReason.missingEmail',
-            channel_not_email: 'invitationProjects.debugReason.channelNotEmail',
-            status_opted_out: 'invitationProjects.debugReason.statusOptedOut',
-            status_bounced: 'invitationProjects.debugReason.statusBounced',
-            not_requested: 'invitationProjects.debugReason.notRequested'
-        };
+    const reasonMap = {
+        missing_email: 'invitationProjects.debugReason.missingEmail',
+        channel_not_email: 'invitationProjects.debugReason.channelNotEmail',
+        status_opted_out: 'invitationProjects.debugReason.statusOptedOut',
+        status_bounced: 'invitationProjects.debugReason.statusBounced',
+        status_already_sent: 'invitationProjects.debugReason.statusAlreadySent',
+        not_requested: 'invitationProjects.debugReason.notRequested'
+    };
 
         return t(reasonMap[reason] || reason);
     }
