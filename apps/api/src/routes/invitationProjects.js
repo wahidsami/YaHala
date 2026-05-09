@@ -414,6 +414,84 @@ export async function createDefaultRsvpModule(db, page) {
     return { ...created[0], fields: createdFields };
 }
 
+async function ensureDefaultRsvpPage(db, projectId) {
+    const { rows: existingPages } = await db.query(
+        `
+        SELECT *
+        FROM invitation_project_pages
+        WHERE project_id = $1
+          AND page_type = 'rsvp'
+        ORDER BY sort_order ASC, created_at ASC
+        LIMIT 1
+        `,
+        [projectId]
+    );
+
+    if (existingPages.length) {
+        await createDefaultRsvpModule(db, existingPages[0]);
+        return existingPages[0];
+    }
+
+    const { rows: maxRows } = await db.query(
+        `
+        SELECT COALESCE(MAX(sort_order), 0)::int AS max_sort
+        FROM invitation_project_pages
+        WHERE project_id = $1
+        `,
+        [projectId]
+    );
+    const nextSort = (maxRows[0]?.max_sort || 0) + 1;
+
+    const page = {
+        id: uuidv4(),
+        project_id: projectId,
+        page_key: 'rsvp',
+        page_type: 'rsvp',
+        title: 'RSVP',
+        title_ar: 'تأكيد الحضور',
+        description: 'Please confirm your attendance.',
+        description_ar: 'يرجى تأكيد حضورك.',
+        sort_order: nextSort,
+        is_enabled: true,
+        settings: {}
+    };
+
+    await db.query(
+        `
+        INSERT INTO invitation_project_pages (
+            id,
+            project_id,
+            page_key,
+            page_type,
+            title,
+            title_ar,
+            description,
+            description_ar,
+            sort_order,
+            is_enabled,
+            settings
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+        `,
+        [
+            page.id,
+            page.project_id,
+            page.page_key,
+            page.page_type,
+            page.title,
+            page.title_ar,
+            page.description,
+            page.description_ar,
+            page.sort_order,
+            page.is_enabled,
+            JSON.stringify(page.settings)
+        ]
+    );
+
+    await createDefaultRsvpModule(db, page);
+    return page;
+}
+
 async function fetchProjectSummary(projectId, db = pool) {
     const { rows } = await db.query(
         `
@@ -527,6 +605,7 @@ function buildRecipientSnapshot(recipient) {
 }
 
 async function buildInvitationProjectSnapshot(db, projectId) {
+    await ensureDefaultRsvpPage(db, projectId);
     const { project } = await fetchProjectWithContext(projectId, db);
 
     const { rows: pageRows } = await db.query(
@@ -1149,6 +1228,7 @@ export async function executeInvitationEmailSend({
 
     try {
         await db.query('BEGIN');
+        await ensureDefaultRsvpPage(db, projectId);
         const projectSnapshot = await buildInvitationProjectSnapshot(db, projectId);
 
         const recipientIds = sendableRecipients.map((recipient) => recipient.id);
@@ -1679,6 +1759,7 @@ router.post('/', requirePermission('events.create'), async (req, res, next) => {
         );
 
         await buildAddonPagesFromEventSetup(db, projectId, clientId, eventId, invitationSetup);
+        await ensureDefaultRsvpPage(db, projectId);
 
         await db.query('COMMIT');
 
@@ -1899,6 +1980,7 @@ router.post('/:id/sync-template', requirePermission('events.edit'), async (req, 
             projectRow.event_id,
             invitationSetup
         );
+        await ensureDefaultRsvpPage(db, projectId);
 
         await db.query(
             `
