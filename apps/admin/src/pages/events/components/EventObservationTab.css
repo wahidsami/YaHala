@@ -1,0 +1,146 @@
+.event-observation-tab {
+    display: grid;
+    gap: 16px;
+}
+
+.event-observation-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.event-observation-header h3 {
+    margin: 0 0 4px;
+}
+
+.event-observation-header p {
+    margin: 0;
+    color: #64748b;
+}
+
+.event-observation-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.event-observation-actions label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.event-observation-kpis {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.obs-kpi {
+    border: 1px solid #dbe2ea;
+    border-radius: 12px;
+    padding: 10px;
+    display: grid;
+    gap: 6px;
+    background: #fff;
+}
+
+.obs-kpi span {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.obs-kpi strong {
+    font-size: 1.25rem;
+}
+
+.event-observation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.obs-card {
+    border: 1px solid #dbe2ea;
+    border-radius: 14px;
+    background: #fff;
+    padding: 14px;
+}
+
+.obs-card h4 {
+    margin: 0 0 10px;
+}
+
+.obs-list {
+    display: grid;
+    gap: 8px;
+}
+
+.obs-list > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.obs-table-wrap {
+    max-height: 280px;
+    overflow: auto;
+}
+
+.obs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.obs-table th,
+.obs-table td {
+    text-align: left;
+    border-bottom: 1px solid #eef2f7;
+    padding: 8px 6px;
+}
+
+.obs-card-full {
+    grid-column: 1 / -1;
+}
+
+.obs-feed {
+    display: grid;
+    gap: 8px;
+    max-height: 320px;
+    overflow: auto;
+}
+
+.obs-feed-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: grid;
+    gap: 4px;
+}
+
+.obs-feed-item span,
+.obs-feed-item time {
+    color: #64748b;
+    font-size: 0.86rem;
+}
+
+.event-observation-loading,
+.event-observation-error {
+    padding: 20px;
+    border: 1px solid #dbe2ea;
+    border-radius: 12px;
+    background: #fff;
+}
+
+@media (max-width: 1100px) {
+    .event-observation-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .event-observation-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

@@ -1986,6 +1986,166 @@ router.get('/:id/questionnaire-summary', requirePermission('events.view'), async
     }
 });
 
+// GET /api/admin/events/:id/observation
+router.get('/:id/observation', requirePermission('events.view'), async (req, res, next) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) {
+            throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
+        }
+
+        const [invitationSummaryRes, attendanceSummaryRes, addonsSummaryRes, questionnaireSummaryRes] = await Promise.all([
+            pool.query(
+                `
+                SELECT
+                    COUNT(*)::int AS recipients,
+                    COUNT(*) FILTER (WHERE overall_status = 'queued')::int AS queued,
+                    COUNT(*) FILTER (WHERE overall_status = 'sent')::int AS sent,
+                    COUNT(*) FILTER (WHERE overall_status = 'delivered')::int AS delivered,
+                    COUNT(*) FILTER (WHERE overall_status = 'opened')::int AS opened,
+                    COUNT(*) FILTER (WHERE overall_status = 'responded')::int AS responded,
+                    COUNT(*) FILTER (WHERE overall_status = 'failed')::int AS failed
+                FROM invitation_recipients r
+                JOIN invitation_projects p ON p.id = r.project_id
+                WHERE p.event_id = $1
+                `,
+                [eventId]
+            ),
+            pool.query(
+                `
+                SELECT
+                    COUNT(*)::int AS invited_total,
+                    COUNT(*) FILTER (WHERE COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') IN ('attended', 'checked_in'))::int AS invited_checked_in,
+                    COUNT(*) FILTER (WHERE COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') NOT IN ('attended', 'checked_in'))::int AS invited_pending
+                FROM invitation_recipients r
+                JOIN invitation_projects p ON p.id = r.project_id
+                WHERE p.event_id = $1
+                `,
+                [eventId]
+            ),
+            pool.query(
+                `
+                SELECT settings
+                FROM events
+                WHERE id = $1
+                LIMIT 1
+                `,
+                [eventId]
+            ),
+            pool.query(
+                `
+                SELECT
+                    COUNT(*)::int AS total_questionnaires,
+                    COUNT(*) FILTER (WHERE status = 'published')::int AS active_questionnaires,
+                    COALESCE(SUM((SELECT COUNT(*)::int FROM questionnaire_submissions qs WHERE qs.questionnaire_id = q.id)), 0)::int AS submissions_total
+                FROM questionnaires q
+                WHERE q.event_id = $1
+                `,
+                [eventId]
+            )
+        ]);
+
+        const invitationSummary = invitationSummaryRes.rows[0] || {};
+        const attendanceSummary = attendanceSummaryRes.rows[0] || {};
+        const eventSettings = safeJson(addonsSummaryRes.rows[0]?.settings, {});
+        const invitationSetup = safeJson(eventSettings.invitation_setup, {});
+        const tabs = Array.isArray(invitationSetup.tabs) ? invitationSetup.tabs : [];
+
+        const { rows: pollStatsRows } = await pool.query(
+            `
+            SELECT
+                COUNT(DISTINCT p.id)::int AS total_polls,
+                COUNT(v.id)::int AS total_votes
+            FROM polls p
+            LEFT JOIN poll_votes v ON v.poll_id = p.id
+            WHERE p.event_id = $1
+            `,
+            [eventId]
+        );
+
+        const { rows: rsvpStatsRows } = await pool.query(
+            `
+            SELECT
+                COUNT(*)::int AS total_submissions,
+                COUNT(*) FILTER (WHERE LOWER(COALESCE(ir.response_data->>'attendance', '')) = 'attending')::int AS attending_count,
+                COUNT(*) FILTER (WHERE LOWER(COALESCE(ir.response_data->>'attendance', '')) = 'not_attending')::int AS not_attending_count,
+                COUNT(*) FILTER (WHERE LOWER(COALESCE(ir.response_data->>'attendance', '')) = 'maybe')::int AS maybe_count
+            FROM invitation_module_responses ir
+            JOIN invitation_projects p ON p.id = ir.project_id
+            JOIN invitation_modules m ON m.id = ir.module_id AND m.module_type = 'rsvp'
+            WHERE p.event_id = $1
+            `,
+            [eventId]
+        );
+
+        const { rows: recentActivityRows } = await pool.query(
+            `
+            SELECT
+                ie.id,
+                ie.event_type,
+                ie.event_name,
+                ie.event_data,
+                ie.created_at,
+                r.display_name,
+                r.display_name_ar,
+                r.email
+            FROM invitation_events ie
+            JOIN invitation_projects p ON p.id = ie.project_id
+            LEFT JOIN invitation_recipients r ON r.id = ie.recipient_id
+            WHERE p.event_id = $1
+            ORDER BY ie.created_at DESC
+            LIMIT 50
+            `,
+            [eventId]
+        );
+
+        const { rows: checkedInRows } = await pool.query(
+            `
+            SELECT
+                r.id AS recipient_id,
+                r.display_name,
+                r.display_name_ar,
+                r.email,
+                r.phone,
+                r.last_opened_at,
+                r.responded_at
+            FROM invitation_recipients r
+            JOIN invitation_projects p ON p.id = r.project_id
+            WHERE p.event_id = $1
+              AND COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', '') IN ('attended', 'checked_in')
+            ORDER BY COALESCE(r.responded_at, r.last_opened_at, r.created_at) DESC
+            LIMIT 200
+            `,
+            [eventId]
+        );
+
+        res.json({
+            data: {
+                generatedAt: new Date().toISOString(),
+                invitation: invitationSummary,
+                attendance: attendanceSummary,
+                addons: {
+                    enabledCount: Array.isArray(invitationSetup.addIns) ? invitationSetup.addIns.length : 0,
+                    linkedTabsCount: tabs.length,
+                    tabs
+                },
+                rsvp: rsvpStatsRows[0] || {},
+                poll: pollStatsRows[0] || { total_polls: 0, total_votes: 0 },
+                questionnaire: questionnaireSummaryRes.rows[0] || { total_questionnaires: 0, active_questionnaires: 0, submissions_total: 0 },
+                checkedInGuests: checkedInRows,
+                recentActivity: recentActivityRows
+            }
+        });
+    } catch (error) {
+        console.error('Failed to build event observation payload:', {
+            eventId: req.params.id,
+            message: error?.message || 'unknown',
+            stack: error?.stack
+        });
+        next(error);
+    }
+});
+
 // PATCH /api/admin/events/:id/status - Activate or deactivate event
 router.patch('/:id/status', requirePermission('events.edit'), async (req, res, next) => {
     try {
