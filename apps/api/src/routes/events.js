@@ -2050,7 +2050,7 @@ router.get('/:id/observation', requirePermission('events.view'), async (req, res
             throw new AppError('Event id is required', 400, 'VALIDATION_ERROR');
         }
 
-        const [invitationSummaryRes, attendanceSummaryRes, addonsSummaryRes, questionnaireSummaryRes] = await Promise.all([
+        const [invitationSummaryRes, attendanceSummaryRes, addonsSummaryRes, questionnaireSummaryRes, walkInSummaryRes] = await Promise.all([
             pool.query(
                 `
                 SELECT
@@ -2098,11 +2098,22 @@ router.get('/:id/observation', requirePermission('events.view'), async (req, res
                 WHERE q.event_id = $1
                 `,
                 [eventId]
+            ),
+            pool.query(
+                `
+                SELECT
+                    COUNT(*)::int AS walk_in_total,
+                    COUNT(*) FILTER (WHERE check_in_status = 'checked_in')::int AS walk_in_checked_in
+                FROM event_walk_ins
+                WHERE event_id = $1
+                `,
+                [eventId]
             )
         ]);
 
         const invitationSummary = invitationSummaryRes.rows[0] || {};
         const attendanceSummary = attendanceSummaryRes.rows[0] || {};
+        const walkInSummary = walkInSummaryRes.rows[0] || { walk_in_total: 0, walk_in_checked_in: 0 };
         const eventSettings = safeJson(addonsSummaryRes.rows[0]?.settings, {});
         const invitationSetup = safeJson(eventSettings.invitation_setup, {});
         const tabs = Array.isArray(invitationSetup.tabs) ? invitationSetup.tabs : [];
@@ -2175,11 +2186,32 @@ router.get('/:id/observation', requirePermission('events.view'), async (req, res
             [eventId]
         );
 
+        const { rows: walkInRows } = await pool.query(
+            `
+            SELECT
+                wi.id AS walk_in_id,
+                wi.client_guest_id,
+                wi.checked_in_at,
+                cg.name AS display_name,
+                cg.email,
+                cg.mobile_number AS phone,
+                cg.organization,
+                cg.position
+            FROM event_walk_ins wi
+            JOIN client_guests cg ON cg.id = wi.client_guest_id
+            WHERE wi.event_id = $1
+            ORDER BY wi.checked_in_at DESC, wi.created_at DESC
+            LIMIT 200
+            `,
+            [eventId]
+        );
+
         res.json({
             data: {
                 generatedAt: new Date().toISOString(),
                 invitation: invitationSummary,
                 attendance: attendanceSummary,
+                walkIns: walkInSummary,
                 addons: {
                     enabledCount: Array.isArray(invitationSetup.addIns) ? invitationSetup.addIns.length : 0,
                     linkedTabsCount: tabs.length,
@@ -2189,6 +2221,7 @@ router.get('/:id/observation', requirePermission('events.view'), async (req, res
                 poll: pollStatsRows[0] || { total_polls: 0, total_votes: 0 },
                 questionnaire: questionnaireSummaryRes.rows[0] || { total_questionnaires: 0, active_questionnaires: 0, submissions_total: 0 },
                 checkedInGuests: checkedInRows,
+                walkInGuests: walkInRows,
                 recentActivity: recentActivityRows
             }
         });

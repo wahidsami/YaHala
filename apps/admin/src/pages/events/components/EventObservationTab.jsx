@@ -44,11 +44,16 @@ export default function EventObservationTab({ event }) {
     const kpis = useMemo(() => {
         const invitation = data?.invitation || {};
         const attendance = data?.attendance || {};
+        const walkIns = data?.walkIns || {};
         const questionnaire = data?.questionnaire || {};
         const poll = data?.poll || {};
+        const invitedCheckedIn = Number(attendance.invited_checked_in || 0);
+        const walkInCheckedIn = Number(walkIns.walk_in_checked_in || 0);
         return {
             invited: Number(invitation.recipients || 0),
-            checkedIn: Number(attendance.invited_checked_in || 0),
+            invitedCheckedIn,
+            walkInCheckedIn,
+            checkedInTotal: invitedCheckedIn + walkInCheckedIn,
             responded: Number(invitation.responded || 0),
             opened: Number(invitation.opened || 0),
             questionnaireSubmissions: Number(questionnaire.submissions_total || 0),
@@ -92,7 +97,9 @@ export default function EventObservationTab({ event }) {
 
             <div className="event-observation-kpis">
                 <div className="obs-kpi"><Users size={16} /><span>Invited</span><strong>{kpis.invited}</strong></div>
-                <div className="obs-kpi"><ClipboardCheck size={16} /><span>Checked-in</span><strong>{kpis.checkedIn}</strong></div>
+                <div className="obs-kpi"><ClipboardCheck size={16} /><span>Checked-in (Total)</span><strong>{kpis.checkedInTotal}</strong></div>
+                <div className="obs-kpi"><ClipboardCheck size={16} /><span>Invited Checked-in</span><strong>{kpis.invitedCheckedIn}</strong></div>
+                <div className="obs-kpi"><ClipboardCheck size={16} /><span>Walk-ins Checked-in</span><strong>{kpis.walkInCheckedIn}</strong></div>
                 <div className="obs-kpi"><Activity size={16} /><span>Opened</span><strong>{kpis.opened}</strong></div>
                 <div className="obs-kpi"><ListChecks size={16} /><span>RSVP Responded</span><strong>{kpis.responded}</strong></div>
                 <div className="obs-kpi"><BarChart3 size={16} /><span>Questionnaire Submissions</span><strong>{kpis.questionnaireSubmissions}</strong></div>
@@ -108,6 +115,7 @@ export default function EventObservationTab({ event }) {
                         <div><span>Total Questionnaires</span><strong>{data?.questionnaire?.total_questionnaires || 0}</strong></div>
                         <div><span>Active Questionnaires</span><strong>{data?.questionnaire?.active_questionnaires || 0}</strong></div>
                         <div><span>Total Polls</span><strong>{data?.poll?.total_polls || 0}</strong></div>
+                        <div><span>Total Walk-ins</span><strong>{data?.walkIns?.walk_in_total || 0}</strong></div>
                     </div>
                 </section>
 
@@ -125,6 +133,26 @@ export default function EventObservationTab({ event }) {
                                 ))}
                                 {(!data?.checkedInGuests || data.checkedInGuests.length === 0) && (
                                     <tr><td colSpan="2">No checked-in guests yet.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section className="obs-card">
+                    <h4>Walk-in Guests</h4>
+                    <div className="obs-table-wrap">
+                        <table className="obs-table">
+                            <thead><tr><th>Name</th><th>Phone</th></tr></thead>
+                            <tbody>
+                                {(data?.walkInGuests || []).slice(0, 20).map((guest) => (
+                                    <tr key={guest.walk_in_id}>
+                                        <td>{guest.display_name || 'Walk-in guest'}</td>
+                                        <td>{guest.phone || '—'}</td>
+                                    </tr>
+                                ))}
+                                {(!data?.walkInGuests || data.walkInGuests.length === 0) && (
+                                    <tr><td colSpan="2">No walk-ins yet.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -150,4 +178,3 @@ export default function EventObservationTab({ event }) {
         </div>
     );
 }
-
