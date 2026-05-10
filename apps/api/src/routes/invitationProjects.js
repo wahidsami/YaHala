@@ -1285,6 +1285,14 @@ export async function executeInvitationEmailSend({
             createdBy
         });
 
+        if (!jobs.length) {
+            throw new AppError(
+                'Selected recipients already have queued deliveries in progress. Please wait for current queue to finish.',
+                409,
+                'DELIVERY_ALREADY_QUEUED'
+            );
+        }
+
         await db.query('COMMIT');
         committed = true;
     } catch (error) {

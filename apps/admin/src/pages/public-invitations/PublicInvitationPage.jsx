@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Loader2, Sparkles, MapPin, X } from 'lucide-react';
-import QRCode from 'react-qr-code';
+import QRCode from 'react-qr-code/lib/index.js';
 import api from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { normalizeLayout } from '../templates/backgroundUtils';

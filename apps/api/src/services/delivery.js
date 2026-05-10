@@ -82,6 +82,23 @@ export async function enqueueEmailDeliveries({
     const jobs = [];
 
     for (const recipient of recipients) {
+        const { rows: activeJobs } = await db.query(
+            `
+            SELECT id
+            FROM invitation_delivery_jobs
+            WHERE project_id = $1
+              AND recipient_id = $2
+              AND channel = 'email'
+              AND status IN ('queued', 'processing', 'retry_scheduled')
+            LIMIT 1
+            `,
+            [project.id, recipient.id]
+        );
+
+        if (activeJobs.length) {
+            continue;
+        }
+
         const language = normalizeLanguage(recipient.preferred_language, project.default_language || 'ar');
         const publicLink = buildInvitationLink(recipient.public_token);
         const payload = buildQueuedPayload({ project, recipient, language, publicLink });
@@ -113,6 +130,20 @@ export async function enqueueEmailDeliveries({
                 JSON.stringify(payload),
                 createdBy
             ]
+        );
+
+        await db.query(
+            `
+            UPDATE invitation_recipients
+            SET
+                overall_status = CASE
+                    WHEN overall_status IN ('draft', 'failed') THEN 'queued'
+                    ELSE overall_status
+                END,
+                updated_at = NOW()
+            WHERE id = $1
+            `,
+            [recipient.id]
         );
 
         jobs.push({

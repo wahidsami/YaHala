@@ -123,6 +123,38 @@
     padding: 0.55rem 0.65rem;
 }
 
+.ops-custom-recipient-list {
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    padding: 0.45rem;
+    background: var(--bg-secondary);
+}
+
+.ops-custom-recipient-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ops-custom-recipient-row:last-child {
+    border-bottom: none;
+}
+
+.ops-custom-recipient-row small {
+    color: var(--text-secondary);
+}
+
+.ops-hint {
+    margin: 0.2rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
 .ops-send-result {
     margin-top: 0.8rem;
     border-top: 1px solid var(--border-color);

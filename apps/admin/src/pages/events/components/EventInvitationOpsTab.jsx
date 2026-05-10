@@ -37,6 +37,8 @@ export default function EventInvitationOpsTab({ event }) {
     const [tracing, setTracing] = useState(false);
     const [scheduleMode, setScheduleMode] = useState('now');
     const [scheduledFor, setScheduledFor] = useState('');
+    const [sendAudience, setSendAudience] = useState('newly_added');
+    const [customRecipientIds, setCustomRecipientIds] = useState([]);
 
     async function loadData() {
         if (!event?.id) {
@@ -123,9 +125,12 @@ export default function EventInvitationOpsTab({ event }) {
         setError('');
         setSuccess('');
         try {
-            const payload = {};
+            const payload = { audience: sendAudience };
             if (scheduleMode === 'scheduled' && scheduledFor) {
                 payload.scheduledFor = new Date(scheduledFor).toISOString();
+            }
+            if (sendAudience === 'custom_selected') {
+                payload.recipientIds = customRecipientIds;
             }
             const response = await api.post(`/admin/events/${event.id}/send-invitations`, payload);
             setSendResult(response.data?.data || null);
@@ -148,9 +153,12 @@ export default function EventInvitationOpsTab({ event }) {
         setSuccess('');
         setTraceResult(null);
         try {
-            const payload = {};
+            const payload = { audience: sendAudience };
             if (scheduleMode === 'scheduled' && scheduledFor) {
                 payload.scheduledFor = new Date(scheduledFor).toISOString();
+            }
+            if (sendAudience === 'custom_selected') {
+                payload.recipientIds = customRecipientIds;
             }
             const response = await api.post(`/admin/events/${event.id}/send-invitations/trace`, payload);
             setTraceResult(response.data?.data || null);
@@ -171,6 +179,21 @@ export default function EventInvitationOpsTab({ event }) {
     const rsvpData = rsvpResponses || { rows: [], totals: {} };
     const responseRows = Array.isArray(rsvpData.rows) ? rsvpData.rows : [];
     const responseTotals = rsvpData.totals || {};
+    const customRecipients = responseRows.map((row) => ({
+        id: row.recipientId,
+        label: row.guestName || row.email || row.recipientId,
+        email: row.email || ''
+    }));
+    const canSend = readiness.hasRecipients && (sendAudience !== 'custom_selected' || customRecipientIds.length > 0);
+
+    function toggleCustomRecipient(recipientId, checked) {
+        setCustomRecipientIds((previous) => {
+            if (checked) {
+                return Array.from(new Set([...previous, recipientId]));
+            }
+            return previous.filter((id) => id !== recipientId);
+        });
+    }
 
     return (
         <div className="invitation-ops-tab">
@@ -237,6 +260,25 @@ export default function EventInvitationOpsTab({ event }) {
                             </button>
 
                             <div className="send-controls">
+                                <label htmlFor="sendAudience">Send Audience</label>
+                                <select
+                                    id="sendAudience"
+                                    value={sendAudience}
+                                    onChange={(e) => {
+                                        const nextAudience = e.target.value;
+                                        setSendAudience(nextAudience);
+                                        if (nextAudience !== 'custom_selected') {
+                                            setCustomRecipientIds([]);
+                                        }
+                                    }}
+                                >
+                                    <option value="newly_added">Newly Added (Unsent)</option>
+                                    <option value="failed">Failed Only</option>
+                                    <option value="sent_not_opened">Sent/Delivered Not Opened</option>
+                                    <option value="opened_not_responded">Opened Not Responded</option>
+                                    <option value="custom_selected">Custom Selected</option>
+                                </select>
+
                                 <label htmlFor="sendMode">{t('events.invitationOps.sendMode')}</label>
                                 <select id="sendMode" value={scheduleMode} onChange={(e) => setScheduleMode(e.target.value)}>
                                     <option value="now">{t('events.invitationOps.sendNow')}</option>
@@ -251,11 +293,31 @@ export default function EventInvitationOpsTab({ event }) {
                                 )}
                             </div>
 
-                            <button type="button" className="btn btn-primary" onClick={handleSendInvitations} disabled={sending || !readiness.hasRecipients}>
+                            {sendAudience === 'custom_selected' && (
+                                <div className="ops-custom-recipient-list">
+                                    {customRecipients.length === 0 ? (
+                                        <p className="ops-hint">No recipients available yet.</p>
+                                    ) : (
+                                        customRecipients.map((recipient) => (
+                                            <label key={recipient.id} className="ops-custom-recipient-row">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={customRecipientIds.includes(recipient.id)}
+                                                    onChange={(e) => toggleCustomRecipient(recipient.id, e.target.checked)}
+                                                />
+                                                <span>{recipient.label}</span>
+                                                <small>{recipient.email || '-'}</small>
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+
+                            <button type="button" className="btn btn-primary" onClick={handleSendInvitations} disabled={sending || !canSend}>
                                 <Send size={16} />
                                 <span>{sending ? t('common.loading') : t('events.invitationOps.send')}</span>
                             </button>
-                            <button type="button" className="btn btn-secondary" onClick={handleTraceInvitations} disabled={tracing || !readiness.hasRecipients}>
+                            <button type="button" className="btn btn-secondary" onClick={handleTraceInvitations} disabled={tracing || !canSend}>
                                 <Send size={16} />
                                 <span>{tracing ? t('common.loading') : t('invitationProjects.traceSend')}</span>
                             </button>

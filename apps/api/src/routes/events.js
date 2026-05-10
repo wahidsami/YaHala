@@ -394,6 +394,48 @@ function normalizeGuestIdList(value) {
         .filter(Boolean);
 }
 
+function normalizeAudience(value) {
+    const text = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    const allowed = new Set([
+        'newly_added',
+        'failed',
+        'sent_not_opened',
+        'opened_not_responded',
+        'custom_selected'
+    ]);
+    return allowed.has(text) ? text : 'newly_added';
+}
+
+async function resolveAudienceRecipientIds(db, projectId, audience, explicitRecipientIds = []) {
+    if (audience === 'custom_selected') {
+        return normalizeRecipientIdList(explicitRecipientIds);
+    }
+
+    let whereClause = '';
+    if (audience === 'failed') {
+        whereClause = `r.overall_status = 'failed'`;
+    } else if (audience === 'sent_not_opened') {
+        whereClause = `r.overall_status IN ('sent', 'delivered')`;
+    } else if (audience === 'opened_not_responded') {
+        whereClause = `r.overall_status = 'opened'`;
+    } else {
+        whereClause = `r.overall_status = 'draft'`;
+    }
+
+    const { rows } = await db.query(
+        `
+        SELECT r.id
+        FROM invitation_recipients r
+        WHERE r.project_id = $1
+          AND ${whereClause}
+        ORDER BY r.created_at ASC
+        `,
+        [projectId]
+    );
+
+    return rows.map((row) => row.id).filter(Boolean);
+}
+
 async function resolvePrimaryInvitationProject(db, eventId) {
     const { rows: eventRows } = await db.query(
         `
@@ -1233,7 +1275,13 @@ router.post('/:id/send-invitations', requirePermission('events.edit'), async (re
         }
 
         const { event, project } = await resolvePrimaryInvitationProject(pool, eventId);
-        const requestedRecipientIds = normalizeRecipientIdList(req.body?.recipientIds);
+        const audience = normalizeAudience(req.body?.audience);
+        const requestedRecipientIds = await resolveAudienceRecipientIds(
+            pool,
+            project.id,
+            audience,
+            req.body?.recipientIds
+        );
         const scheduledFor = parseOptionalSchedule(req.body?.scheduledFor);
         const sendResult = await executeInvitationEmailSend({
             projectId: project.id,
@@ -1247,6 +1295,7 @@ router.post('/:id/send-invitations', requirePermission('events.edit'), async (re
             data: {
                 eventId: event.id,
                 projectId: project.id,
+                audience,
                 summary: sendResult.summary,
                 selection: sendResult.debug?.selection || null
             }
@@ -1270,7 +1319,13 @@ router.post('/:id/send-invitations/trace', requirePermission('events.edit'), asy
         }
 
         const { event, project } = await resolvePrimaryInvitationProject(pool, eventId);
-        const requestedRecipientIds = normalizeRecipientIdList(req.body?.recipientIds);
+        const audience = normalizeAudience(req.body?.audience);
+        const requestedRecipientIds = await resolveAudienceRecipientIds(
+            pool,
+            project.id,
+            audience,
+            req.body?.recipientIds
+        );
         const scheduledFor = parseOptionalSchedule(req.body?.scheduledFor);
         const traceResult = await executeInvitationEmailSend({
             projectId: project.id,
@@ -1284,6 +1339,7 @@ router.post('/:id/send-invitations/trace', requirePermission('events.edit'), asy
             data: {
                 eventId: event.id,
                 projectId: project.id,
+                audience,
                 summary: traceResult.summary,
                 selection: traceResult.debug?.selection || null,
                 trace: traceResult.trace || null
