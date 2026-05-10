@@ -63,16 +63,16 @@ You can also put both admin and invite traffic on the same Coolify admin resourc
 
 ## 4. Deploy order
 
-1. Create PostgreSQL in Coolify
-2. Deploy API
-3. Import the existing database dump
+1. Create PostgreSQL in Coolify d
+2. Deploy API d 
+3. Import the existing database dump d
 4. Deploy Admin
 5. Deploy Scanner
 6. Test login, invite page, scanner, uploads
 7. Use migrations/seed only if you are not importing the dump
 8. Add email worker only if you need queued invitation delivery
 
-## 5. PostgreSQL setup
+## 5. PostgreSQL setup  done
 
 Create a PostgreSQL service from Coolify's database/service options.
 
@@ -143,7 +143,7 @@ After import, verify:
 - clients/events data exists
 - app login works before running any seed script
 
-### pgAdmin restore notes
+### pgAdmin restore notes done
 
 This dump contains database-level metadata for `rawaj_db`.
 
@@ -255,7 +255,7 @@ SELECT COUNT(*) AS events_count FROM public.events;
 SELECT COUNT(*) AS templates_count FROM public.templates;
 ```
 
-## 7. API application setup
+## 7. API application setup  done
 
 Create a new Application from your public Git repository.
 
@@ -266,7 +266,7 @@ Recommended settings:
 - Port Exposes: `3001`
 - Install Command: `npm ci`
 - Build Command: leave empty
-- Start Command: `npm run start --workspace=apps/api`
+- Start Command: `npm run start:migrated --workspace=apps/api`
 - Domain: `https://yapi.testproject.cloud`
 - Health check path: `/api/health`
 
@@ -311,10 +311,14 @@ Notes:
 - `RESEND_API_KEY` should be stored in Coolify as a secret, not hardcoded in Git-tracked files.
 - API variables are runtime variables.
 - Your old local file used `NODE_ENV=development`; in Coolify use `NODE_ENV=production`.
+- `start:migrated` runs migrations before API startup on every deploy/restart. This is safe because migrations are tracked in `schema_migrations`.
 
 ## 8. Database initialization fallback
 
 Use this only if you are not importing `rawaj_db.sql`.
+
+If you use `start:migrated`, migrations already run automatically.  
+Only run this manually when you need an explicit one-time initialization or seeding.
 
 After the API container is up, open the Coolify terminal for that app and run:
 
@@ -330,12 +334,10 @@ Seed script creates the default admin:
 
 Important note:
 
-- The current migration runner does not keep a migrations history table.
-- It simply reruns every SQL file in `apps/api/src/db/migrations`.
-- The current scripts appear mostly idempotent, but for future schema changes you should keep this in mind.
+- The migration runner keeps history in `schema_migrations` and skips already-applied files.
 - If you already restored `rawaj_db.sql`, skip this section unless you intentionally want a fresh empty database instead.
 
-## 9. Admin application setup
+## 9. Admin application setup  done
 
 Create another Application from the same public Git repository.
 
