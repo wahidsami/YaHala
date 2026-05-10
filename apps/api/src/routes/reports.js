@@ -303,7 +303,7 @@ router.get('/events/:eventId', requirePermission('reports.view'), async (req, re
                 r.phone,
                 r.overall_status,
                 r.responded_at,
-                r.opened_at,
+                r.last_opened_at AS opened_at,
                 COALESCE(r.metadata->>'attendance_status', r.metadata->>'check_in_status', 'pending') AS attendance_status,
                 cg.id AS guest_id,
                 cg.position,
