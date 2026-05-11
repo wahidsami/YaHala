@@ -211,11 +211,8 @@ export default function EventDashboardPage() {
                 <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>
                     {t('events.dashboardOverview')}
                 </button>
-                <button className={activeTab === 'invitation-setup' ? 'active' : ''} onClick={() => setActiveTab('invitation-setup')}>
-                    <Layers3 size={16} /> {t('events.dashboardInvitationSetup')}
-                </button>
-                <button className={activeTab === 'invitation-ops' ? 'active' : ''} onClick={() => setActiveTab('invitation-ops')}>
-                    <Mail size={16} /> {t('events.dashboardInvitationOps')}
+                <button className={activeTab === 'invitations' ? 'active' : ''} onClick={() => setActiveTab('invitations')}>
+                    <Mail size={16} /> Invitations
                 </button>
                 <button className={activeTab === 'guests' ? 'active' : ''} onClick={() => setActiveTab('guests')}>
                     <Users size={16} /> {t('events.dashboardGuests')}
@@ -223,8 +220,8 @@ export default function EventDashboardPage() {
                 <button className={activeTab === 'addons' ? 'active' : ''} onClick={() => setActiveTab('addons')}>
                     <Layers3 size={16} /> {t('events.dashboardAddons')}
                 </button>
-                <button className={activeTab === 'observation' ? 'active' : ''} onClick={() => setActiveTab('observation')}>
-                    <Activity size={16} /> Observation Center
+                <button className={activeTab === 'live-ops' ? 'active' : ''} onClick={() => setActiveTab('live-ops')}>
+                    <Activity size={16} /> Live Ops
                 </button>
             </div>
 
@@ -307,7 +304,7 @@ export default function EventDashboardPage() {
                                 </div>
                             </button>
 
-                            <button type="button" className="event-ops-card" onClick={() => setActiveTab('observation')}>
+                            <button type="button" className="event-ops-card" onClick={() => setActiveTab('live-ops')}>
                                 <div className="event-ops-card__icon event-ops-card__icon--live">
                                     <Activity size={18} />
                                 </div>
@@ -503,20 +500,15 @@ export default function EventDashboardPage() {
                     </div>
                 )}
 
-                {activeTab === 'invitation-setup' && (
-                    <EventInvitationSetupTab event={event} onUpdated={fetchEvent} />
-                )}
-
-                {activeTab === 'invitation-ops' && (
-                    <EventInvitationOpsTab event={event} />
-                )}
+                {activeTab === 'invitations' && (<div className="invitations-combined-tab"><EventInvitationSetupTab event={event} onUpdated={fetchEvent} /><hr className="tab-divider" style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '32px 0' }} /><EventInvitationOpsTab event={event} /></div>)}
 
                 {activeTab === 'guests' && <EventGuestsTab event={event} />}
 
                 {activeTab === 'addons' && <EventAddonsTab event={event} />}
 
-                {activeTab === 'observation' && <EventObservationTab event={event} />}
+                {activeTab === 'live-ops' && <EventObservationTab event={event} />}
             </div>
         </div>
     );
 }
+

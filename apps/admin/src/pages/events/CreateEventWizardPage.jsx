@@ -325,23 +325,20 @@ export default function CreateEventWizardPage() {
 
     return (
         <div className="create-event-page">
+            <div className="wizard-top-bar">
+                <button className="wizard-back-btn" onClick={handleBack} title="Back">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <div className="wizard-steps-dots">
+                    {[1, 2, 3, 4].map((item) => (
+                        <div key={item} className={`wizard-dot ${step === item ? 'is-active' : step > item ? 'is-complete' : ''}`} />
+                    ))}
+                </div>
+            </div>
             <section className="create-event-page__hero">
                 <div>
                     <h1 className="hub-display-title">{localize(i18n, 'Let’s create your event', 'لننشئ فعاليتك')}</h1>
                     <p>{localize(i18n, 'A few quick steps. You can edit everything later.', 'بضع خطوات سريعة ويمكنك تعديل كل شيء لاحقاً.')}</p>
-                </div>
-                <div className="wizard-steps">
-                    {[1, 2, 3, 4].map((item) => (
-                        <div key={item} className={`wizard-step-pill ${step === item ? 'is-active' : step > item ? 'is-complete' : ''}`}>
-                            <span>{step > item ? <CheckCircle2 size={16} /> : item}</span>
-                            <strong>
-                                {item === 1 && localize(i18n, 'Event type', 'نوع الفعالية')}
-                                {item === 2 && localize(i18n, 'Details', 'التفاصيل')}
-                                {item === 3 && localize(i18n, 'Design invite', 'تصميم الدعوة')}
-                                {item === 4 && localize(i18n, 'Guest list', 'قائمة الضيوف')}
-                            </strong>
-                        </div>
-                    ))}
                 </div>
             </section>
 
@@ -549,15 +546,15 @@ export default function CreateEventWizardPage() {
             </div>
 
             <div className="create-event-footer">
-                <button type="button" className="btn btn-secondary" onClick={handleBack}>
-                    {step === 1 ? localize(i18n, 'Exit', 'خروج') : localize(i18n, 'Back', 'رجوع')}
+                <button type="button" className="btn btn-ghost" onClick={() => navigate('/')}>
+                    {localize(i18n, 'Save draft', 'حفظ كمسودة')}
                 </button>
                 <button type="button" className="btn btn-primary" onClick={handleContinue} disabled={saving || (step === 2 && !canContinueFromDetails)}>
                     {saving
                         ? localize(i18n, 'Saving...', 'جاري الحفظ...')
                         : step === 4
                             ? localize(i18n, 'Finish Event Setup', 'إنهاء إعداد الفعالية')
-                            : localize(i18n, 'Continue', 'متابعة')}
+                            : localize(i18n, 'Continue →', 'متابعة ←')}
                 </button>
             </div>
         </div>

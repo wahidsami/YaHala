@@ -349,8 +349,8 @@ function AddonListPage() {
                                         <td>{formatDate(item.created_at, i18n.language)}</td>
                                         <td>
                                             <div className="row-actions">
-                                                <Link to={`/addons/${addonType}/${item.id}`} className="action-btn" title="View"><Eye size={16} /></Link>
-                                                <Link to={`/addons/${addonType}/${item.id}`} className="action-btn" title="Edit">Edit</Link>
+                                                <Link to={`/addons/${addonType}/${item.id}/edit`} className="action-btn" title="View"><Eye size={16} /></Link>
+                                                <Link to={`/addons/${addonType}/${item.id}/edit`} className="action-btn" title="Edit">Edit</Link>
                                                 <RoleGuard permission="events.edit">
                                                     <button type="button" className="action-btn danger" title="Delete" onClick={() => openDeleteDialog(item)}>
                                                         <Trash2 size={16} />
@@ -388,60 +388,6 @@ function AddonListPage() {
     );
 }
 
-function AddonEditorShell() {
-    const { addonType = 'polls', id } = useParams();
-    const navigate = useNavigate();
-    const isNew = id === 'new';
-
-    if (addonType === 'polls' && isNew) {
-        return <Navigate to="/addons/polls/new-builder" replace />;
-    }
-
-    if (addonType === 'questionnaires' && isNew) {
-        return <Navigate to="/addons/questionnaires/new-builder" replace />;
-    }
-
-    if (addonType === 'instructions' && isNew) {
-        return <Navigate to="/addons/instructions/new-builder" replace />;
-    }
-
-    if (addonType === 'instructions' && !isNew) {
-        return <Navigate to={`/addons/instructions/${id}/edit`} replace />;
-    }
-
-    return (
-        <div className="addons-page">
-            <div className="page-header addon-editor-top">
-                <div>
-                    <button type="button" className="back-link" onClick={() => navigate(`/addons/${addonType}`)}>Back</button>
-                    <h1>{isNew ? `New ${ADDON_LABELS[addonType] || addonType}` : `Edit ${ADDON_LABELS[addonType] || addonType}`}</h1>
-                </div>
-                <button type="button" className="btn btn-primary">Save</button>
-            </div>
-
-            <section className="addon-editor-shell">
-                <div className="addon-editor-form-grid">
-                    <label>
-                        <span>Addon Name</span>
-                        <input type="text" placeholder="Enter addon name" />
-                    </label>
-                    <label>
-                        <span>Client</span>
-                        <select defaultValue="">
-                            <option value="">Select client</option>
-                        </select>
-                    </label>
-                </div>
-
-                <div className="addon-editor-placeholder">
-                    <h3>Editor Area</h3>
-                    <p>This is the dedicated editor container for {addonType}. We can now plug the full builder here.</p>
-                </div>
-            </section>
-        </div>
-    );
-}
-
 export default function AddonsPageRouter() {
     const location = useLocation();
     if (location.pathname === '/addons' || location.pathname === '/addons/') {
@@ -450,4 +396,5 @@ export default function AddonsPageRouter() {
     return <AddonListPage />;
 }
 
-export { AddonEditorShell };
+
+

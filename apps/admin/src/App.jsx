@@ -23,7 +23,7 @@ import CreateEventWizardPage from './pages/events/CreateEventWizardPage';
 import TemplateBuilderPage from './pages/templates/TemplateBuilderPage';
 import TemplatePreviewPage from './pages/templates/TemplatePreviewPage';
 import LibraryPage from './pages/library/LibraryPage';
-import AddonsPage, { AddonEditorShell } from './pages/addons/AddonsPage';
+import AddonsPage from './pages/addons/AddonsPage';
 import PollBuilderPage from './pages/addons/PollBuilderPage';
 import QuestionnaireBuilderPage from './pages/addons/QuestionnaireBuilderPage';
 import InstructionsBuilderPage from './pages/addons/InstructionsBuilderPage';
@@ -77,7 +77,6 @@ function App() {
                     {/* Addons */}
                     <Route path="/addons" element={<AddonsPage />} />
                     <Route path="/addons/:addonType" element={<AddonsPage />} />
-                    <Route path="/addons/:addonType/:id" element={<AddonEditorShell />} />
                     <Route path="/addons/polls/new-builder" element={<PollBuilderPage mode="create" />} />
                     <Route path="/addons/polls/new" element={<PollBuilderPage mode="create" />} />
                     <Route path="/addons/polls/:id/edit" element={<PollEditWrapper />} />
@@ -291,3 +290,4 @@ function InstructionsEditWrapper() {
 }
 
 export default App;
+
