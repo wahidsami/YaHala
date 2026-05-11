@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, Plus, Search, Trash2 } from 'lucide-react';
+import { BookOpen, ClipboardList, Eye, Layers3, MessageSquare, Plus, Search, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import RoleGuard from '../../components/auth/RoleGuard';
@@ -14,6 +14,21 @@ const ADDON_LABELS = {
     quiz: 'Quiz',
     'files-downloads': 'Files & Downloads',
     guestbook: 'Guestbook'
+};
+
+const ADDON_META = {
+    polls: {
+        icon: MessageSquare,
+        description: 'Fast voting and preference collection for an event.'
+    },
+    questionnaires: {
+        icon: ClipboardList,
+        description: 'Longer forms for RSVP, attendee details, or pre-event intake.'
+    },
+    instructions: {
+        icon: BookOpen,
+        description: 'Reusable event instructions that can be linked into invitation cards.'
+    }
 };
 
 const ENDPOINT_MAP = {
@@ -32,18 +47,30 @@ function AddonListPage() {
     const { i18n } = useTranslation();
     const { addonType = 'polls' } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
     const [clients, setClients] = useState([]);
+    const [events, setEvents] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 0 });
-    const [filters, setFilters] = useState({ search: '', status: 'all', clientId: 'all' });
+    const [filters, setFilters] = useState({
+        search: '',
+        status: 'all',
+        clientId: 'all',
+        eventId: searchParams.get('eventId') || 'all'
+    });
     const [confirmDialog, setConfirmDialog] = useState(null);
 
     const supportsApi = Boolean(ENDPOINT_MAP[addonType]);
+    const supportsEventFilter = addonType === 'polls' || addonType === 'questionnaires' || addonType === 'instructions';
+    const activeMeta = ADDON_META[addonType] || { icon: Layers3, description: 'Manage addon records for this module.' };
+    const ActiveIcon = activeMeta.icon;
+    const selectedEvent = useMemo(() => events.find((event) => event.id === filters.eventId) || null, [events, filters.eventId]);
 
     useEffect(() => {
         fetchClients();
+        fetchEvents();
     }, []);
 
     useEffect(() => {
@@ -55,7 +82,7 @@ function AddonListPage() {
         setItems([]);
         setPagination((prev) => ({ ...prev, total: 0, totalPages: 0 }));
         setLoading(false);
-    }, [addonType, filters, pagination.page]);
+    }, [addonType, filters, pagination.page, selectedEvent?.client_id]);
 
     async function fetchClients() {
         try {
@@ -66,15 +93,28 @@ function AddonListPage() {
         }
     }
 
+    async function fetchEvents() {
+        try {
+            const response = await api.get('/admin/events?page=1&pageSize=200');
+            setEvents(response.data?.data || []);
+        } catch (error) {
+            console.error('Failed to fetch events:', error);
+        }
+    }
+
     async function fetchList() {
         setLoading(true);
         try {
+            const effectiveClientId = filters.clientId !== 'all'
+                ? filters.clientId
+                : (addonType === 'instructions' && selectedEvent?.client_id ? selectedEvent.client_id : 'all');
             const params = new URLSearchParams({
                 page: String(pagination.page),
                 pageSize: String(pagination.pageSize),
                 ...(filters.search ? { search: filters.search } : {}),
                 ...(filters.status !== 'all' ? { status: filters.status } : {}),
-                ...(filters.clientId !== 'all' ? { clientId: filters.clientId } : {})
+                ...(effectiveClientId !== 'all' ? { clientId: effectiveClientId } : {}),
+                ...(supportsEventFilter && filters.eventId !== 'all' && addonType !== 'instructions' ? { eventId: filters.eventId } : {})
             });
 
             const endpoint = ENDPOINT_MAP[addonType];
@@ -88,6 +128,18 @@ function AddonListPage() {
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            if (filters.eventId && filters.eventId !== 'all') {
+                next.set('eventId', filters.eventId);
+            } else {
+                next.delete('eventId');
+            }
+            return next;
+        }, { replace: true });
+    }, [filters.eventId, setSearchParams]);
 
     async function deleteItem(item) {
         try {
@@ -124,21 +176,81 @@ function AddonListPage() {
     }
 
     const pageTitle = useMemo(() => ADDON_LABELS[addonType] || 'Addons', [addonType]);
+    const publishedCount = items.filter((item) => item.status === 'published').length;
+    const draftCount = items.filter((item) => item.status === 'draft').length;
+    const contextualEventLabel = selectedEvent ? (selectedEvent.name || selectedEvent.name_ar || 'Selected event') : 'All events';
 
     return (
         <div className="addons-page">
+            <nav className="addons-subnav">
+                {Object.entries(ADDON_META).map(([key, meta]) => {
+                    const Icon = meta.icon;
+                    return (
+                        <Link key={key} to={`/addons/${key}${filters.eventId !== 'all' ? `?eventId=${filters.eventId}` : ''}`} className={`addons-subnav-btn ${addonType === key ? 'active' : ''}`}>
+                            <Icon size={16} />
+                            <span>{ADDON_LABELS[key]}</span>
+                        </Link>
+                    );
+                })}
+            </nav>
+
             <div className="page-header">
                 <div>
                     <h1>{pageTitle}</h1>
-                    <p>Manage {pageTitle.toLowerCase()} records for this addon only.</p>
+                    <p>{activeMeta.description}</p>
                 </div>
             </div>
+
+            <section className="addon-overview-shell">
+                <div className="addon-overview-card">
+                    <div className="addon-overview-card__head">
+                        <div className="addon-overview-card__icon">
+                            <ActiveIcon size={18} />
+                        </div>
+                        <div>
+                            <strong>{pageTitle} workspace</strong>
+                            <p>Organize this addon around the event first, then manage individual records.</p>
+                        </div>
+                    </div>
+
+                    <div className="addon-overview-card__stats">
+                        <div><span>Loaded</span><strong>{pagination.total || items.length}</strong></div>
+                        <div><span>Published</span><strong>{publishedCount}</strong></div>
+                        <div><span>Draft</span><strong>{draftCount}</strong></div>
+                        <div><span>Selected</span><strong>{selectedIds.length}</strong></div>
+                    </div>
+                </div>
+
+                <div className="addon-overview-card addon-overview-card--actions">
+                    <div className="addon-overview-card__head">
+                        <div className="addon-overview-card__icon addon-overview-card__icon--event">
+                            <Layers3 size={18} />
+                        </div>
+                        <div>
+                            <strong>{contextualEventLabel}</strong>
+                            <p>{selectedEvent ? 'Keep this addon list scoped to the current event and jump back into the event workspace when needed.' : 'Choose an event below to work in event context and keep addon management organized.'}</p>
+                        </div>
+                    </div>
+                    <div className="addon-overview-card__links">
+                        {selectedEvent && (
+                            <Link to={`/events/${selectedEvent.id}`} className="addon-overview-link">
+                                <span>Open event workspace</span>
+                            </Link>
+                        )}
+                        {selectedEvent && (
+                            <Link to={`/reports?eventId=${selectedEvent.id}`} className="addon-overview-link">
+                                <span>Open live report</span>
+                            </Link>
+                        )}
+                    </div>
+                </div>
+            </section>
 
             <section className="addon-list-shell">
                 <div className="addon-list-header">
                     <div>
                         <h2>{pageTitle}</h2>
-                        <p>Search, filter, and manage all {pageTitle.toLowerCase()}.</p>
+                        <p>Search, filter, and manage all {pageTitle.toLowerCase()} with event context.</p>
                     </div>
                     <RoleGuard permission="events.edit">
                         <button type="button" className="btn btn-primary" onClick={() => navigate(`/addons/${addonType}/new`)}>
@@ -161,6 +273,18 @@ function AddonListPage() {
                             }}
                         />
                     </div>
+
+                    {supportsEventFilter && (
+                        <select value={filters.eventId} onChange={(event) => {
+                            setFilters((prev) => ({ ...prev, eventId: event.target.value }));
+                            setPagination((prev) => ({ ...prev, page: 1 }));
+                        }}>
+                            <option value="all">All events</option>
+                            {events.map((event) => (
+                                <option key={event.id} value={event.id}>{event.name || event.name_ar || 'Untitled event'}</option>
+                            ))}
+                        </select>
+                    )}
 
                     <select value={filters.status} onChange={(event) => {
                         setFilters((prev) => ({ ...prev, status: event.target.value }));
@@ -196,7 +320,7 @@ function AddonListPage() {
                                         aria-label="Select all"
                                     />
                                 </th>
-                                <th>Instruction Name</th>
+                                <th>Title</th>
                                 <th>Client</th>
                                 <th>Created</th>
                                 <th>Actions</th>

@@ -4,6 +4,94 @@
     gap: 1rem;
 }
 
+.addon-overview-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+    gap: 1rem;
+}
+
+.addon-overview-card {
+    padding: 1rem 1.1rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color, #d7deea);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.04);
+}
+
+.addon-overview-card__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+}
+
+.addon-overview-card__head p {
+    margin: 0.3rem 0 0;
+    color: var(--muted-text, #64748b);
+}
+
+.addon-overview-card__icon {
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 143, 118, 0.14);
+    color: #d05c36;
+    flex-shrink: 0;
+}
+
+.addon-overview-card__icon--event {
+    background: rgba(123, 104, 238, 0.12);
+    color: #6d28d9;
+}
+
+.addon-overview-card__stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.addon-overview-card__stats div {
+    padding: 0.8rem 0.85rem;
+    border-radius: 14px;
+    background: #faf7ff;
+    border: 1px solid rgba(215, 222, 234, 0.8);
+}
+
+.addon-overview-card__stats span {
+    display: block;
+    color: var(--muted-text, #64748b);
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.addon-overview-card__stats strong {
+    font-size: 1.15rem;
+}
+
+.addon-overview-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: 1rem;
+}
+
+.addon-overview-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.85rem;
+    padding: 0.7rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-color, #d7deea);
+    background: #fff;
+    color: var(--text-color, #0f172a);
+    text-decoration: none;
+    font-weight: 700;
+}
+
 .addons-subnav {
     display: flex;
     gap: 0.75rem;
@@ -122,6 +210,7 @@
 }
 
 @media (max-width: 900px) {
+    .addon-overview-shell,
     .addon-editor-form-grid {
         grid-template-columns: 1fr;
     }
@@ -129,5 +218,9 @@
     .addon-list-header {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .addon-overview-card__stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }

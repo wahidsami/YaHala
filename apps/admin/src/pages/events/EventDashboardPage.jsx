@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Edit, Users, Send, CheckCircle, Clock, Clock3, Mail, MapPin, Image, Link2, Layers3, Activity } from 'lucide-react';
+import { ArrowLeft, Edit, Users, Send, CheckCircle, Clock, Clock3, Mail, MapPin, Image, Link2, Layers3, Activity, BarChart3 } from 'lucide-react';
 import api from '../../services/api';
 import RoleGuard from '../../components/auth/RoleGuard';
 import EventInvitationSetupTab from './components/EventInvitationSetupTab';
@@ -273,6 +273,52 @@ export default function EventDashboardPage() {
                             </div>
                         </div>
 
+                        <div className="event-ops-grid">
+                            <Link to={`/send?eventId=${id}`} className="event-ops-card">
+                                <div className="event-ops-card__icon">
+                                    <Send size={18} />
+                                </div>
+                                <div className="event-ops-card__copy">
+                                    <span>{t('events.dashboardSendInvitations')}</span>
+                                    <strong>{t('events.dashboardInvitesSent')}: {stats?.invitesSent || 0}</strong>
+                                    <small>Open the send workspace with this event already selected.</small>
+                                </div>
+                            </Link>
+
+                            <Link to={`/reports?eventId=${id}`} className="event-ops-card">
+                                <div className="event-ops-card__icon event-ops-card__icon--report">
+                                    <BarChart3 size={18} />
+                                </div>
+                                <div className="event-ops-card__copy">
+                                    <span>Real-time report</span>
+                                    <strong>{stats?.checkedIn || 0} checked in</strong>
+                                    <small>Watch live attendance, RSVP, and delivery performance.</small>
+                                </div>
+                            </Link>
+
+                            <button type="button" className="event-ops-card" onClick={() => setActiveTab('addons')}>
+                                <div className="event-ops-card__icon event-ops-card__icon--addon">
+                                    <Layers3 size={18} />
+                                </div>
+                                <div className="event-ops-card__copy">
+                                    <span>{t('events.dashboardAddons')}</span>
+                                    <strong>Organize tabs and linked experiences</strong>
+                                    <small>Enable polls, questionnaires, and card-linked instructions.</small>
+                                </div>
+                            </button>
+
+                            <button type="button" className="event-ops-card" onClick={() => setActiveTab('observation')}>
+                                <div className="event-ops-card__icon event-ops-card__icon--live">
+                                    <Activity size={18} />
+                                </div>
+                                <div className="event-ops-card__copy">
+                                    <span>Check-in pulse</span>
+                                    <strong>{stats?.pending || 0} still pending</strong>
+                                    <small>Jump into live monitoring for scanner and floor activity.</small>
+                                </div>
+                            </button>
+                        </div>
+
                         <div className="overview-grid">
                             <section className="overview-card overview-card--wide">
                                 <div className="overview-card-header">
@@ -434,10 +480,16 @@ export default function EventDashboardPage() {
                                         <span>{t('events.dashboardManageGuestsInEvent')}</span>
                                     </button>
                                     <RoleGuard permission="events.edit">
-                                        <button className="action-item" type="button">
+                                        <Link className="action-item" to={`/send?eventId=${id}`}>
                                             <Send size={18} />
                                             <span>{t('events.dashboardSendInvitations')}</span>
-                                        </button>
+                                        </Link>
+                                    </RoleGuard>
+                                    <RoleGuard permission="reports.view">
+                                        <Link to={`/reports?eventId=${id}`} className="action-item">
+                                            <BarChart3 size={18} />
+                                            <span>Open real-time report</span>
+                                        </Link>
                                     </RoleGuard>
                                     <RoleGuard permission="events.create">
                                         <Link to={`/invitation-projects/new?eventId=${id}`} className="action-item">

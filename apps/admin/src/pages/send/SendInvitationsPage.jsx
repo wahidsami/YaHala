@@ -16,7 +16,7 @@ import {
     Sparkles,
     Users
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import './SendInvitationsPage.css';
@@ -182,6 +182,7 @@ function PreviewShell({ channel, title, subtitle, previewMessage, eventLine, cta
 
 export default function SendInvitationsPage() {
     const { i18n } = useTranslation();
+    const [searchParams] = useSearchParams();
     const messageRef = useRef(null);
     const [events, setEvents] = useState([]);
     const [selectedEventId, setSelectedEventId] = useState('');
@@ -201,6 +202,7 @@ export default function SendInvitationsPage() {
     const [sending, setSending] = useState(false);
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
+    const requestedEventId = searchParams.get('eventId') || '';
 
     useEffect(() => {
         let mounted = true;
@@ -214,7 +216,9 @@ export default function SendInvitationsPage() {
                 }
                 const rows = response.data?.data || [];
                 setEvents(rows);
-                if (!selectedEventId && rows.length) {
+                if (requestedEventId && rows.some((event) => event.id === requestedEventId)) {
+                    setSelectedEventId(requestedEventId);
+                } else if (!selectedEventId && rows.length) {
                     setSelectedEventId(rows[0].id);
                 }
             } catch (loadError) {
@@ -230,7 +234,7 @@ export default function SendInvitationsPage() {
         return () => {
             mounted = false;
         };
-    }, [selectedEventId]);
+    }, [requestedEventId, selectedEventId]);
 
     useEffect(() => {
         if (!selectedEventId) {

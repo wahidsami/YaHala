@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
     Activity,
@@ -107,15 +107,18 @@ function EmptyState({ message }) {
 
 export default function ReportsPage() {
     const { t, i18n } = useTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [refreshTick, setRefreshTick] = useState(0);
     const [eventOptions, setEventOptions] = useState([]);
-    const [selectedEventId, setSelectedEventId] = useState('');
+    const [selectedEventId, setSelectedEventId] = useState(searchParams.get('eventId') || '');
     const [eventReport, setEventReport] = useState(null);
     const [eventReportLoading, setEventReportLoading] = useState(false);
     const [eventReportError, setEventReportError] = useState('');
+    const [autoRefresh, setAutoRefresh] = useState(false);
+    const [lastUpdatedAt, setLastUpdatedAt] = useState('');
 
     const isArabic = i18n.language?.startsWith('ar');
 
@@ -130,6 +133,7 @@ export default function ReportsPage() {
                 const response = await api.get('/admin/reports/overview');
                 if (mounted) {
                     setData(response.data.data || null);
+                    setLastUpdatedAt(new Date().toISOString());
                 }
             } catch (fetchError) {
                 console.error('Failed to load reports:', fetchError);
@@ -159,7 +163,9 @@ export default function ReportsPage() {
                 const rows = response.data?.data || [];
                 if (mounted) {
                     setEventOptions(rows);
-                    if (!selectedEventId && rows.length) {
+                    if (selectedEventId && rows.some((event) => event.id === selectedEventId)) {
+                        setSelectedEventId(selectedEventId);
+                    } else if (!selectedEventId && rows.length) {
                         setSelectedEventId(rows[0].id);
                     }
                 }
@@ -171,7 +177,7 @@ export default function ReportsPage() {
         return () => {
             mounted = false;
         };
-    }, [selectedEventId]);
+    }, []);
 
     useEffect(() => {
         if (!selectedEventId) {
@@ -186,6 +192,7 @@ export default function ReportsPage() {
                 const response = await api.get(`/admin/reports/events/${selectedEventId}`);
                 if (mounted) {
                     setEventReport(response.data?.data || null);
+                    setLastUpdatedAt(new Date().toISOString());
                 }
             } catch (fetchError) {
                 if (mounted) {
@@ -202,7 +209,31 @@ export default function ReportsPage() {
         return () => {
             mounted = false;
         };
-    }, [selectedEventId]);
+    }, [refreshTick, selectedEventId]);
+
+    useEffect(() => {
+        if (!autoRefresh) {
+            return undefined;
+        }
+
+        const intervalId = window.setInterval(() => {
+            setRefreshTick((value) => value + 1);
+        }, 30000);
+
+        return () => window.clearInterval(intervalId);
+    }, [autoRefresh]);
+
+    useEffect(() => {
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            if (selectedEventId) {
+                next.set('eventId', selectedEventId);
+            } else {
+                next.delete('eventId');
+            }
+            return next;
+        }, { replace: true });
+    }, [selectedEventId, setSearchParams]);
 
     const overview = data?.summary || {};
     const invitations = data?.invitations || {};
@@ -217,6 +248,14 @@ export default function ReportsPage() {
 
     const responseRate = useMemo(() => percent(rsvp.total_submissions, invitations.total_recipients), [invitations.total_recipients, rsvp.total_submissions]);
     const openRate = useMemo(() => percent(invitations.opened_count, invitations.total_recipients), [invitations.opened_count, invitations.total_recipients]);
+    const selectedEvent = useMemo(
+        () => eventOptions.find((event) => event.id === selectedEventId) || null,
+        [eventOptions, selectedEventId]
+    );
+    const checkInRate = useMemo(
+        () => percent(eventReport?.invitationStats?.checked_in_count, eventReport?.invitationStats?.total_recipients),
+        [eventReport]
+    );
 
     function refreshReports() {
         setRefreshTick((value) => value + 1);
@@ -238,6 +277,57 @@ export default function ReportsPage() {
                     <span>{t('common.refresh')}</span>
                 </button>
             </div>
+
+            <section className="report-live-shell">
+                <div className="report-live-shell__header">
+                    <div>
+                        <span className="eyebrow">Live event monitor</span>
+                        <h2>{selectedEvent ? (isArabic ? (selectedEvent.name_ar || selectedEvent.name) : (selectedEvent.name || selectedEvent.name_ar)) : 'Choose an event'}</h2>
+                        <p>Keep one event in focus, watch attendance and RSVP movement, then jump into add-ons or workspace actions without losing context.</p>
+                    </div>
+
+                    <div className="report-live-shell__controls">
+                        <div className="event-report-toolbar">
+                            <label htmlFor="eventReportQuickSelect">Event</label>
+                            <select
+                                id="eventReportQuickSelect"
+                                className="form-select"
+                                value={selectedEventId}
+                                onChange={(event) => setSelectedEventId(event.target.value)}
+                            >
+                                {eventOptions.map((event) => (
+                                    <option key={event.id} value={event.id}>
+                                        {isArabic ? (event.name_ar || event.name) : (event.name || event.name_ar)} · {isArabic ? (event.client_name_ar || event.client_name) : (event.client_name || event.client_name_ar)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button type="button" className={`report-live-toggle ${autoRefresh ? 'is-active' : ''}`} onClick={() => setAutoRefresh((value) => !value)}>
+                            <Activity size={16} />
+                            <span>{autoRefresh ? 'Auto refresh on' : 'Auto refresh off'}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="report-live-shell__meta">
+                    <span>Last updated: {formatDateTime(lastUpdatedAt, i18n.language)}</span>
+                    <div className="report-live-shell__links">
+                        {selectedEventId && <Link to={`/events/${selectedEventId}`} className="report-live-link">Open event workspace</Link>}
+                        {selectedEventId && <Link to={`/addons/polls?eventId=${selectedEventId}`} className="report-live-link">Open add-ons</Link>}
+                        {selectedEventId && <Link to={`/send?eventId=${selectedEventId}`} className="report-live-link">Open send workspace</Link>}
+                    </div>
+                </div>
+
+                {eventReport && !eventReportLoading && (
+                    <div className="report-grid report-grid--four">
+                        <OverviewCard title="Invited" value={formatNumber(eventReport?.invitationStats?.total_recipients)} subtitle={`Checked-in rate ${checkInRate}`} icon={Users} tone="primary" />
+                        <OverviewCard title="Checked In" value={formatNumber(eventReport?.invitationStats?.checked_in_count)} subtitle={`Walk-ins ${formatNumber(eventReport?.walkInStats?.walk_in_count)}`} icon={UserCheck} tone="success" />
+                        <OverviewCard title="Responded" value={formatNumber(eventReport?.rsvpStats?.total_submissions)} subtitle={`Attending ${formatNumber(eventReport?.rsvpStats?.attending_count)}`} icon={Reply} tone="accent" />
+                        <OverviewCard title="Delivery" value={formatNumber(eventReport?.invitationStats?.sent_count)} subtitle={`Opened ${formatNumber(eventReport?.invitationStats?.opened_count)} · Failed ${formatNumber(eventReport?.invitationStats?.failed_count)}`} icon={Send} tone="dark" />
+                    </div>
+                )}
+            </section>
 
             {error && <div className="reports-error">{error}</div>}
 

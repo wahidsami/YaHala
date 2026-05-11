@@ -96,11 +96,11 @@ Use this as the working checklist for the remaining redesign.
 - [x] Add stronger visual connection to the active invitation/template preview.
 
 ### 3.3 Library polish
-- [ ] Improve `/library` to better match `mockup_library.jpg`.
-- [ ] Upgrade gallery cards to feel more like real template previews.
-- [ ] Improve saved-template experience.
-- [ ] Improve upload / custom design entry flow.
-- [ ] Review whether template categories need expansion beyond current backend values.
+- [x] Improve `/library` to better match `mockup_library.jpg`.
+- [x] Upgrade gallery cards to feel more like real template previews.
+- [x] Improve saved-template experience.
+- [x] Improve upload / custom design entry flow.
+- [x] Review whether template categories need expansion beyond current backend values.
 
 ### 3.4 Create Event polish
 - [ ] Improve wizard polish to better match `mockup_create_event.jpg`.
@@ -115,7 +115,7 @@ Use this as the working checklist for the remaining redesign.
 ## 4. Remaining Secondary Redesign Work
 
 ### 4.1 Event workspace
-- [ ] Restyle event detail/dashboard pages to match the new shell.
+- [x] Restyle event detail/dashboard pages to match the new shell.
 - [ ] Review event tabs for simplification and clearer grouping.
 - [ ] Align invitation setup / invitation ops / guests / addons tabs with the new visual system.
 
@@ -124,7 +124,7 @@ Use this as the working checklist for the remaining redesign.
 - [ ] Keep Clients as a secondary / search-accessed destination.
 
 ### 4.3 Reports
-- [ ] Redesign reports pages visually for consistency with the hub-first admin.
+- [x] Redesign reports pages visually for consistency with the hub-first admin.
 - [ ] Keep Reports as a secondary / search-accessed destination.
 
 ### 4.4 Logs
@@ -198,7 +198,7 @@ Use this as the working checklist for the remaining redesign.
 
 - [x] Guests full redesign
 - [x] Send Invitations polish
-- [ ] Library polish
+- [x] Library polish
 - [ ] Create Event polish
 - [ ] Event workspace restyle
 - [ ] Reports / Logs / Clients / Settings restyle
@@ -213,4 +213,4 @@ Use this as the working checklist for the remaining redesign.
 - [ ] The remaining work still includes mockup parity.
 - [ ] The remaining work still includes secondary-screen consistency.
 - [ ] The remaining work still includes QA / polish.
-- [ ] The next best implementation target is now `Library`, because Send Invitations has its redesign polish pass.
+- [ ] The next best implementation target is now `Create Event`, because Library has its polish pass.
