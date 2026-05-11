@@ -117,3 +117,29 @@
 }
 
 
+
+.guest-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.guest-tabs button {
+    padding: 0.75rem 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+}
+
+.guest-tabs button:hover {
+    color: var(--text-primary);
+}
+
+.guest-tabs button.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
