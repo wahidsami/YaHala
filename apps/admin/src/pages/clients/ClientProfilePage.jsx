@@ -226,32 +226,48 @@ export default function ClientProfilePage() {
 
     return (
         <div className="client-profile-page">
-            <div className="profile-header">
-                <Link to="/clients" className="back-link">
+            <div className="profile-header hub-profile-header">
+                <Link to="/clients" className="back-link wizard-back-btn" title={t('clients.form.backToClients')}>
                     <ArrowLeft size={18} />
-                    <span>{t('clients.form.backToClients')}</span>
                 </Link>
 
-                <div className="header-content">
-                    <div className="header-info">
-                        <div className="client-identity">
-                            <div className="client-logo">
-                                {client.logo_path ? (
-                                    <img src={resolveAssetUrl(client.logo_path)} alt={`${client.name} logo`} />
-                                ) : (
-                                    <div className="client-logo-placeholder">
-                                        <Building2 size={28} />
-                                    </div>
-                                )}
-                            </div>
+                <div className="hub-profile-header__content">
+                    <div className="hub-profile-header__identity">
+                        <div className="hub-profile-logo">
+                            {client.logo_path ? (
+                                <img src={resolveAssetUrl(client.logo_path)} alt={`${client.name} logo`} />
+                            ) : (
+                                <div className="hub-profile-logo-placeholder">
+                                    <Building2 size={32} />
+                                </div>
+                            )}
+                        </div>
 
-                            <div>
-                                <h1>{client.name}</h1>
-                                {client.name_ar && <p className="name-ar">{client.name_ar}</p>}
+                        <div>
+                            <h1>{client.name}</h1>
+                            {client.name_ar && <p className="name-ar">{client.name_ar}</p>}
+                            <div className="hub-profile-meta">
                                 <span className={`status-badge status-${client.status}`}>{client.status}</span>
+                                <span className={`plan-badge plan-${client.subscription_tier}`}>{t(`clients.plan.${client.subscription_tier}`)}</span>
                             </div>
                         </div>
                     </div>
+
+                    <div className="hub-profile-header__actions">
+                        <RoleGuard permission="clients.edit">
+                            <Link to={`/clients/${id}/edit`} className="btn btn-secondary">
+                                <Edit size={16} />
+                                <span>{t('common.edit')}</span>
+                            </Link>
+                        </RoleGuard>
+                        <RoleGuard permission="clients.delete">
+                            <button className="btn btn-secondary warn" onClick={handleDeactivate}>
+                                {t('common.deactivate')}
+                            </button>
+                        </RoleGuard>
+                    </div>
+                </div>
+            </div>
 
                     <div className="header-actions">
                         <RoleGuard permission="clients.edit">
@@ -280,7 +296,7 @@ export default function ClientProfilePage() {
                 onCancel={() => setConfirmDialog(null)}
             />
 
-            <div className="profile-tabs">
+            <div className="guest-tabs" role="tablist">
                 <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => handleTabChange('overview')}>
                     {t('clients.tabs.overview')}
                 </button>
@@ -377,31 +393,33 @@ export default function ClientProfilePage() {
                         {stats && (
                             <div className="usage-section">
                                 <h3>{t('clients.profile.usage')}</h3>
-                                <div className="usage-grid">
-                                    <div className="usage-card">
-                                        <Calendar size={24} />
-                                        <div>
-                                            <span className="usage-value">{stats.events?.used || 0}</span>
-                                            <span className="usage-label">{t('clients.events')}</span>
-                                        </div>
-                                    </div>
-                                    <div className="usage-card">
-                                        <Users size={24} />
-                                        <div>
-                                            <span className="usage-value">{stats.activeEvents || 0}</span>
-                                            <span className="usage-label">{t('clients.profile.activeEvents')}</span>
-                                        </div>
-                                    </div>
-                                    <div className="usage-card">
-                                        <Scan size={24} />
-                                        <div>
-                                            <span className="usage-value">{stats.scannerUsers || 0}</span>
-                                            <span className="usage-label">{t('clients.tabs.scanners')}</span>
-                                        </div>
-                                    </div>
+                                <div className="guest-stat-grid">
+                                    <QuickStatCard
+                                        title={t('clients.events')}
+                                        value={stats.events?.used || 0}
+                                        share={`${Math.round(((stats.events?.used || 0) / Math.max(client.event_limit, 1)) * 100)}% limit`}
+                                        tone="ink"
+                                        icon={Calendar}
+                                    />
+                                    <QuickStatCard
+                                        title={t('clients.profile.activeEvents')}
+                                        value={stats.activeEvents || 0}
+                                        share="Active"
+                                        tone="mint"
+                                        icon={Calendar}
+                                    />
+                                    <QuickStatCard
+                                        title={t('clients.tabs.scanners')}
+                                        value={stats.scannerUsers || 0}
+                                        share="Assigned"
+                                        tone="lavender"
+                                        icon={Scan}
+                                    />
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
                     </div>
                 )}
 
@@ -615,3 +633,6 @@ export default function ClientProfilePage() {
         </div>
     );
 }
+
+
+

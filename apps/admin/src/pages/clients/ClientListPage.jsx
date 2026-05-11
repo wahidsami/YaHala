@@ -121,11 +121,20 @@ export default function ClientListPage() {
 
     return (
         <div className="client-list-page">
-            <div className="page-header">
-                <div>
-                    <h1>{t('nav.clients')}</h1>
-                    <p>{t('clients.listSubtitle', { count: pagination.total })}</p>
+            <div className="page-header hub-display-title">
+                <div className="hub-display-title__copy">
+                    <span className="hub-display-title__eyebrow">{t('nav.clients')}</span>
+                    <h1>{t('clients.listSubtitle', { count: pagination.total })}</h1>
                 </div>
+                <div className="hub-display-title__actions">
+                    <RoleGuard permission="clients.create">
+                        <Link to="/clients/new" className="btn btn-primary">
+                            <Plus size={16} />
+                            <span>{t('clients.createClient')}</span>
+                        </Link>
+                    </RoleGuard>
+                </div>
+            </div>
                 <RoleGuard permission="clients.create">
                     <Link to="/clients/new" className="btn btn-primary">
                         <Plus size={18} />
@@ -177,110 +186,57 @@ export default function ClientListPage() {
                 </select>
             </div>
 
-            <div className="table-container">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>{t('clients.name')}</th>
-                            <th>{t('clients.contact')}</th>
-                            <th>{t('clients.company')}</th>
-                            <th>{t('clients.status')}</th>
-                            <th>{t('clients.events')}</th>
-                            <th>{t('clients.plan')}</th>
-                            <th>{t('clients.created')}</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="8" className="loading-cell">{t('common.loading')}</td></tr>
-                        ) : clients.length === 0 ? (
-                            <tr><td colSpan="8" className="empty-cell">{t('clients.noClients')}</td></tr>
-                        ) : (
-                            clients.map(client => (
-                                <tr key={client.id}>
-                                    <td>
-                                        <div className="client-name">
-                                            <div className="client-logo">
-                                                {client.logo_path ? (
-                                                    <img src={resolveAssetUrl(client.logo_path)} alt={`${client.name} logo`} />
-                                                ) : (
-                                                    <span>{client.name.charAt(0).toUpperCase()}</span>
-                                                )}
-                                            </div>
-                                            <strong>{client.name}</strong>
-                                            {client.name_ar && <span className="name-ar">{client.name_ar}</span>}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="contact-info">
-                                            <span>{client.email}</span>
-                                            {client.phone && <span className="phone">{client.phone}</span>}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="company-info">
-                                            <span className={`company-type company-type-${client.company_type || 'unknown'}`}>
-                                                {t(`clients.type.${client.company_type || 'unknown'}`)}
-                                            </span>
-                                            <span className="company-sector">{client.company_sector || 'N/A'}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge status-${client.status}`}>
-                                            {t(`clients.status.${client.status}`)}
-                                        </span>
-                                    </td>
-                                    <td>{client.event_count || 0}</td>
-                                    <td>
-                                        <span className={`plan-badge plan-${client.subscription_tier}`}>
-                                            {t(`clients.plan.${client.subscription_tier}`)}
-                                        </span>
-                                    </td>
-                                    <td>{formatDate(client.created_at)}</td>
-                                    <td>
-                                        <div className="row-actions">
-                                            <Link to={`/clients/${client.id}`} className="action-btn" title={t('clients.view')}>
-                                                <Eye size={16} />
-                                            </Link>
-                                            <RoleGuard permission="clients.edit">
-                                                <Link to={`/clients/${client.id}/edit`} className="action-btn" title={t('clients.edit')}>
-                                                    <Edit size={16} />
-                                                </Link>
-                                            </RoleGuard>
-                                            <RoleGuard permission="clients.edit">
-                                                <button
-                                                    type="button"
-                                                    className={`action-btn warn ${client.status === 'suspended' ? 'active-state' : ''}`}
-                                                    title={client.status === 'suspended' ? t('clients.actions.unban') : t('clients.actions.ban')}
-                                                    onClick={() => handleToggleBan(client)}
-                                                    disabled={actionBusy?.id === client.id && actionBusy?.type === 'status'}
-                                                >
-                                                    <Ban size={16} />
-                                                </button>
-                                            </RoleGuard>
-                                            <RoleGuard permission="clients.delete">
-                                                <button
-                                                    type="button"
-                                                    className="action-btn danger"
-                                                    title={t('clients.actions.delete')}
-                                                    onClick={() => handleDeleteClient(client)}
-                                                    disabled={actionBusy?.id === client.id && actionBusy?.type === 'delete'}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </RoleGuard>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            <div className="client-card-grid">
+                {loading ? (
+                    <div className="loading-state">{t('common.loading')}</div>
+                ) : clients.length === 0 ? (
+                    <div className="empty-state">{t('clients.noClients')}</div>
+                ) : (
+                    clients.map(client => (
+                        <div key={client.id} className="client-card">
+                            <div className="client-card__header">
+                                <div className="client-card__logo">
+                                    {client.logo_path ? (
+                                        <img src={resolveAssetUrl(client.logo_path)} alt={`${client.name} logo`} />
+                                    ) : (
+                                        <span>{client.name.charAt(0).toUpperCase()}</span>
+                                    )}
+                                </div>
+                                <div className="client-card__actions">
+                                    <Link to={`/clients/${client.id}`} className="action-btn" title={t('clients.view')}>
+                                        <Eye size={16} />
+                                    </Link>
+                                </div>
+                            </div>
+                            <div className="client-card__body">
+                                <h3>{client.name}</h3>
+                                {client.name_ar && <span className="client-name-ar">{client.name_ar}</span>}
+                                
+                                <div className="client-card__meta">
+                                    <span className={`status-badge status-${client.status}`}>
+                                        {t(`clients.status.${client.status}`)}
+                                    </span>
+                                    <span className={`plan-badge plan-${client.subscription_tier}`}>
+                                        {t(`clients.plan.${client.subscription_tier}`)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="client-card__footer">
+                                <div className="client-card__stat">
+                                    <strong>{client.event_count || 0}</strong>
+                                    <span>{t('clients.events')}</span>
+                                </div>
+                                <div className="client-card__stat">
+                                    <strong>{formatDate(client.created_at)}</strong>
+                                    <span>{t('clients.created')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
-            {pagination.totalPages > 1 && (
-                <div className="pagination">
+            <div className="pagination">
                     <button
                         disabled={pagination.page === 1}
                         onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
@@ -299,3 +255,5 @@ export default function ClientListPage() {
         </div>
     );
 }
+
+

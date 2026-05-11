@@ -73,58 +73,41 @@
     background: var(--bg-primary);
 }
 
-/* Table */
-.table-container {
+/* Client Card Grid */
+.client-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.client-card {
     background: var(--bg-primary);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table th,
-.data-table td {
-    padding: 0.875rem 1rem;
-    text-align: start;
-}
-
-.data-table th {
-    background: var(--bg-tertiary);
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-}
-
-.data-table tbody tr {
-    border-bottom: 1px solid var(--border-color);
-}
-
-.data-table tbody tr:hover {
-    background-color: var(--bg-secondary);
-}
-
-.loading-cell,
-.empty-cell {
-    text-align: center !important;
-    padding: 2rem !important;
-    color: var(--text-secondary);
-}
-
-/* Client Name */
-.client-name {
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 1.25rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px -8px rgba(0,0,0,0.1);
 }
 
-.client-logo {
-    width: 40px;
-    height: 40px;
+.client-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -10px rgba(0,0,0,0.12);
+    border-color: rgba(159, 114, 175, 0.4);
+}
+
+.client-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.client-card__logo {
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
     overflow: hidden;
     background: var(--bg-secondary);
@@ -134,66 +117,76 @@
     justify-content: center;
     color: var(--text-secondary);
     font-weight: 600;
+    font-size: 1.2rem;
 }
 
-.client-logo img {
+.client-card__logo img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.client-name .name-ar {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-/* Contact Info */
-.contact-info {
+.client-card__body {
     display: flex;
     flex-direction: column;
-    font-size: 0.875rem;
+    gap: 0.5rem;
 }
 
-.contact-info .phone {
+.client-card__body h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.client-name-ar {
+    font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
-.company-info {
+.client-card__meta {
     display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
 }
 
-.company-sector {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.company-type {
-    display: inline-flex;
+.client-card__footer {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    width: fit-content;
-    padding: 0.2rem 0.55rem;
-    border-radius: 9999px;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.client-card__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.client-card__stat strong {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.client-card__stat span {
     font-size: 0.75rem;
-    font-weight: 600;
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
 }
 
-.company-type-gov {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-
-.company-type-private {
-    background: #dcfce7;
-    color: #15803d;
-}
-
-.company-type-unknown {
-    background: #f3f4f6;
-    color: #6b7280;
+.loading-state,
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    border-radius: 16px;
+    border: 1px dashed var(--border-color);
 }
 
 /* Status Badge */
@@ -316,3 +309,4 @@
 .pagination button:not(:disabled):hover {
     background: var(--bg-tertiary);
 }
+
