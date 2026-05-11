@@ -97,19 +97,15 @@ function flowLabel(i18n, flow) {
     return localize(i18n, 'Ready to invite', 'جاهز للدعوة');
 }
 
-function QuickStatCard({ title, value, share, note, tone, icon: Icon }) {
+function QuickStatCard({ title, value, tone, icon: Icon }) {
     return (
         <article className={`guest-stat-card guest-stat-card--${tone}`}>
-            <div className="guest-stat-card__head">
-                <span>{title}</span>
-                <div className="guest-stat-card__icon">
-                    <Icon size={18} />
-                </div>
+            <div className="guest-stat-card__icon">
+                <Icon size={20} strokeWidth={2.5} />
             </div>
-            <strong>{value}</strong>
-            <div className="guest-stat-card__meta">
-                <span>{share}</span>
-                <small>{note}</small>
+            <div className="guest-stat-card__head">
+                <strong>{value}</strong>
+                <span>{title}</span>
             </div>
         </article>
     );
@@ -575,28 +571,28 @@ export default function GuestsPage() {
 
             <div className="guest-stat-grid">
                 <QuickStatCard
+                    title={localize(i18n, 'Invited', '??? ??????')}
+                    value={formatNumber(invitedCount)}
+                    tone="lavender"
+                    icon={Users}
+                />
+                <QuickStatCard
                     title={localize(i18n, 'Confirmed', '????')}
                     value={formatNumber(respondedCount)}
-                    share={formatPercent((respondedCount / Math.max(invitedCount, 1)) * 100)}
-                    note={localize(i18n, 'Guests who accepted the invitation', '?????? ????? ????? ??????')}
                     tone="mint"
                     icon={BadgeCheck}
                 />
                 <QuickStatCard
                     title={localize(i18n, 'Pending', '??? ????????')}
                     value={formatNumber(awaitingCount)}
-                    share={formatPercent((awaitingCount / Math.max(invitedCount, 1)) * 100)}
-                    note={localize(i18n, 'Invited but awaiting reply', '??? ?????? ??????? ????')}
                     tone="peach"
                     icon={Clock3}
                 />
                 <QuickStatCard
                     title={localize(i18n, 'Declined', '?????')}
                     value={formatNumber(0)}
-                    share={formatPercent(0)}
-                    note={localize(i18n, 'Guests who cannot attend', '?????? ????? ?? ?????? ??????')}
-                    tone="ink"
-                    icon={CircleDashed}
+                    tone="red"
+                    icon={X}
                 />
             </div>
 
@@ -636,16 +632,51 @@ export default function GuestsPage() {
                             ))}
                         </div>
 
-                        <div className="guests-toolbar-card">
-                            <div className="search-box guest-search-box">
+                        <div className="guests-toolbar-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div className="guest-tabs" style={{ marginBottom: 0 }}>
+                            {viewTabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    className={activeView === tab.id ? 'is-active' : ''}
+                                    onClick={() => setActiveView(tab.id)}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap", flex: 1, justifyContent: "flex-end" }}>
+                            <div className="guest-search-box" style={{ flex: "0 1 16rem" }}>
                                 <Search size={18} />
                                 <input
                                     type="text"
-                                    placeholder={t('clients.guests.searchPlaceholder')}
+                                    placeholder={localize(i18n, 'Search by name or email...', '????? ?????? ?? ??????...')}
                                     value={filters.search}
-                                    onChange={handleSearch}
+                                    onChange={(event) => {
+                                        handleFilterChange('search', event.target.value);
+                                        setActiveView('all');
+                                    }}
                                 />
                             </div>
+
+                            <button type="button" className="btn btn-secondary" style={{ background: "transparent", borderColor: "var(--border-color)", borderRadius: "999px" }}>
+                                <Filter size={16} />
+                                <span>{t('common.filter')}</span>
+                            </button>
+
+                            <RoleGuard permission="clients.edit">
+                                <button type="button" className="btn btn-secondary" onClick={() => setLauncherMode('import')} disabled={!clients.length} style={{ background: "transparent", borderColor: "var(--border-color)", borderRadius: "999px" }}>
+                                    <Upload size={16} />
+                                    <span>{localize(i18n, 'Import CSV', 'Import CSV')}</span>
+                                </button>
+                                <button type="button" className="btn btn-primary" onClick={() => setLauncherMode('create')} disabled={!clients.length} style={{ background: "#ef4444", borderColor: "#ef4444", color: "white", borderRadius: "999px" }}>
+                                    <Plus size={16} />
+                                    <span>{localize(i18n, 'Add Guest', 'Add Guest')}</span>
+                                </button>
+                            </RoleGuard>
+                        </div>
+                    </div>
 
                             <div className="filter-pill">
                                 <Filter size={16} />
@@ -827,33 +858,33 @@ export default function GuestsPage() {
                 <aside className="guests-sidebar">
                     <div className="guests-helper-card">
                         <div className="guests-helper-card__head">
-                            <h2>{localize(i18n, 'Quick groups', 'مجموعات سريعة')}</h2>
-                            <span>{localize(i18n, 'Saved operational slices', 'تقسيمات تشغيلية سريعة')}</span>
+                            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.25rem", color: "#1e1b4b" }}>{t('Quick groups', 'Quick groups')}</h2>
                         </div>
-
                         <div className="quick-group-list">
                             {quickGroups.map((group) => (
-                                <button key={group.id} type="button" className="quick-group-card" onClick={group.onClick}>
-                                    <div>
-                                        <strong>{group.title}</strong>
-                                        <span>{group.caption}</span>
+                                <button
+                                    key={group.id}
+                                    type="button"
+                                    className="quick-group-card"
+                                    onClick={group.onClick}
+                                    style={{ alignItems: "center", borderRadius: "999px", padding: "0.5rem 1rem", border: "1px solid var(--border-color)", background: "white", marginBottom: "0.5rem" }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                        <Users size={16} style={{ color: "var(--text-secondary)" }} />
+                                        <strong style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>{group.title}</strong>
                                     </div>
-                                    <em>{formatNumber(group.value)}</em>
+                                    <em style={{ background: "rgba(241, 245, 249, 0.8)", padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.8rem", color: "var(--color-primary)" }}>{group.value}</em>
                                 </button>
                             ))}
+                            <button
+                                type="button"
+                                className="quick-group-card"
+                                style={{ justifyContent: "center", background: "transparent", border: "1px dashed var(--border-color)", color: "var(--text-secondary)", borderRadius: "999px", padding: "0.5rem 1rem" }}
+                            >
+                                <Plus size={16} />
+                                <strong style={{ margin: 0, fontSize: "0.9rem" }}>{t('New group', 'New group')}</strong>
+                            </button>
                         </div>
-                    </div>
-
-                    <div className="guests-helper-card guests-helper-card--accent">
-                        <div className="guests-helper-card__head">
-                            <h2>{localize(i18n, 'Action routing', 'مسار الإجراءات')}</h2>
-                            <span>{localize(i18n, 'What lives here vs. inside each client', 'ما يوجد هنا مقابل ما يوجد داخل كل عميل')}</span>
-                        </div>
-                        <ul className="guests-helper-list">
-                            <li>{localize(i18n, 'Use this page for invite progress, cross-client search, and follow-up lists.', 'استخدم هذه الصفحة لتقدم الدعوات والبحث عبر العملاء وقوائم المتابعة.')}</li>
-                            <li>{localize(i18n, 'Use a client guestbook when you need to add, import, edit, ban, or delete records.', 'استخدم دفتر ضيوف العميل عندما تحتاج إلى إضافة أو استيراد أو تعديل أو حظر أو حذف السجلات.')}</li>
-                            <li>{localize(i18n, 'Filter to one client first if you want the fastest path back into editing.', 'قم بالتصفية على عميل واحد أولاً إذا أردت أسرع طريق للعودة إلى التحرير.')}</li>
-                        </ul>
                     </div>
                 </aside>
             </div>
@@ -908,6 +939,11 @@ export default function GuestsPage() {
         </div>
     );
 }
+
+
+
+
+
 
 
 
