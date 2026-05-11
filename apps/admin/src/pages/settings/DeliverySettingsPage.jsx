@@ -50,11 +50,19 @@ export default function DeliverySettingsPage() {
 
     return (
         <div className="delivery-settings-page">
-            <div className="page-header">
-                <div>
+            <div className="page-header hub-display-title">
+                <div className="hub-display-title__copy">
+                    <span className="hub-display-title__eyebrow">{t('nav.settings')}</span>
                     <h1>{t('settings.deliverySettings')}</h1>
-                    <p>{t('settings.deliverySettingsSubtitle')}</p>
                 </div>
+
+                <div className="hub-display-title__actions">
+                    <button type="button" className="btn btn-secondary" onClick={handleRefresh} disabled={refreshing}>
+                        <RefreshCw size={16} />
+                        <span>{refreshing ? t('common.loading') : t('common.refresh')}</span>
+                    </button>
+                </div>
+            </div>
 
                 <button type="button" className="btn btn-secondary" onClick={handleRefresh} disabled={refreshing}>
                     <RefreshCw size={16} />
@@ -154,3 +162,4 @@ export default function DeliverySettingsPage() {
         </div>
     );
 }
+
