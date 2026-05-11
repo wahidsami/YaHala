@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Redesign v2 Task List</title>
+  <style>
+    :root {
+      --bg: #fbf7f2;
+      --surface: #ffffff;
+      --surface-soft: #fff6f2;
+      --text: #2a1f2f;
+      --muted: #6d5d71;
+      --border: #ead9d2;
+      --accent: #ff7f66;
+      --accent-soft: #ffe1d8;
+      --done: #1e9d71;
+      --done-soft: #ddf7ee;
+      --shadow: 0 18px 48px -28px rgba(80, 53, 83, 0.24);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 213, 195, 0.55), transparent 25%),
+        radial-gradient(circle at top right, rgba(225, 208, 255, 0.45), transparent 24%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    .hero {
+      margin-bottom: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .toolbar button {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .toolbar button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .stats {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 22px 22px 14px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 1.2rem;
+    }
+
+    .group {
+      margin-bottom: 18px;
+    }
+
+    .group h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .task {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      transition: background 0.16s ease;
+    }
+
+    .task:hover {
+      background: var(--surface-soft);
+    }
+
+    .task input[type="checkbox"] {
+      margin-top: 2px;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .task label {
+      cursor: pointer;
+      line-height: 1.45;
+      flex: 1;
+    }
+
+    .task.done {
+      background: var(--done-soft);
+    }
+
+    .task.done label {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .footer-note {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 720px) {
+      .stats {
+        margin-left: 0;
+        width: 100%;
+      }
+
+      .page {
+        padding: 18px 14px 48px;
+      }
+
+      .hero,
+      .section {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <h1>Admin Redesign v2 Task List</h1>
+      <p>Clickable checklist for the remaining redesign work. State is saved in your browser with local storage.</p>
+      <div class="toolbar">
+        <button class="primary" id="check-all-open">Mark All Open Tasks Done</button>
+        <button id="clear-all">Reset All Checks</button>
+        <div class="stats" id="stats">0 / 0 complete</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Completed</h2>
+
+      <div class="group">
+        <h3>Shell and Navigation</h3>
+        <div class="task"><input type="checkbox" id="task-001" checked /><label for="task-001">Removed the old sidebar-first shell from the primary admin flow.</label></div>
+        <div class="task"><input type="checkbox" id="task-002" checked /><label for="task-002">Added a new hub-style chrome with back button.</label></div>
+        <div class="task"><input type="checkbox" id="task-003" checked /><label for="task-003">Added a new hub-style chrome with breadcrumb path.</label></div>
+        <div class="task"><input type="checkbox" id="task-004" checked /><label for="task-004">Added a new hub-style chrome with search / command palette entry.</label></div>
+        <div class="task"><input type="checkbox" id="task-005" checked /><label for="task-005">Added a new hub-style chrome with theme toggle.</label></div>
+        <div class="task"><input type="checkbox" id="task-006" checked /><label for="task-006">Added a new hub-style chrome with user menu.</label></div>
+        <div class="task"><input type="checkbox" id="task-007" checked /><label for="task-007">Moved the main landing page to <code>/</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-008" checked /><label for="task-008">Redirected <code>/dashboard</code> to <code>/</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-009" checked /><label for="task-009">Kept deep legacy routes accessible inside the new shell.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Home Hub</h3>
+        <div class="task"><input type="checkbox" id="task-010" checked /><label for="task-010">Added the new home hub page.</label></div>
+        <div class="task"><input type="checkbox" id="task-011" checked /><label for="task-011">Added the <code>Create Event</code> main entry card.</label></div>
+        <div class="task"><input type="checkbox" id="task-012" checked /><label for="task-012">Added the <code>Manage Guests</code> main entry card.</label></div>
+        <div class="task"><input type="checkbox" id="task-013" checked /><label for="task-013">Added the <code>Send Invitations</code> main entry card.</label></div>
+        <div class="task"><input type="checkbox" id="task-014" checked /><label for="task-014">Added the <code>Library &amp; Templates</code> main entry card.</label></div>
+        <div class="task"><input type="checkbox" id="task-015" checked /><label for="task-015">Added recent event / activity strip behavior using existing API data.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Primary Flows and Compatibility</h3>
+        <div class="task"><input type="checkbox" id="task-016" checked /><label for="task-016">Added a new Create Event wizard page.</label></div>
+        <div class="task"><input type="checkbox" id="task-017" checked /><label for="task-017">Added a new Send Invitations page.</label></div>
+        <div class="task"><input type="checkbox" id="task-018" checked /><label for="task-018">Added a new Library page.</label></div>
+        <div class="task"><input type="checkbox" id="task-019" checked /><label for="task-019">Reworked shared admin visual tokens and base styling.</label></div>
+        <div class="task"><input type="checkbox" id="task-020" checked /><label for="task-020">Applied the new visual language to the redesigned shell and primary flows.</label></div>
+        <div class="task"><input type="checkbox" id="task-021" checked /><label for="task-021">Kept <code>Clients</code> reachable inside the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-022" checked /><label for="task-022">Kept <code>Events</code> reachable inside the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-023" checked /><label for="task-023">Kept <code>Addons</code> reachable inside the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-024" checked /><label for="task-024">Kept <code>Reports</code> reachable inside the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-025" checked /><label for="task-025">Kept <code>Logs</code> reachable inside the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-026" checked /><label for="task-026">Kept <code>Settings</code> reachable inside the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-027" checked /><label for="task-027">Kept <code>Invitation Projects</code> reachable inside the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-028" checked /><label for="task-028">Verified the admin app builds successfully with <code>npm run build</code>.</label></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Partially Completed</h2>
+
+      <div class="group">
+        <h3>Guests</h3>
+        <div class="task"><input type="checkbox" id="task-029" checked /><label for="task-029">Guests page is reachable through the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-030" checked /><label for="task-030">Guests page inherits the new global styling layer.</label></div>
+        <div class="task"><input type="checkbox" id="task-031" /><label for="task-031">Guests page is fully rebuilt to match the redesign mockup.</label></div>
+        <div class="task"><input type="checkbox" id="task-032" /><label for="task-032">Guests page is fully restructured into an RSVP-first experience.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Secondary Screens</h3>
+        <div class="task"><input type="checkbox" id="task-033" checked /><label for="task-033">Secondary screens still work under the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-034" /><label for="task-034">Secondary screens are visually redesigned to match the new hub-first product language.</label></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Remaining High-Priority Work</h2>
+
+      <div class="group">
+        <h3>Guests Redesign</h3>
+        <div class="task"><input type="checkbox" id="task-035" /><label for="task-035">Rebuild Guests page to match <code>mockup_guests.jpg</code> more closely.</label></div>
+        <div class="task"><input type="checkbox" id="task-036" /><label for="task-036">Replace current summary model with RSVP-first <code>Invited</code> stat card.</label></div>
+        <div class="task"><input type="checkbox" id="task-037" /><label for="task-037">Replace current summary model with RSVP-first <code>Confirmed</code> stat card.</label></div>
+        <div class="task"><input type="checkbox" id="task-038" /><label for="task-038">Replace current summary model with RSVP-first <code>Pending</code> stat card.</label></div>
+        <div class="task"><input type="checkbox" id="task-039" /><label for="task-039">Replace current summary model with RSVP-first <code>Declined</code> stat card.</label></div>
+        <div class="task"><input type="checkbox" id="task-040" /><label for="task-040">Add segmented RSVP filtering tabs.</label></div>
+        <div class="task"><input type="checkbox" id="task-041" /><label for="task-041">Rework Guests toolbar around search.</label></div>
+        <div class="task"><input type="checkbox" id="task-042" /><label for="task-042">Rework Guests toolbar around event filter.</label></div>
+        <div class="task"><input type="checkbox" id="task-043" /><label for="task-043">Rework Guests toolbar around group filter.</label></div>
+        <div class="task"><input type="checkbox" id="task-044" /><label for="task-044">Rework Guests toolbar around RSVP filter.</label></div>
+        <div class="task"><input type="checkbox" id="task-045" /><label for="task-045">Rework Guests toolbar around import CSV.</label></div>
+        <div class="task"><input type="checkbox" id="task-046" /><label for="task-046">Rework Guests toolbar around add guest.</label></div>
+        <div class="task"><input type="checkbox" id="task-047" /><label for="task-047">Add row-selection UX with floating bulk action bar.</label></div>
+        <div class="task"><input type="checkbox" id="task-048" /><label for="task-048">Add quick groups side panel.</label></div>
+        <div class="task"><input type="checkbox" id="task-049" /><label for="task-049">Improve mobile layout for the Guests flow.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Send Invitations Polish</h3>
+        <div class="task"><input type="checkbox" id="task-050" /><label for="task-050">Improve <code>/send</code> to better match <code>mockup_send.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-051" /><label for="task-051">Refine audience chips and recipient selection UX.</label></div>
+        <div class="task"><input type="checkbox" id="task-052" /><label for="task-052">Improve channel-specific preview behavior.</label></div>
+        <div class="task"><input type="checkbox" id="task-053" /><label for="task-053">Improve schedule / send-now UX.</label></div>
+        <div class="task"><input type="checkbox" id="task-054" /><label for="task-054">Decide whether message body should become event-aware defaults per channel.</label></div>
+        <div class="task"><input type="checkbox" id="task-055" /><label for="task-055">Add stronger visual connection to the active invitation/template preview.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Library Polish</h3>
+        <div class="task"><input type="checkbox" id="task-056" /><label for="task-056">Improve <code>/library</code> to better match <code>mockup_library.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-057" /><label for="task-057">Upgrade gallery cards to feel more like real template previews.</label></div>
+        <div class="task"><input type="checkbox" id="task-058" /><label for="task-058">Improve saved-template experience.</label></div>
+        <div class="task"><input type="checkbox" id="task-059" /><label for="task-059">Improve upload / custom design entry flow.</label></div>
+        <div class="task"><input type="checkbox" id="task-060" /><label for="task-060">Review whether template categories need expansion beyond current backend values.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Create Event Polish</h3>
+        <div class="task"><input type="checkbox" id="task-061" /><label for="task-061">Improve wizard polish to better match <code>mockup_create_event.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-062" /><label for="task-062">Improve live preview quality.</label></div>
+        <div class="task"><input type="checkbox" id="task-063" /><label for="task-063">Improve step transitions and completion states.</label></div>
+        <div class="task"><input type="checkbox" id="task-064" /><label for="task-064">Improve dirty-state / exit confirmation behavior.</label></div>
+        <div class="task"><input type="checkbox" id="task-065" /><label for="task-065">Review whether client selection should stay in step 2 or move earlier for operational clarity.</label></div>
+        <div class="task"><input type="checkbox" id="task-066" /><label for="task-066">Review whether guest import options need a dedicated CSV / paste / create-group UI instead of only reusable guest selection.</label></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Remaining Secondary Redesign Work</h2>
+
+      <div class="group">
+        <h3>Event Workspace</h3>
+        <div class="task"><input type="checkbox" id="task-067" /><label for="task-067">Restyle event detail / dashboard pages to match the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-068" /><label for="task-068">Review event tabs for simplification and clearer grouping.</label></div>
+        <div class="task"><input type="checkbox" id="task-069" /><label for="task-069">Align invitation setup / invitation ops / guests / addons tabs with the new visual system.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Clients, Reports, Logs, Addons, Settings, Invitation Projects</h3>
+        <div class="task"><input type="checkbox" id="task-070" /><label for="task-070">Redesign client list and client profile pages to fit the new product language.</label></div>
+        <div class="task"><input type="checkbox" id="task-071" /><label for="task-071">Redesign reports pages visually for consistency with the hub-first admin.</label></div>
+        <div class="task"><input type="checkbox" id="task-072" /><label for="task-072">Redesign logs pages visually for consistency with the hub-first admin.</label></div>
+        <div class="task"><input type="checkbox" id="task-073" /><label for="task-073">Redesign addon index and builder entry flows visually.</label></div>
+        <div class="task"><input type="checkbox" id="task-074" /><label for="task-074">Redesign settings / delivery configuration page visually.</label></div>
+        <div class="task"><input type="checkbox" id="task-075" /><label for="task-075">Redesign invitation project list / detail pages visually.</label></div>
+        <div class="task"><input type="checkbox" id="task-076" /><label for="task-076">Keep advanced screens as deeper power-user destinations, not hub-primary navigation.</label></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>UX and QA</h2>
+
+      <div class="group">
+        <h3>Command Palette and Navigation</h3>
+        <div class="task"><input type="checkbox" id="task-077" /><label for="task-077">Improve result grouping and prioritization.</label></div>
+        <div class="task"><input type="checkbox" id="task-078" /><label for="task-078">Improve keyboard navigation and selection behavior.</label></div>
+        <div class="task"><input type="checkbox" id="task-079" /><label for="task-079">Add stronger quick-action coverage for advanced destinations.</label></div>
+        <div class="task"><input type="checkbox" id="task-080" /><label for="task-080">Review permission-aware empty states and hidden-result behavior.</label></div>
+        <div class="task"><input type="checkbox" id="task-081" /><label for="task-081">Audit all deep pages for breadcrumb correctness.</label></div>
+        <div class="task"><input type="checkbox" id="task-082" /><label for="task-082">Audit all back-button behaviors.</label></div>
+        <div class="task"><input type="checkbox" id="task-083" /><label for="task-083">Ensure no stale links still assume <code>/dashboard</code> is the landing page.</label></div>
+        <div class="task"><input type="checkbox" id="task-084" /><label for="task-084">Ensure all template / library entry points feel consistent.</label></div>
+        <div class="task"><input type="checkbox" id="task-085" /><label for="task-085">Review home hub card copy for clarity for brand-new users.</label></div>
+        <div class="task"><input type="checkbox" id="task-086" /><label for="task-086">Review page headings and descriptions across primary flows.</label></div>
+        <div class="task"><input type="checkbox" id="task-087" /><label for="task-087">Review English and Arabic wording consistency.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Responsive, RTL, Visual, Technical QA</h3>
+        <div class="task"><input type="checkbox" id="task-088" /><label for="task-088">Test hub and primary flows at 375px width.</label></div>
+        <div class="task"><input type="checkbox" id="task-089" /><label for="task-089">Test tablet breakpoints.</label></div>
+        <div class="task"><input type="checkbox" id="task-090" /><label for="task-090">Remove any horizontal overflow on redesigned pages.</label></div>
+        <div class="task"><input type="checkbox" id="task-091" /><label for="task-091">Verify breadcrumb and back-button placement in RTL.</label></div>
+        <div class="task"><input type="checkbox" id="task-092" /><label for="task-092">Verify card layouts, tables, and forms in Arabic.</label></div>
+        <div class="task"><input type="checkbox" id="task-093" /><label for="task-093">Verify typography remains readable in Arabic after redesign styling changes.</label></div>
+        <div class="task"><input type="checkbox" id="task-094" /><label for="task-094">Compare implemented pages against <code>mockup_hub_desktop.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-095" /><label for="task-095">Compare implemented pages against <code>mockup_hub_mobile.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-096" /><label for="task-096">Compare implemented pages against <code>mockup_create_event.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-097" /><label for="task-097">Compare implemented pages against <code>mockup_guests.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-098" /><label for="task-098">Compare implemented pages against <code>mockup_send.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-099" /><label for="task-099">Compare implemented pages against <code>mockup_library.jpg</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-100" /><label for="task-100">Close spacing, hierarchy, and density gaps where needed.</label></div>
+        <div class="task"><input type="checkbox" id="task-101" /><label for="task-101">Smoke-test primary flows with real API data.</label></div>
+        <div class="task"><input type="checkbox" id="task-102" /><label for="task-102">Smoke-test deep legacy pages under the new shell.</label></div>
+        <div class="task"><input type="checkbox" id="task-103" /><label for="task-103">Review console errors in dev mode.</label></div>
+        <div class="task"><input type="checkbox" id="task-104" /><label for="task-104">Review bundle size warning from the Vite build.</label></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Recommended Next Order</h2>
+      <div class="task"><input type="checkbox" id="task-105" /><label for="task-105">Guests full redesign.</label></div>
+      <div class="task"><input type="checkbox" id="task-106" /><label for="task-106">Send Invitations polish.</label></div>
+      <div class="task"><input type="checkbox" id="task-107" /><label for="task-107">Library polish.</label></div>
+      <div class="task"><input type="checkbox" id="task-108" /><label for="task-108">Create Event polish.</label></div>
+      <div class="task"><input type="checkbox" id="task-109" /><label for="task-109">Event workspace restyle.</label></div>
+      <div class="task"><input type="checkbox" id="task-110" /><label for="task-110">Reports / Logs / Clients / Settings restyle.</label></div>
+      <div class="task"><input type="checkbox" id="task-111" /><label for="task-111">Final responsive + RTL + visual QA pass.</label></div>
+    </div>
+
+    <p class="footer-note">
+      File path: <code>Planning/admin_redesign_v2_tasklist.html</code>
+    </p>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'admin-redesign-v2-tasklist';
+    const boxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+    const stats = document.getElementById('stats');
+    const checkAllOpenButton = document.getElementById('check-all-open');
+    const clearAllButton = document.getElementById('clear-all');
+
+    function updateVisualState() {
+      let complete = 0;
+
+      boxes.forEach((box) => {
+        const row = box.closest('.task');
+        if (box.checked) {
+          row.classList.add('done');
+          complete += 1;
+        } else {
+          row.classList.remove('done');
+        }
+      });
+
+      stats.textContent = `${complete} / ${boxes.length} complete`;
+    }
+
+    function saveState() {
+      const payload = {};
+      boxes.forEach((box) => {
+        payload[box.id] = box.checked;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      updateVisualState();
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        updateVisualState();
+        return;
+      }
+
+      try {
+        const saved = JSON.parse(raw);
+        boxes.forEach((box) => {
+          if (Object.prototype.hasOwnProperty.call(saved, box.id)) {
+            box.checked = Boolean(saved[box.id]);
+          }
+        });
+      } catch (error) {
+        console.warn('Could not load task state:', error);
+      }
+
+      updateVisualState();
+    }
+
+    boxes.forEach((box) => {
+      box.addEventListener('change', saveState);
+    });
+
+    checkAllOpenButton.addEventListener('click', () => {
+      boxes.forEach((box) => {
+        if (!box.checked) {
+          box.checked = true;
+        }
+      });
+      saveState();
+    });
+
+    clearAllButton.addEventListener('click', () => {
+      boxes.forEach((box) => {
+        box.checked = false;
+      });
+      saveState();
+    });
+
+    loadState();
+  </script>
+</body>
+</html>

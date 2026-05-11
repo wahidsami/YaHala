@@ -258,7 +258,7 @@ export default function TemplateBuilderPage() {
         <div className="template-builder-page">
             <div className="builder-header">
                 <div className="header-left">
-                    <button className="btn-icon" onClick={() => navigate('/templates')}>
+                    <button className="btn-icon" onClick={() => navigate('/library')}>
                         <ArrowLeft size={20} />
                     </button>
                     <input

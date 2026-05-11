@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import AppShell from './components/layout/AppShell';
+import HomeHubPage from './pages/HomeHubPage';
+import HubChrome from './components/layout/HubChrome';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import api from './services/api';
 
@@ -17,11 +17,12 @@ import ClientEditPage from './pages/clients/ClientEditPage';
 import EventListPage from './pages/events/EventListPage';
 import EventFormPage from './pages/events/EventFormPage';
 import EventDashboardPage from './pages/events/EventDashboardPage';
+import CreateEventWizardPage from './pages/events/CreateEventWizardPage';
 
 // Template pages
-import TemplateListPage from './pages/templates/TemplateListPage';
 import TemplateBuilderPage from './pages/templates/TemplateBuilderPage';
 import TemplatePreviewPage from './pages/templates/TemplatePreviewPage';
+import LibraryPage from './pages/library/LibraryPage';
 import AddonsPage, { AddonEditorShell } from './pages/addons/AddonsPage';
 import PollBuilderPage from './pages/addons/PollBuilderPage';
 import QuestionnaireBuilderPage from './pages/addons/QuestionnaireBuilderPage';
@@ -35,6 +36,7 @@ import DeliverySettingsPage from './pages/settings/DeliverySettingsPage';
 import GuestsPage from './pages/guests/GuestsPage';
 import LogsPage from './pages/logs/LogsPage';
 import ReportsPage from './pages/reports/ReportsPage';
+import SendInvitationsPage from './pages/send/SendInvitationsPage';
 
 function App() {
     return (
@@ -46,9 +48,9 @@ function App() {
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-                <Route element={<AppShell />}>
-                    {/* Dashboard */}
-                    <Route path="/dashboard" element={<DashboardPage />} />
+                <Route element={<HubChrome />}>
+                    <Route path="/" element={<HomeHubPage />} />
+                    <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
                     {/* Clients */}
                     <Route path="/clients" element={<ClientListPage />} />
@@ -58,12 +60,16 @@ function App() {
 
                     {/* Events */}
                     <Route path="/events" element={<EventListPage />} />
-                    <Route path="/events/new" element={<EventFormPage />} />
+                    <Route path="/events/new" element={<CreateEventWizardPage />} />
                     <Route path="/events/:id" element={<EventDashboardPage />} />
                     <Route path="/events/:id/edit" element={<EventEditWrapper />} />
 
+                    {/* Primary Hub Sections */}
+                    <Route path="/send" element={<SendInvitationsPage />} />
+                    <Route path="/library" element={<LibraryPage />} />
+                    <Route path="/templates" element={<LibraryPage />} />
+
                     {/* Templates */}
-                    <Route path="/templates" element={<TemplateListPage />} />
                     <Route path="/templates/new" element={<TemplateBuilderPage />} />
                     <Route path="/templates/:id/preview" element={<TemplatePreviewPage />} />
                     <Route path="/templates/:id" element={<TemplateBuilderPage />} />
@@ -99,8 +105,7 @@ function App() {
             </Route>
 
             {/* Default Redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
 }
@@ -193,17 +198,6 @@ function PollEditWrapper() {
     }
 
     return <PollBuilderPage mode="edit" initialData={poll} />;
-}
-
-function PlaceholderPage({ titleKey }) {
-    const { t } = useTranslation();
-
-    return (
-        <div className="placeholder-page">
-            <h1>{t(titleKey)}</h1>
-            <p>{t('common.comingSoon')}</p>
-        </div>
-    );
 }
 
 function QuestionnaireEditWrapper() {
