@@ -10,6 +10,7 @@ export default function DeliverySettingsPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
     const [data, setData] = useState(null);
+    const [activeTab, setActiveTab] = useState('overview');
 
     async function fetchSettings() {
         try {
@@ -66,92 +67,112 @@ export default function DeliverySettingsPage() {
 
             {error && <div className="settings-error">{error}</div>}
 
-            <div className="settings-grid">
-                <section className="settings-card">
-                    <div className="card-head">
-                        <Mail size={18} />
-                        <h2>{t('settings.provider')}</h2>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.provider')}</span>
-                        <strong>{data?.email?.provider || '—'}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.configured')}</span>
-                        <strong className={data?.email?.configured ? 'status-ok' : 'status-bad'}>
-                            {data?.email?.configured ? t('settings.ready') : t('settings.off')}
-                        </strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.fromEmail')}</span>
-                        <strong>{data?.email?.fromEmail || '—'}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.publicBaseUrl')}</span>
-                        <strong>{data?.email?.baseUrl || '—'}</strong>
-                    </div>
-                </section>
+            <div className="guest-tabs" style={{ marginBottom: '2rem' }}>
+                <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>
+                    <span>{t('common.overview')}</span>
+                </button>
+                <button className={activeTab === 'channels' ? 'active' : ''} onClick={() => setActiveTab('channels')}>
+                    <span>{t('settings.channels')}</span>
+                </button>
+                <button className={activeTab === 'queue' ? 'active' : ''} onClick={() => setActiveTab('queue')}>
+                    <span>{t('settings.queueHealth')}</span>
+                </button>
+            </div>
 
-                <section className="settings-card">
-                    <div className="card-head">
-                        <Clock3 size={18} />
-                        <h2>{t('settings.worker')}</h2>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.pollInterval')}</span>
-                        <strong>{data?.worker?.pollIntervalMs || 0} ms</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.maxRetries')}</span>
-                        <strong>{data?.worker?.maxRetries || 0}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.retryDelay')}</span>
-                        <strong>{data?.worker?.retryBaseDelayMs || 0} ms</strong>
-                    </div>
-                </section>
+            <div className="settings-content">
+                {activeTab === 'overview' && (
+                    <div className="settings-grid">
+                        <section className="settings-card">
+                            <div className="card-head">
+                                <Mail size={18} />
+                                <h2>{t('settings.provider')}</h2>
+                            </div>
+                            <div className="setting-row">
+                                <span>{t('settings.provider')}</span>
+                                <strong>{data?.email?.provider || '—'}</strong>
+                            </div>
+                            <div className="setting-row">
+                                <span>{t('settings.configured')}</span>
+                                <strong className={data?.email?.configured ? 'status-ok' : 'status-bad'}>
+                                    {data?.email?.configured ? t('settings.ready') : t('settings.off')}
+                                </strong>
+                            </div>
+                            <div className="setting-row">
+                                <span>{t('settings.fromEmail')}</span>
+                                <strong>{data?.email?.fromEmail || '—'}</strong>
+                            </div>
+                            <div className="setting-row">
+                                <span>{t('settings.publicBaseUrl')}</span>
+                                <strong>{data?.email?.baseUrl || '—'}</strong>
+                            </div>
+                        </section>
 
-                <section className="settings-card">
-                    <div className="card-head">
-                        <ShieldCheck size={18} />
-                        <h2>{t('settings.channelReadiness')}</h2>
+                        <section className="settings-card">
+                            <div className="card-head">
+                                <Clock3 size={18} />
+                                <h2>{t('settings.worker')}</h2>
+                            </div>
+                            <div className="setting-row">
+                                <span>{t('settings.pollInterval')}</span>
+                                <strong>{data?.worker?.pollIntervalMs || 0} ms</strong>
+                            </div>
+                            <div className="setting-row">
+                                <span>{t('settings.maxRetries')}</span>
+                                <strong>{data?.worker?.maxRetries || 0}</strong>
+                            </div>
+                            <div className="setting-row">
+                                <span>{t('settings.retryDelay')}</span>
+                                <strong>{data?.worker?.retryBaseDelayMs || 0} ms</strong>
+                            </div>
+                        </section>
                     </div>
-                    <div className="setting-row">
-                        <span>{t('settings.email')}</span>
-                        <strong className={data?.channels?.email ? 'status-ok' : 'status-bad'}>{data?.channels?.email ? t('settings.ready') : t('settings.off')}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.whatsapp')}</span>
-                        <strong className={data?.channels?.whatsapp ? 'status-ok' : 'status-bad'}>{data?.channels?.whatsapp ? t('settings.ready') : t('settings.pendingApi')}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.sms')}</span>
-                        <strong className={data?.channels?.sms ? 'status-ok' : 'status-bad'}>{data?.channels?.sms ? t('settings.ready') : t('settings.pendingApi')}</strong>
-                    </div>
-                </section>
+                )}
 
-                <section className="settings-card">
-                    <div className="card-head">
-                        <Send size={18} />
-                        <h2>{t('settings.queueHealth')}</h2>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.queued')}</span>
-                        <strong>{data?.queue?.queued || 0}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.processing')}</span>
-                        <strong>{data?.queue?.processing || 0}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.retryScheduled')}</span>
-                        <strong>{data?.queue?.retryScheduled || 0}</strong>
-                    </div>
-                    <div className="setting-row">
-                        <span>{t('settings.failed')}</span>
-                        <strong>{data?.queue?.failed || 0}</strong>
-                    </div>
-                </section>
+                {activeTab === 'channels' && (
+                    <section className="settings-card" style={{ maxWidth: '600px' }}>
+                        <div className="card-head">
+                            <ShieldCheck size={18} />
+                            <h2>{t('settings.channelReadiness')}</h2>
+                        </div>
+                        <div className="setting-row">
+                            <span>{t('settings.email')}</span>
+                            <strong className={data?.channels?.email ? 'status-ok' : 'status-bad'}>{data?.channels?.email ? t('settings.ready') : t('settings.off')}</strong>
+                        </div>
+                        <div className="setting-row">
+                            <span>{t('settings.whatsapp')}</span>
+                            <strong className={data?.channels?.whatsapp ? 'status-ok' : 'status-bad'}>{data?.channels?.whatsapp ? t('settings.ready') : t('settings.pendingApi')}</strong>
+                        </div>
+                        <div className="setting-row">
+                            <span>{t('settings.sms')}</span>
+                            <strong className={data?.channels?.sms ? 'status-ok' : 'status-bad'}>{data?.channels?.sms ? t('settings.ready') : t('settings.pendingApi')}</strong>
+                        </div>
+                    </section>
+                )}
+
+                {activeTab === 'queue' && (
+                    <section className="settings-card" style={{ maxWidth: '600px' }}>
+                        <div className="card-head">
+                            <Send size={18} />
+                            <h2>{t('settings.queueHealth')}</h2>
+                        </div>
+                        <div className="setting-row">
+                            <span>{t('settings.queued')}</span>
+                            <strong>{data?.queue?.queued || 0}</strong>
+                        </div>
+                        <div className="setting-row">
+                            <span>{t('settings.processing')}</span>
+                            <strong>{data?.queue?.processing || 0}</strong>
+                        </div>
+                        <div className="setting-row">
+                            <span>{t('settings.retryScheduled')}</span>
+                            <strong>{data?.queue?.retryScheduled || 0}</strong>
+                        </div>
+                        <div className="setting-row">
+                            <span>{t('settings.failed')}</span>
+                            <strong>{data?.queue?.failed || 0}</strong>
+                        </div>
+                    </section>
+                )}
             </div>
         </div>
     );
