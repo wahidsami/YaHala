@@ -471,30 +471,25 @@ export default function GuestsPage() {
     })), [clients, i18n.language]);
 
     const viewTabs = useMemo(() => ([
-        { id: 'all', label: localize(i18n, 'All guests', 'كل الضيوف'), count: totalCount },
-        { id: 'ready', label: localize(i18n, 'Ready', 'جاهزون'), count: readyCount },
-        { id: 'invited', label: localize(i18n, 'Invited', 'تمت دعوتهم'), count: invitedCount },
-        { id: 'responded', label: localize(i18n, 'Responded', 'استجابوا'), count: respondedCount },
-        { id: 'awaiting', label: localize(i18n, 'Awaiting', 'بانتظار الرد'), count: awaitingCount }
-    ]), [awaitingCount, i18n, invitedCount, readyCount, respondedCount, totalCount]);
+        { id: 'all', label: localize(i18n, 'All guests', '?? ??????'), count: totalCount },
+        { id: 'attending', label: localize(i18n, 'Attending', '????'), count: respondedCount },
+        { id: 'pending', label: localize(i18n, 'Pending', '??? ????????'), count: awaitingCount },
+        { id: 'declined', label: localize(i18n, 'Not Attending', '?? ????'), count: 0 }
+    ]), [awaitingCount, i18n, respondedCount, totalCount]);
 
     const visibleGuests = useMemo(() => guests.filter((guest) => {
         const flow = getGuestFlowState(guest);
 
-        if (activeView === 'ready') {
-            return flow === 'ready';
-        }
-
-        if (activeView === 'invited') {
-            return Number(guest.invitation_count || 0) > 0;
-        }
-
-        if (activeView === 'responded') {
+        if (activeView === 'attending') {
             return flow === 'responded';
         }
 
-        if (activeView === 'awaiting') {
+        if (activeView === 'pending') {
             return flow === 'awaiting';
+        }
+
+        if (activeView === 'declined') {
+            return false; // Mock
         }
 
         return true;
@@ -580,40 +575,51 @@ export default function GuestsPage() {
 
             <div className="guest-stat-grid">
                 <QuickStatCard
-                    title={localize(i18n, 'Invited', 'تمت دعوتهم')}
-                    value={formatNumber(invitedCount)}
-                    share={formatPercent((invitedCount / totalBase) * 100)}
-                    note={localize(i18n, 'Guests with invitation history', 'ضيوف لديهم سجل دعوات')}
-                    tone="peach"
-                    icon={Mail}
-                />
-                <QuickStatCard
-                    title={localize(i18n, 'Responded', 'استجابوا')}
+                    title={localize(i18n, 'Confirmed', '????')}
                     value={formatNumber(respondedCount)}
                     share={formatPercent((respondedCount / Math.max(invitedCount, 1)) * 100)}
-                    note={localize(i18n, 'Reply rate from invited guests', 'معدل الرد من الضيوف المدعوين')}
+                    note={localize(i18n, 'Guests who accepted the invitation', '?????? ????? ????? ??????')}
                     tone="mint"
                     icon={BadgeCheck}
                 />
                 <QuickStatCard
-                    title={localize(i18n, 'Awaiting reply', 'بانتظار الرد')}
+                    title={localize(i18n, 'Pending', '??? ????????')}
                     value={formatNumber(awaitingCount)}
                     share={formatPercent((awaitingCount / Math.max(invitedCount, 1)) * 100)}
-                    note={localize(i18n, 'Good candidates for reminders', 'مرشحون جيدون للتذكير')}
-                    tone="lavender"
+                    note={localize(i18n, 'Invited but awaiting reply', '??? ?????? ??????? ????')}
+                    tone="peach"
                     icon={Clock3}
                 />
                 <QuickStatCard
-                    title={localize(i18n, 'Ready to invite', 'جاهزون للدعوة')}
-                    value={formatNumber(readyCount)}
-                    share={formatPercent((readyCount / activeBase) * 100)}
-                    note={localize(i18n, 'Active guests without invite history', 'ضيوف نشطون بلا سجل دعوات')}
+                    title={localize(i18n, 'Declined', '?????')}
+                    value={formatNumber(0)}
+                    share={formatPercent(0)}
+                    note={localize(i18n, 'Guests who cannot attend', '?????? ????? ?? ?????? ??????')}
                     tone="ink"
                     icon={CircleDashed}
                 />
             </div>
 
             <div className="guests-workspace">
+                <aside className="quick-groups-panel">
+                    <h3>{localize(i18n, 'Quick Groups', '??????? ?????')}</h3>
+                    <div className="quick-groups-list">
+                        {quickGroups.map((group) => (
+                            <button
+                                key={group.id}
+                                className={`quick-group-btn ${activeView === group.id || (group.id === 'restricted' && filters.status === 'banned') ? 'is-active' : '}`}
+                                onClick={group.onClick}
+                            >
+                                <div className="quick-group-btn__info">
+                                    <strong>{group.title}</strong>
+                                    <span>{group.caption}</span>
+                                </div>
+                                <span className="quick-group-btn__count">{formatNumber(group.value)}</span>
+                            </button>
+                        ))}
+                    </div>
+                </aside>
+
                 <section className="guests-main">
                     <div className="guests-panel">
                         <div className="guest-tabs" role="tablist" aria-label={localize(i18n, 'Guest views', 'طرق عرض الضيوف')}>
@@ -902,3 +908,8 @@ export default function GuestsPage() {
         </div>
     );
 }
+
+
+
+
+

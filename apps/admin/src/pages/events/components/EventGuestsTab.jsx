@@ -1,12 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, UserPlus, Users } from 'lucide-react';
+import { Search, UserPlus, Users, BadgeCheck, Clock3, CircleDashed } from 'lucide-react';
 import api from '../../../services/api';
 import RoleGuard from '../../../components/auth/RoleGuard';
 import './EventGuestsTab.css';
 
 function localizedText(i18n, primary, secondary) {
     return i18n.language?.startsWith('ar') ? (secondary || primary || '') : (primary || secondary || '');
+}
+
+function QuickStatCard({ title, value, share, tone, icon: Icon }) {
+    return (
+        <article className={`guest-stat-card guest-stat-card--${tone}`}>
+            <div className="guest-stat-card__head">
+                <span>{title}</span>
+                <div className="guest-stat-card__icon">
+                    <Icon size={18} />
+                </div>
+            </div>
+            <strong>{value}</strong>
+            <div className="guest-stat-card__meta">
+                <span>{share}</span>
+            </div>
+        </article>
+    );
 }
 
 export default function EventGuestsTab({ event }) {
@@ -123,6 +140,30 @@ export default function EventGuestsTab({ event }) {
                 </div>
             </div>
 
+            <div className="guest-stat-grid" style={{ marginBottom: '1.5rem' }}>
+                <QuickStatCard
+                    title={t('clients.guests.statusActive', 'Confirmed')}
+                    value={pagination.total || 0}
+                    share="100%"
+                    tone="mint"
+                    icon={BadgeCheck}
+                />
+                <QuickStatCard
+                    title={t('events.guests.awaiting', 'Pending')}
+                    value={0}
+                    share="0%"
+                    tone="peach"
+                    icon={Clock3}
+                />
+                <QuickStatCard
+                    title={t('events.guests.declined', 'Declined')}
+                    value={0}
+                    share="0%"
+                    tone="ink"
+                    icon={CircleDashed}
+                />
+            </div>
+            
             <div className="event-guests-toolbar">
                 <div className="event-guests-search">
                     <Search size={16} />
@@ -243,3 +284,4 @@ export default function EventGuestsTab({ event }) {
         </div>
     );
 }
+
