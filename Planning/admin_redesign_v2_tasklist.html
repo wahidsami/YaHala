@@ -371,6 +371,42 @@
     </div>
 
     <div class="section">
+      <h2>Bug Fixes &amp; UI Polish — Session May 2026</h2>
+
+      <div class="group">
+        <h3>Deployment Stability</h3>
+        <div class="task"><input type="checkbox" id="task-bf-001" checked /><label for="task-bf-001">Fixed <code>esbuild</code> build failure: removed duplicate JSX header block in <code>ClientListPage.jsx</code> that caused dangling <code>&lt;/div&gt;</code> and orphaned <code>RoleGuard</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-002" checked /><label for="task-bf-002">Fixed structural JSX corruption and invalid syntax in <code>ClientProfilePage.jsx</code> causing Nixpacks build to abort.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-003" checked /><label for="task-bf-003">Fixed UTF-8 encoding corruption of Arabic strings and JSX nesting in <code>GuestsPage.jsx</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-004" checked /><label for="task-bf-004">Verified clean local Vite build (2125 modules) before each push to confirm no regressions.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>Home Hub — Action Cards Redesign</h3>
+        <div class="task"><input type="checkbox" id="task-bf-005" checked /><label for="task-bf-005">Resized action cards to compact mockup height (<code>min-height: 15rem</code> down from <code>21.5rem</code>).</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-006" checked /><label for="task-bf-006">Replaced Lucide icon orb illustrations with custom flat-vector PNG images matching the mockup.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-007" checked /><label for="task-bf-007">Generated 4 illustration assets: party popper, guests group, paper airplane, greeting cards.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-008" checked /><label for="task-bf-008">Added color-coded card titles per accent: coral, lavender, mint, rose — matching mockup typography.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-009" checked /><label for="task-bf-009">Applied <code>mix-blend-mode: multiply</code> to card art container so PNG white backgrounds blend into card color.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-010" checked /><label for="task-bf-010">Constrained action cards grid to <code>max-width: 900px</code> centered, matching the mockup proportions.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-011" checked /><label for="task-bf-011">Constrained Recent Activity section to <code>max-width: 900px</code> so it no longer spans full page width.</label></div>
+      </div>
+
+      <div class="group">
+        <h3>User Menu Dropdown — Logout &amp; Navigation Fix</h3>
+        <div class="task"><input type="checkbox" id="task-bf-012" checked /><label for="task-bf-012">Diagnosed logout race condition: <code>navigate('/login')</code> was competing with <code>ProtectedRoute</code>'s own <code>&lt;Navigate&gt;</code>, causing the redirect to stall.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-013" checked /><label for="task-bf-013">Removed redundant <code>navigate('/login')</code> from logout handler — <code>ProtectedRoute</code> now handles redirect cleanly when user becomes <code>null</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-014" checked /><label for="task-bf-014">Diagnosed dropdown button click-through bug: <code>mousedown</code> listener was closing the menu before button's <code>click</code> event fired.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-015" checked /><label for="task-bf-015">Replaced <code>mousedown</code> click-outside listener with a transparent backdrop <code>&lt;div&gt;</code> overlay pattern.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-016" checked /><label for="task-bf-016">Diagnosed CSS stacking context bug: backdrop was inside <code>hub-user-menu</code> (which created an isolated stacking context), trapping pointer events above the dropdown buttons.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-017" checked /><label for="task-bf-017">Moved backdrop outside <code>hub-shell</code> as a React Fragment sibling — completely separate from any stacking context. Backdrop at <code>z-index: 8000</code>, menu at <code>z-index: 9000</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-018" checked /><label for="task-bf-018">Added <code>setTimeout(() =&gt; action(), 0)</code> to defer all menu actions (Language, Settings, Logout) to next tick after menu closes.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-019" checked /><label for="task-bf-019">Added icons (Globe, Settings, LogOut) to each dropdown menu item with a divider and red-styled Logout button.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-020" checked /><label for="task-bf-020">Added <code>Escape</code> key handler to close the user menu.</label></div>
+      </div>
+    </div>
+
+    <div class="section">
       <h2>Recommended Next Order</h2>
       <div class="task"><input type="checkbox" id="task-105" checked /><label for="task-105">Guests full redesign.</label></div>
       <div class="task"><input type="checkbox" id="task-106" checked /><label for="task-106">Send Invitations polish.</label></div>
@@ -383,7 +419,9 @@
 
     <p class="footer-note">
       File path: <code>Planning/admin_redesign_v2_tasklist.html</code><br />
-      Current next target: <strong>Event workspace restyle</strong>
+      Last updated: <strong>12 May 2026</strong><br />
+      Current next target: <strong>Create Event wizard polish → Event workspace restyle</strong><br />
+      Recent commits: <code>4e73908</code> dropdown stacking fix · <code>64ee139</code> recent activity width · <code>b7102f1</code> card illustrations · <code>c9abd5e</code> logout fix
     </p>
   </div>
 
