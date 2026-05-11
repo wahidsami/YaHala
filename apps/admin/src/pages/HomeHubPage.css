@@ -289,6 +289,7 @@ html[dir="rtl"] .hub-display-title {
     align-items: center;
     min-height: 7.5rem;
     margin-bottom: 0.5rem;
+    mix-blend-mode: multiply;
 }
 
 .home-hub-card__img {
@@ -297,8 +298,6 @@ html[dir="rtl"] .hub-display-title {
     object-fit: contain;
     display: block;
     user-select: none;
-    background: transparent;
-    border-radius: 0;
     mix-blend-mode: multiply;
 }
 
