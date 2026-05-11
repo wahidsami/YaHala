@@ -224,12 +224,12 @@ html[dir="rtl"] .hub-display-title {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 21.5rem;
-    padding: 1.45rem;
-    border-radius: 2rem;
+    min-height: 17rem;
+    padding: 1.35rem 1.35rem 1.6rem;
+    border-radius: 1.6rem;
     border: 1px solid rgba(240, 221, 215, 0.88);
     background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 24px 55px -36px rgba(100, 73, 102, 0.34);
+    box-shadow: 0 20px 44px -30px rgba(100, 73, 102, 0.28);
     overflow: hidden;
     transition: transform 0.24s ease, box-shadow 0.24s ease;
     animation: hubCardRise 0.65s ease both;
@@ -280,7 +280,7 @@ html[dir="rtl"] .hub-display-title {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 10.25rem;
+    min-height: 7rem;
 }
 
 .home-hub-card__copy {
@@ -300,8 +300,9 @@ html[dir="rtl"] .hub-display-title {
 .home-hub-card h2 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(2rem, 3vw, 2.85rem);
-    line-height: 0.98;
+    font-size: clamp(1.5rem, 2.2vw, 2rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
 }
 
 html[dir="rtl"] .home-hub-card h2 {
@@ -337,8 +338,8 @@ html[dir="rtl"] .home-hub-card__arrow {
 
 .hub-illustration {
     position: relative;
-    width: 12rem;
-    height: 9.5rem;
+    width: 8rem;
+    height: 7rem;
 }
 
 .hub-illustration__halo {
@@ -350,17 +351,17 @@ html[dir="rtl"] .home-hub-card__arrow {
 
 .hub-illustration__orb {
     position: absolute;
-    top: 1.1rem;
+    top: 0.6rem;
     left: 50%;
     transform: translateX(-50%);
-    width: 5.8rem;
-    height: 5.8rem;
+    width: 4.6rem;
+    height: 4.6rem;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.72);
-    box-shadow: 0 22px 34px -20px rgba(103, 83, 118, 0.4);
+    box-shadow: 0 16px 28px -16px rgba(103, 83, 118, 0.38);
 }
 
 .hub-illustration__spark {
@@ -629,11 +630,11 @@ html[dir="rtl"] .recent-activity-card__chevron {
     }
 
     .home-hub-card {
-        min-height: 18.5rem;
+        min-height: 14rem;
     }
 
     .home-hub-card__art {
-        min-height: 8.5rem;
+        min-height: 6.5rem;
     }
 
     .hub-illustration {

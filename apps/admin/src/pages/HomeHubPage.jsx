@@ -63,7 +63,7 @@ function ActionCard({ card }) {
                 <p>{card.description}</p>
             </div>
             <span className="home-hub-card__arrow">
-                <ArrowRight size={18} />
+                <ArrowRight size={16} />
             </span>
         </Link>
     );

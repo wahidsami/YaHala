@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, ChevronDown, ChevronLeft, MoonStar, Search, SunMedium } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +50,7 @@ export default function HubChrome() {
     const { language, toggleLanguage } = useLanguage();
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef(null);
     const [darkMode, setDarkMode] = useState(() => {
         if (typeof window === 'undefined') {
             return false;
@@ -96,6 +97,18 @@ export default function HubChrome() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [navigate]);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setMenuOpen(false);
+            }
+        }
+        if (menuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [menuOpen]);
 
     function handleBack() {
         if (window.history.length > 1) {
@@ -158,7 +171,7 @@ export default function HubChrome() {
                         <span className="hub-notification__dot" />
                     </button>
 
-                    <div className="hub-user-menu">
+                    <div className="hub-user-menu" ref={menuRef}>
                         <button type="button" className="hub-user-button" onClick={() => setMenuOpen((current) => !current)}>
                             <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
                             <span className="hub-user-meta">
@@ -170,13 +183,13 @@ export default function HubChrome() {
 
                         {menuOpen && (
                             <div className="hub-user-dropdown">
-                                <button type="button" onClick={toggleLanguage}>
+                                <button type="button" onClick={() => { toggleLanguage(); setMenuOpen(false); }}>
                                     {language === 'ar' ? 'English' : 'العربية'}
                                 </button>
-                                <button type="button" onClick={() => navigate('/settings')}>
+                                <button type="button" onClick={() => { setMenuOpen(false); navigate('/settings'); }}>
                                     {localize(i18n, 'Settings', 'الإعدادات')}
                                 </button>
-                                <button type="button" onClick={logout}>
+                                <button type="button" onClick={async () => { setMenuOpen(false); await logout(); navigate('/login'); }}>
                                     {t('auth.logout')}
                                 </button>
                             </div>
