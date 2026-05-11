@@ -539,6 +539,54 @@ textarea {
     border-color: rgba(239, 68, 68, 0.26);
 }
 
+.scan-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(2, 6, 23, 0.62);
+    backdrop-filter: blur(8px);
+}
+
+.scan-modal-card {
+    width: min(100%, 460px);
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.96);
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.scan-modal-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.4rem;
+}
+
+.scan-modal-name {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.scan-modal-event {
+    margin: 0;
+    color: rgba(226, 232, 240, 0.88);
+}
+
+.scan-modal-copy {
+    margin: 16px 0 0;
+    color: rgba(226, 232, 240, 0.76);
+}
+
+.scan-modal-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
 @media (max-width: 960px) {
     .auth-shell,
     .scanner-layout,
@@ -577,5 +625,9 @@ textarea {
 
     .visitor-form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .scan-modal-actions {
+        flex-direction: column;
     }
 }

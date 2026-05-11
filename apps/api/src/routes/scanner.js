@@ -1322,6 +1322,7 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
         const eventId = normalizeText(req.body?.eventId);
         const requestedMode = normalizeText(req.body?.mode) || 'camera';
         const mode = SCAN_MODES.has(requestedMode) ? requestedMode : 'camera';
+        const confirmCheckIn = req.body?.confirmCheckIn !== false;
 
         if (!rawToken) {
             throw new AppError('QR token is required', 400, 'VALIDATION_ERROR');
@@ -1379,9 +1380,11 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
         const alreadyAttended = getInvitationAttendanceStatus(currentMetadata) === 'checked_in';
         const scannedAt = new Date().toISOString();
         const questionnaire = await fetchRecipientQuestionnaireState(db, recipient.event_id, recipient.recipient_id);
-        const unlockedAddons = await syncRecipientAddonStatesOnScan(db, recipient, req.scannerUser, scannedAt);
+        const unlockedAddons = confirmCheckIn
+            ? await syncRecipientAddonStatesOnScan(db, recipient, req.scannerUser, scannedAt)
+            : [];
 
-        if (!alreadyAttended) {
+        if (!alreadyAttended && confirmCheckIn) {
             const nextMetadata = {
                 ...currentMetadata,
                 attendance_status: 'checked_in',
@@ -1417,7 +1420,7 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
                 attended: true,
                 mode
             });
-        } else {
+        } else if (alreadyAttended) {
             await logScannerActivity(db, req, req.scannerUser, 'duplicate_scan', 'invitation_recipient', recipient.recipient_id, {
                 token: rawToken,
                 eventId: recipient.event_id,
@@ -1432,13 +1435,13 @@ router.post('/scan', authenticateScanner, async (req, res, next) => {
         await db.query('COMMIT');
 
         sendScannerSuccess(res, {
-            status: alreadyAttended ? 'duplicate' : 'attended',
+            status: alreadyAttended ? 'duplicate' : (confirmCheckIn ? 'attended' : 'ready'),
             attendee: {
                 id: recipient.recipient_id,
                 name: recipient.display_name,
                 name_ar: recipient.display_name_ar,
-                attendance_status: 'checked_in',
-                attended_at: alreadyAttended ? currentMetadata.attended_at || null : scannedAt,
+                attendance_status: alreadyAttended || confirmCheckIn ? 'checked_in' : 'not_scanned',
+                attended_at: alreadyAttended ? currentMetadata.attended_at || null : (confirmCheckIn ? scannedAt : null),
                 questionnaire,
                 unlocked_addons: unlockedAddons
             },

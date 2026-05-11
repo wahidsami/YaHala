@@ -225,7 +225,7 @@ function LoginCard({ onLogin, loading, error }) {
     );
 }
 
-function CameraScanner({ enabled, onScan, onStatus }) {
+function CameraScanner({ enabled, paused, onScan, onStatus }) {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
     const detectorRef = useRef(null);
@@ -249,6 +249,10 @@ function CameraScanner({ enabled, onScan, onStatus }) {
 
         function emitScan(value) {
             const now = Date.now();
+            if (paused) {
+                return;
+            }
+
             if (now - lastScanRef.current > 1400) {
                 lastScanRef.current = now;
                 onScanRef.current(value);
@@ -429,7 +433,7 @@ function CameraScanner({ enabled, onScan, onStatus }) {
                 streamRef.current = null;
             }
         };
-    }, [enabled]);
+    }, [enabled, paused]);
 
     return (
         <div className="scanner-camera">
@@ -642,7 +646,46 @@ function VisitorIntakePanel({ eventId, onApprove, busy, onSuccess }) {
     );
 }
 
-function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEventId, onLogout, onScanToken, onApproveVisitor, result, recentScans, loadingEvents, savingVisitor }) {
+function ScanResultModal({ open, payload, busy, onConfirm, onClose }) {
+    if (!open || !payload) {
+        return null;
+    }
+
+    const isDuplicate = payload.status === 'duplicate';
+    const name = localizedName('en', payload.attendee?.name, payload.attendee?.name_ar) || 'Guest';
+    const attendedAt = payload.attendee?.attended_at ? toDate(payload.attendee.attended_at) : 'Unknown time';
+
+    return (
+        <div className="scan-modal-overlay">
+            <div className="scan-modal-card">
+                <h3>{isDuplicate ? 'Already checked in' : 'Guest found'}</h3>
+                <p className="scan-modal-name">{name}</p>
+                <p className="scan-modal-event">{localizedName('en', payload.event?.name, payload.event?.name_ar)}</p>
+
+                {isDuplicate ? (
+                    <p className="scan-modal-copy">This QR was already scanned on {attendedAt}.</p>
+                ) : (
+                    <p className="scan-modal-copy">Review details then confirm check-in.</p>
+                )}
+
+                <div className="scan-modal-actions">
+                    {isDuplicate ? (
+                        <button type="button" className="primary-btn" onClick={onClose}>OK</button>
+                    ) : (
+                        <>
+                            <button type="button" className="ghost-btn" onClick={onClose} disabled={busy}>Cancel</button>
+                            <button type="button" className="primary-btn" onClick={onConfirm} disabled={busy}>
+                                {busy ? 'Checking in...' : 'Check In'}
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEventId, onLogout, onScanToken, onApproveVisitor, result, recentScans, loadingEvents, savingVisitor, pendingScan, scanModalOpen, scanConfirming, onConfirmPendingScan, onCloseScanModal }) {
     const [manualToken, setManualToken] = useState('');
     const [scannerStatus, setScannerStatus] = useState('Preparing camera...');
 
@@ -719,7 +762,7 @@ function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEven
                         </select>
                     </label>
 
-                    <CameraScanner enabled={Boolean(activeEvent)} onScan={handleDetected} onStatus={setScannerStatus} />
+                    <CameraScanner enabled={Boolean(activeEvent)} paused={scanModalOpen || scanConfirming} onScan={handleDetected} onStatus={setScannerStatus} />
 
                     <p className="scanner-status">{scannerStatus}</p>
 
@@ -787,6 +830,14 @@ function ScannerHome({ scannerUser, client, events, activeEventId, setActiveEven
                     </div>
                 </div>
             </section>
+
+            <ScanResultModal
+                open={scanModalOpen}
+                payload={pendingScan}
+                busy={scanConfirming}
+                onConfirm={onConfirmPendingScan}
+                onClose={onCloseScanModal}
+            />
         </div>
     );
 }
@@ -803,6 +854,9 @@ export default function App() {
     const [activeEventId, setActiveEventId] = useState('');
     const [result, setResult] = useState(null);
     const [recentScans, setRecentScans] = useState([]);
+    const [pendingScan, setPendingScan] = useState(null);
+    const [scanModalOpen, setScanModalOpen] = useState(false);
+    const [scanConfirming, setScanConfirming] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem(SCANNER_STORAGE_KEY);
@@ -871,6 +925,9 @@ export default function App() {
         setRecentScans([]);
         setError(null);
         setSavingVisitor(false);
+        setPendingScan(null);
+        setScanModalOpen(false);
+        setScanConfirming(false);
     }
 
     async function handleScanToken(token, eventId, mode) {
@@ -882,22 +939,30 @@ export default function App() {
             const response = await api.post('/scanner/scan', {
                 token,
                 eventId,
-                mode
+                mode,
+                confirmCheckIn: false
             });
 
             const nextResult = response.data.data;
-            setResult(nextResult);
-            setRecentScans((prev) => [
-                {
-                    token,
-                    label: localizedName('en', nextResult.attendee?.name, nextResult.attendee?.name_ar),
-                    status: nextResult.status
-                },
-                ...prev
-            ].slice(0, 6));
+            setPendingScan({
+                ...nextResult,
+                token,
+                eventId,
+                mode
+            });
+            setScanModalOpen(true);
 
-            const eventsResponse = await api.get('/scanner/events');
-            setEvents(eventsResponse.data.data || []);
+            if (nextResult.status === 'duplicate') {
+                setResult(nextResult);
+                setRecentScans((prev) => [
+                    {
+                        token,
+                        label: localizedName('en', nextResult.attendee?.name, nextResult.attendee?.name_ar),
+                        status: nextResult.status
+                    },
+                    ...prev
+                ].slice(0, 6));
+            }
         } catch (err) {
             setResult({
                 status: 'failed',
@@ -913,6 +978,51 @@ export default function App() {
                 ...prev
             ].slice(0, 6));
         }
+    }
+
+    async function handleConfirmPendingScan() {
+        if (!pendingScan?.token) {
+            return;
+        }
+
+        setScanConfirming(true);
+        try {
+            const response = await api.post('/scanner/scan', {
+                token: pendingScan.token,
+                eventId: pendingScan.eventId,
+                mode: pendingScan.mode || 'camera',
+                confirmCheckIn: true
+            });
+            const nextResult = response.data.data;
+            setResult(nextResult);
+            setRecentScans((prev) => [
+                {
+                    token: pendingScan.token,
+                    label: localizedName('en', nextResult.attendee?.name, nextResult.attendee?.name_ar),
+                    status: nextResult.status
+                },
+                ...prev
+            ].slice(0, 6));
+            const eventsResponse = await api.get('/scanner/events');
+            setEvents(eventsResponse.data.data || []);
+            setScanModalOpen(false);
+            setPendingScan(null);
+        } catch (err) {
+            setResult({
+                status: 'failed',
+                attendee: { name: 'Unknown guest', attendance_status: 'not_attended' },
+                event: { name: err.response?.data?.message || 'Check-in failed' }
+            });
+            setScanModalOpen(false);
+            setPendingScan(null);
+        } finally {
+            setScanConfirming(false);
+        }
+    }
+
+    function handleCloseScanModal() {
+        setScanModalOpen(false);
+        setPendingScan(null);
     }
 
     async function handleApproveVisitor(payload) {
@@ -983,6 +1093,11 @@ export default function App() {
             recentScans={recentScans}
             loadingEvents={eventsLoading}
             savingVisitor={savingVisitor}
+            pendingScan={pendingScan}
+            scanModalOpen={scanModalOpen}
+            scanConfirming={scanConfirming}
+            onConfirmPendingScan={handleConfirmPendingScan}
+            onCloseScanModal={handleCloseScanModal}
         />
     );
 }
