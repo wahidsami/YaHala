@@ -569,28 +569,35 @@ export default function InvitationProjectDetailPage() {
 
     return (
         <div className="invitation-project-detail-page">
-            <div className="detail-hero">
-                <Link to="/invitation-projects" className="back-link">
-                    <ArrowLeft size={18} />
+            <div className="hub-profile-header">
+                <Link to="/invitation-projects" className="hub-profile-back">
+                    <ArrowLeft size={16} />
                     <span>{t('common.back')}</span>
                 </Link>
 
-                <div className="hero-body">
-                    <div className="hero-copy">
-                        <span className={`status-badge status-${project.status}`}>
-                            {t(`invitationProjects.status.${project.status}`)}
-                        </span>
-                        <h1>{localized(project.name, project.name_ar)}</h1>
-                        {project.name_ar && project.name && project.name_ar !== project.name && <p className="name-ar">{project.name_ar}</p>}
-                        <p className="hero-subtitle">
-                            {localized(project.event_name, project.event_name_ar)} · {localized(project.client_name, project.client_name_ar)}
-                        </p>
+                <div className="hub-profile-content">
+                    <div className="hub-profile-identity">
+                        <div className="hub-profile-logo">
+                            <Mail size={40} strokeWidth={1.5} />
+                        </div>
+                        <div className="hub-profile-title">
+                            <div className="hub-profile-name-row">
+                                <h1>{localized(project.name, project.name_ar)}</h1>
+                                {project.name_ar && project.name && project.name_ar !== project.name && <span className="hub-profile-name-ar">{project.name_ar}</span>}
+                                <span className={`status-badge status-${project.status}`}>
+                                    {t(`invitationProjects.status.${project.status}`)}
+                                </span>
+                            </div>
+                            <p className="hub-profile-meta">
+                                {localized(project.event_name, project.event_name_ar)} &bull; {localized(project.client_name, project.client_name_ar)}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="hero-actions">
+                    <div className="hub-profile-actions">
                         <RoleGuard permission="events.edit">
                             <Link to={`/invitation-projects/${id}/edit`} className="btn btn-secondary">
-                                <Layers3 size={18} />
+                                <Layers3 size={16} />
                                 <span>{t('common.edit')}</span>
                             </Link>
                         </RoleGuard>
@@ -602,7 +609,7 @@ export default function InvitationProjectDetailPage() {
                                 disabled={syncingTemplate}
                                 title={t('invitationProjects.syncTemplateHint')}
                             >
-                                <RefreshCw size={18} />
+                                <RefreshCw size={16} />
                                 <span>{syncingTemplate ? t('common.loading') : t('invitationProjects.syncTemplate')}</span>
                             </button>
                         )}
@@ -614,12 +621,12 @@ export default function InvitationProjectDetailPage() {
                                 disabled={launchingProject || !readyToLaunch}
                                 title={!readyToLaunch ? t('invitationProjects.launchNotReady') : undefined}
                             >
-                                <Send size={18} />
+                                <Send size={16} />
                                 <span>{launchingProject ? t('common.loading') : t('invitationProjects.launchProject')}</span>
                             </button>
                         )}
                         <button className="btn btn-primary" onClick={() => setActiveTab('invitations')}>
-                            <Mail size={18} />
+                            <Mail size={16} />
                             <span>{t('invitationProjects.manageInvitations')}</span>
                         </button>
                     </div>
@@ -669,7 +676,7 @@ export default function InvitationProjectDetailPage() {
                 </div>
             )}
 
-            <div className="project-tabs">
+            <div className="guest-tabs">
                 <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>
                     {t('invitationProjects.overview')}
                 </button>
@@ -1483,3 +1490,4 @@ export default function InvitationProjectDetailPage() {
         </div>
     );
 }
+

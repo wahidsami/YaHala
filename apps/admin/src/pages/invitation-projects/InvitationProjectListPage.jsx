@@ -73,18 +73,20 @@ export default function InvitationProjectListPage() {
 
     return (
         <div className="invitation-projects-page">
-            <div className="page-header">
-                <div>
+            <div className="page-header hub-display-title">
+                <div className="hub-display-title__copy">
+                    <span className="hub-display-title__eyebrow">{t('nav.invitationProjects')}</span>
                     <h1>{t('invitationProjects.title')}</h1>
-                    <p>{t('invitationProjects.subtitle')}</p>
                 </div>
 
-                <RoleGuard permission="events.create">
-                    <Link to="/invitation-projects/new" className="btn btn-primary">
-                        <Plus size={18} />
-                        <span>{t('invitationProjects.newProject')}</span>
-                    </Link>
-                </RoleGuard>
+                <div className="hub-display-title__actions">
+                    <RoleGuard permission="events.create">
+                        <Link to="/invitation-projects/new" className="btn btn-primary">
+                            <Plus size={16} />
+                            <span>{t('invitationProjects.newProject')}</span>
+                        </Link>
+                    </RoleGuard>
+                </div>
             </div>
 
             <div className="filters-bar">
@@ -108,75 +110,61 @@ export default function InvitationProjectListPage() {
                 </select>
             </div>
 
-            <div className="table-container">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>{t('invitationProjects.project')}</th>
-                            <th>{t('invitationProjects.event')}</th>
-                            <th>{t('invitationProjects.statusLabel')}</th>
-                            <th>{t('invitationProjects.recipients')}</th>
-                            <th>{t('invitationProjects.pages')}</th>
-                            <th>{t('invitationProjects.updated')}</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan="7" className="loading-cell">{t('common.loading')}</td>
-                            </tr>
-                        ) : projects.length === 0 ? (
-                            <tr>
-                                <td colSpan="7" className="empty-cell">{t('invitationProjects.emptyState')}</td>
-                            </tr>
-                        ) : (
-                            projects.map((project) => (
-                                <tr key={project.id}>
-                                    <td>
-                                        <div className="project-name">
-                                            <strong>{localized(project.name, project.name_ar)}</strong>
-                                            {project.name_ar && project.name && project.name_ar !== project.name && <span className="name-ar">{project.name_ar}</span>}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="project-meta">
-                                            <span>{localized(project.event_name, project.event_name_ar)}</span>
-                                            {project.client_name && <span className="meta-subtle">{localized(project.client_name, project.client_name_ar)}</span>}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge ${STATUS_BADGE[project.status] || 'status-draft'}`}>
-                                            {t(`invitationProjects.status.${project.status}`)}
-                                        </span>
-                                    </td>
-                                    <td>{project.recipient_count || 0}</td>
-                                    <td>{project.page_count || 0}</td>
-                                    <td>{formatDate(project.updated_at)}</td>
-                                    <td>
-                                        <div className="row-actions">
-                                            <Link to={`/invitation-projects/${project.id}`} className="action-btn" title={t('common.view')}>
-                                                <Eye size={16} />
-                                            </Link>
-                                            <RoleGuard permission="events.edit">
-                                                <Link to={`/invitation-projects/${project.id}/edit`} className="action-btn" title={t('common.edit')}>
-                                                    <Edit size={16} />
-                                                </Link>
-                                            </RoleGuard>
-                                            <Link
-                                                to={`/invitation-projects/${project.id}`}
-                                                className="action-btn"
-                                                title={t('invitationProjects.manage')}
-                                            >
-                                                <Mail size={16} />
-                                            </Link>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            <div className="client-card-grid">
+                {loading ? (
+                    <div className="loading-state">{t('common.loading')}</div>
+                ) : projects.length === 0 ? (
+                    <div className="empty-state">{t('invitationProjects.emptyState')}</div>
+                ) : (
+                    projects.map((project) => (
+                        <div key={project.id} className="client-card">
+                            <div className="client-card__header">
+                                <div className="client-card__logo">
+                                    <Mail size={24} />
+                                </div>
+                                <div className="client-card__actions">
+                                    <Link to={`/invitation-projects/${project.id}`} className="action-btn" title={t('common.view')}>
+                                        <Eye size={16} />
+                                    </Link>
+                                    <RoleGuard permission="events.edit">
+                                        <Link to={`/invitation-projects/${project.id}/edit`} className="action-btn" title={t('common.edit')}>
+                                            <Edit size={16} />
+                                        </Link>
+                                    </RoleGuard>
+                                </div>
+                            </div>
+                            <div className="client-card__body">
+                                <h3>{localized(project.name, project.name_ar)}</h3>
+                                {project.name_ar && project.name && project.name_ar !== project.name && <span className="client-name-ar">{project.name_ar}</span>}
+                                
+                                <div className="client-card__meta">
+                                    <span className={`status-badge ${STATUS_BADGE[project.status] || 'status-draft'}`}>
+                                        {t(`invitationProjects.status.${project.status}`)}
+                                    </span>
+                                </div>
+                                
+                                <div className="project-meta" style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    <span>{localized(project.event_name, project.event_name_ar)}</span>
+                                    {project.client_name && <span> • {localized(project.client_name, project.client_name_ar)}</span>}
+                                </div>
+                            </div>
+                            <div className="client-card__footer">
+                                <div className="client-card__stat">
+                                    <strong>{project.recipient_count || 0}</strong>
+                                    <span>{t('invitationProjects.recipients')}</span>
+                                </div>
+                                <div className="client-card__stat">
+                                    <strong>{project.page_count || 0}</strong>
+                                    <span>{t('invitationProjects.pages')}</span>
+                                </div>
+                                <div className="client-card__stat">
+                                    <strong>{formatDate(project.updated_at)}</strong>
+                                    <span>{t('invitationProjects.updated')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {pagination.totalPages > 1 && (
@@ -199,3 +187,5 @@ export default function InvitationProjectListPage() {
         </div>
     );
 }
+
+
