@@ -88,12 +88,12 @@ Use this as the working checklist for the remaining redesign.
 - [x] Improve mobile layout for the Guests flow.
 
 ### 3.2 Send Invitations polish
-- [ ] Improve `/send` to better match `mockup_send.jpg`.
-- [ ] Refine audience chips and recipient selection UX.
-- [ ] Improve channel-specific preview behavior.
-- [ ] Improve schedule/send-now UX.
-- [ ] Decide whether message body should become event-aware defaults per channel.
-- [ ] Add stronger visual connection to the active invitation/template preview.
+- [x] Improve `/send` to better match `mockup_send.jpg`.
+- [x] Refine audience chips and recipient selection UX.
+- [x] Improve channel-specific preview behavior.
+- [x] Improve schedule/send-now UX.
+- [x] Decide whether message body should become event-aware defaults per channel.
+- [x] Add stronger visual connection to the active invitation/template preview.
 
 ### 3.3 Library polish
 - [ ] Improve `/library` to better match `mockup_library.jpg`.
@@ -197,7 +197,7 @@ Use this as the working checklist for the remaining redesign.
 ## 7. Recommended Next Order
 
 - [x] Guests full redesign
-- [ ] Send Invitations polish
+- [x] Send Invitations polish
 - [ ] Library polish
 - [ ] Create Event polish
 - [ ] Event workspace restyle
@@ -213,4 +213,4 @@ Use this as the working checklist for the remaining redesign.
 - [ ] The remaining work still includes mockup parity.
 - [ ] The remaining work still includes secondary-screen consistency.
 - [ ] The remaining work still includes QA / polish.
-- [ ] The next best implementation target is now `Send Invitations`, because Guests has its first full redesign pass.
+- [ ] The next best implementation target is now `Library`, because Send Invitations has its redesign polish pass.
