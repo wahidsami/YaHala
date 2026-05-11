@@ -297,6 +297,9 @@ html[dir="rtl"] .hub-display-title {
     object-fit: contain;
     display: block;
     user-select: none;
+    background: transparent;
+    border-radius: 0;
+    mix-blend-mode: multiply;
 }
 
 .home-hub-card__copy {
@@ -491,6 +494,9 @@ html[dir="rtl"] .home-hub-card__arrow {
 
 .home-hub-recent {
     padding: 0.35rem 0 0;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 .home-hub-recent__header {
