@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, ChevronDown, ChevronLeft, MoonStar, Search, SunMedium } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bell, ChevronDown, ChevronLeft, LogOut, MoonStar, Search, Settings, SunMedium } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -50,7 +50,6 @@ export default function HubChrome() {
     const { language, toggleLanguage } = useLanguage();
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
-    const menuRef = useRef(null);
     const [darkMode, setDarkMode] = useState(() => {
         if (typeof window === 'undefined') {
             return false;
@@ -92,31 +91,37 @@ export default function HubChrome() {
                 event.preventDefault();
                 navigate('/events/new');
             }
+
+            if (event.key === 'Escape') {
+                setMenuOpen(false);
+            }
         }
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [navigate]);
 
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-        }
-        if (menuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [menuOpen]);
-
     function handleBack() {
         if (window.history.length > 1) {
             navigate(-1);
             return;
         }
-
         navigate('/');
+    }
+
+    function handleLanguageToggle() {
+        toggleLanguage();
+        setMenuOpen(false);
+    }
+
+    function handleSettings() {
+        navigate('/settings');
+        setMenuOpen(false);
+    }
+
+    async function handleLogout() {
+        setMenuOpen(false);
+        await logout();
     }
 
     const firstName = (user?.name || '').trim().split(/\s+/)[0] || t('app.name');
@@ -171,8 +176,21 @@ export default function HubChrome() {
                         <span className="hub-notification__dot" />
                     </button>
 
-                    <div className="hub-user-menu" ref={menuRef}>
-                        <button type="button" className="hub-user-button" onClick={() => setMenuOpen((current) => !current)}>
+                    {/* User menu: uses transparent backdrop to close — avoids mousedown race condition */}
+                    <div className="hub-user-menu">
+                        {menuOpen && (
+                            <div
+                                className="hub-user-backdrop"
+                                onClick={() => setMenuOpen(false)}
+                                aria-hidden="true"
+                            />
+                        )}
+
+                        <button
+                            type="button"
+                            className="hub-user-button"
+                            onClick={() => setMenuOpen((current) => !current)}
+                        >
                             <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
                             <span className="hub-user-meta">
                                 <strong>{firstName}</strong>
@@ -182,14 +200,18 @@ export default function HubChrome() {
                         </button>
 
                         {menuOpen && (
-                            <div className="hub-user-dropdown">
-                                <button type="button" onClick={() => { toggleLanguage(); setMenuOpen(false); }}>
+                            <div className="hub-user-dropdown" role="menu">
+                                <button type="button" role="menuitem" onClick={handleLanguageToggle}>
+                                    <span className="menu-item-icon">🌐</span>
                                     {language === 'ar' ? 'English' : 'العربية'}
                                 </button>
-                                <button type="button" onClick={() => { setMenuOpen(false); navigate('/settings'); }}>
+                                <button type="button" role="menuitem" onClick={handleSettings}>
+                                    <Settings size={16} className="menu-item-icon" />
                                     {localize(i18n, 'Settings', 'الإعدادات')}
                                 </button>
-                                <button type="button" onClick={async () => { setMenuOpen(false); await logout(); }}>
+                                <div className="hub-user-dropdown__divider" />
+                                <button type="button" role="menuitem" className="logout-item" onClick={handleLogout}>
+                                    <LogOut size={16} className="menu-item-icon" />
                                     {t('auth.logout')}
                                 </button>
                             </div>
