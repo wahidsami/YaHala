@@ -59,8 +59,8 @@ Use this as the working checklist for the remaining redesign.
 ### 2.1 Guests
 - [x] Guests page is reachable through the new shell.
 - [x] Guests page inherits the new global styling layer.
-- [ ] Guests page is not yet fully rebuilt to match the redesign mockup.
-- [ ] Guests page is not yet fully restructured into an RSVP-first experience.
+- [x] Guests page now has a dedicated redesign pass with stat cards, segmented views, helper panel, and bulk-action UX.
+- [ ] Guests page still needs final mockup-parity polish and a truer RSVP/event-group data model.
 
 ### 2.2 Secondary screens
 - [x] Secondary screens still work under the new shell.
@@ -71,21 +71,21 @@ Use this as the working checklist for the remaining redesign.
 ## 3. Remaining High-Priority Work
 
 ### 3.1 Guests redesign
-- [ ] Rebuild Guests page to match `mockup_guests.jpg` more closely.
-- [ ] Replace current summary model with RSVP-first `Invited` stat card.
-- [ ] Replace current summary model with RSVP-first `Confirmed` stat card.
-- [ ] Replace current summary model with RSVP-first `Pending` stat card.
-- [ ] Replace current summary model with RSVP-first `Declined` stat card.
-- [ ] Add segmented RSVP filtering tabs.
-- [ ] Rework Guests toolbar around search.
+- [x] Rebuild Guests page to match `mockup_guests.jpg` more closely.
+- [x] Replace current summary model with invitation-lifecycle stat cards.
+- [ ] Replace current summary model with true RSVP-first `Confirmed` stat card backed by event-level data.
+- [ ] Replace current summary model with true RSVP-first `Pending` stat card backed by event-level data.
+- [ ] Replace current summary model with true RSVP-first `Declined` stat card backed by event-level data.
+- [x] Add segmented RSVP-style filtering tabs.
+- [x] Rework Guests toolbar around search.
 - [ ] Rework Guests toolbar around event filter.
 - [ ] Rework Guests toolbar around group filter.
-- [ ] Rework Guests toolbar around RSVP filter.
-- [ ] Rework Guests toolbar around import CSV.
-- [ ] Rework Guests toolbar around add guest.
-- [ ] Add row-selection UX with floating bulk action bar.
-- [ ] Add quick groups side panel.
-- [ ] Improve mobile layout for the Guests flow.
+- [x] Rework Guests toolbar around RSVP-style lifecycle filtering.
+- [x] Rework Guests toolbar around import CSV.
+- [x] Rework Guests toolbar around add guest.
+- [x] Add row-selection UX with floating bulk action bar.
+- [x] Add quick groups side panel.
+- [x] Improve mobile layout for the Guests flow.
 
 ### 3.2 Send Invitations polish
 - [ ] Improve `/send` to better match `mockup_send.jpg`.
@@ -196,7 +196,7 @@ Use this as the working checklist for the remaining redesign.
 
 ## 7. Recommended Next Order
 
-- [ ] Guests full redesign
+- [x] Guests full redesign
 - [ ] Send Invitations polish
 - [ ] Library polish
 - [ ] Create Event polish
@@ -213,4 +213,4 @@ Use this as the working checklist for the remaining redesign.
 - [ ] The remaining work still includes mockup parity.
 - [ ] The remaining work still includes secondary-screen consistency.
 - [ ] The remaining work still includes QA / polish.
-- [ ] The next best implementation target remains `Guests`, because it is the biggest remaining gap between the current implementation and the redesign brief.
+- [ ] The next best implementation target is now `Send Invitations`, because Guests has its first full redesign pass.

@@ -237,7 +237,7 @@ function getGuestSaveError(t, error, fallbackKey) {
     return error?.response?.data?.message || error?.message || t(fallbackKey);
 }
 
-export default function ClientGuestsTab({ clientId }) {
+export default function ClientGuestsTab({ clientId, initialAction = '', onInitialActionHandled }) {
     const { t } = useTranslation();
     const [guests, setGuests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -265,6 +265,26 @@ export default function ClientGuestsTab({ clientId }) {
         setSelectedIds([]);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [clientId, pagination.page, pagination.pageSize, filters.search, filters.status, filters.gender]);
+
+    useEffect(() => {
+        if (!initialAction) {
+            return;
+        }
+
+        if (initialAction === 'create') {
+            openCreateGuest();
+        }
+
+        if (initialAction === 'import') {
+            setImportOpen(true);
+            setImportError('');
+            setImportResult(null);
+            setImportFile(null);
+        }
+
+        onInitialActionHandled?.();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialAction]);
 
     async function fetchGuests() {
         setLoading(true);

@@ -56,6 +56,7 @@ export default function HubChrome() {
         }
         return window.localStorage.getItem('yahala-admin-theme') === 'dark';
     });
+
     const crumbs = useMemo(() => buildCrumbs(location.pathname, i18n), [i18n, location.pathname]);
     const showBack = location.pathname !== '/';
 
@@ -101,6 +102,7 @@ export default function HubChrome() {
             navigate(-1);
             return;
         }
+
         navigate('/');
     }
 
@@ -117,13 +119,17 @@ export default function HubChrome() {
                     <button type="button" className={`hub-back-button ${showBack ? '' : 'is-hidden'}`} onClick={handleBack} aria-label={t('common.back')}>
                         <ChevronLeft size={18} />
                     </button>
+
                     <button type="button" className="hub-brand" onClick={() => navigate('/')}>
                         <img src={logo} alt={t('app.name')} />
                         <span>{t('app.name')}</span>
                     </button>
+
                     {showBack && (
                         <div className="hub-breadcrumbs">
-                            <button type="button" onClick={() => navigate('/')}>{localize(i18n, 'Home', 'الرئيسية')}</button>
+                            <button type="button" onClick={() => navigate('/')}>
+                                {localize(i18n, 'Home', 'الرئيسية')}
+                            </button>
                             {crumbs.map((crumb) => (
                                 <span key={crumb}>{crumb}</span>
                             ))}
@@ -133,18 +139,25 @@ export default function HubChrome() {
 
                 <button type="button" className="hub-search-pill" onClick={() => setPaletteOpen(true)}>
                     <Search size={18} />
-                    <span>{localize(i18n, 'Search events, guests, templates...', 'ابحث عن الفعاليات والضيوف والقوالب...')}</span>
+                    <span>{localize(i18n, 'Search events, clients, guests, templates...', 'ابحث عن الفعاليات والعملاء والضيوف والقوالب...')}</span>
                     <kbd>⌘K</kbd>
                 </button>
 
                 <div className="hub-topbar__right">
-                    <button type="button" className="hub-icon-button" onClick={() => setDarkMode((current) => !current)} aria-label={darkMode ? localize(i18n, 'Switch to light mode', 'التبديل إلى الوضع الفاتح') : localize(i18n, 'Switch to dark mode', 'التبديل إلى الوضع الداكن')}>
+                    <button
+                        type="button"
+                        className="hub-icon-button"
+                        onClick={() => setDarkMode((current) => !current)}
+                        aria-label={darkMode ? localize(i18n, 'Switch to light mode', 'التبديل إلى الوضع الفاتح') : localize(i18n, 'Switch to dark mode', 'التبديل إلى الوضع الداكن')}
+                    >
                         {darkMode ? <SunMedium size={18} /> : <MoonStar size={18} />}
                     </button>
+
                     <button type="button" className="hub-icon-button hub-notification">
                         <Bell size={18} />
                         <span className="hub-notification__dot" />
                     </button>
+
                     <div className="hub-user-menu">
                         <button type="button" className="hub-user-button" onClick={() => setMenuOpen((current) => !current)}>
                             <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
@@ -154,6 +167,7 @@ export default function HubChrome() {
                             </span>
                             <ChevronDown size={16} />
                         </button>
+
                         {menuOpen && (
                             <div className="hub-user-dropdown">
                                 <button type="button" onClick={toggleLanguage}>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Edit, ArrowLeft, Calendar, Users, Scan, Globe, Mail, Phone, MapPin, UserCircle2, Building2, Search, Eye } from 'lucide-react';
 import api from '../../services/api';
@@ -51,6 +51,7 @@ export default function ClientProfilePage() {
     const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [client, setClient] = useState(null);
     const [stats, setStats] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
@@ -73,6 +74,13 @@ export default function ClientProfilePage() {
         fetchClient();
         fetchStats();
     }, [id]);
+
+    useEffect(() => {
+        const requestedTab = searchParams.get('tab');
+        if (requestedTab && ['overview', 'guests', 'events', 'scanners'].includes(requestedTab)) {
+            setActiveTab(requestedTab);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (activeTab === 'events') {
@@ -177,6 +185,23 @@ export default function ClientProfilePage() {
         setEventPagination(prev => ({ ...prev, page: 1 }));
     }
 
+    function handleTabChange(nextTab) {
+        setActiveTab(nextTab);
+
+        const nextParams = new URLSearchParams(searchParams);
+        if (nextTab === 'overview') {
+            nextParams.delete('tab');
+        } else {
+            nextParams.set('tab', nextTab);
+        }
+
+        if (nextTab !== 'guests') {
+            nextParams.delete('guestAction');
+        }
+
+        setSearchParams(nextParams, { replace: true });
+    }
+
     async function executeDeactivate() {
         try {
             await api.delete(`/admin/clients/${id}`);
@@ -256,16 +281,16 @@ export default function ClientProfilePage() {
             />
 
             <div className="profile-tabs">
-                <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>
+                <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => handleTabChange('overview')}>
                     {t('clients.tabs.overview')}
                 </button>
-                <button className={activeTab === 'guests' ? 'active' : ''} onClick={() => setActiveTab('guests')}>
+                <button className={activeTab === 'guests' ? 'active' : ''} onClick={() => handleTabChange('guests')}>
                     {t('clients.tabs.guests')}
                 </button>
-                <button className={activeTab === 'events' ? 'active' : ''} onClick={() => setActiveTab('events')}>
+                <button className={activeTab === 'events' ? 'active' : ''} onClick={() => handleTabChange('events')}>
                     {t('clients.tabs.events')}
                 </button>
-                <button className={activeTab === 'scanners' ? 'active' : ''} onClick={() => setActiveTab('scanners')}>
+                <button className={activeTab === 'scanners' ? 'active' : ''} onClick={() => handleTabChange('scanners')}>
                     {t('clients.tabs.scanners')}
                 </button>
             </div>
@@ -381,7 +406,15 @@ export default function ClientProfilePage() {
                 )}
 
                 {activeTab === 'guests' && (
-                    <ClientGuestsTab clientId={id} />
+                    <ClientGuestsTab
+                        clientId={id}
+                        initialAction={searchParams.get('guestAction') || ''}
+                        onInitialActionHandled={() => {
+                            const nextParams = new URLSearchParams(searchParams);
+                            nextParams.delete('guestAction');
+                            setSearchParams(nextParams, { replace: true });
+                        }}
+                    />
                 )}
 
                 {activeTab === 'events' && (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BookOpenText, CalendarPlus, Mail, Users } from 'lucide-react';
+import { ArrowRight, BookOpenText, Briefcase, CalendarPlus, FolderOpen, Mail, Sparkles, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,6 +28,45 @@ function formatShortDate(dateString, language) {
     }
     const locale = language?.startsWith('ar') ? 'ar-SA' : 'en-US';
     return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(dateString));
+}
+
+function formatNumber(value) {
+    return new Intl.NumberFormat().format(Number(value || 0));
+}
+
+function HubIllustration({ icon: Icon, accent }) {
+    return (
+        <div className={`hub-illustration hub-illustration--${accent}`} aria-hidden="true">
+            <span className="hub-illustration__halo" />
+            <span className="hub-illustration__spark hub-illustration__spark--one" />
+            <span className="hub-illustration__spark hub-illustration__spark--two" />
+            <span className="hub-illustration__spark hub-illustration__spark--three" />
+            <div className="hub-illustration__orb">
+                <Icon size={38} />
+            </div>
+            <div className="hub-illustration__mini">
+                <Sparkles size={15} />
+            </div>
+        </div>
+    );
+}
+
+function ActionCard({ card }) {
+    return (
+        <Link to={card.path} className={`home-hub-card home-hub-card--${card.accent}`}>
+            <div className="home-hub-card__art">
+                <HubIllustration icon={card.icon} accent={card.accent} />
+            </div>
+            <div className="home-hub-card__copy">
+                <span className="home-hub-card__eyebrow">{card.eyebrow}</span>
+                <h2>{card.title}</h2>
+                <p>{card.description}</p>
+            </div>
+            <span className="home-hub-card__arrow">
+                <ArrowRight size={18} />
+            </span>
+        </Link>
+    );
 }
 
 export default function HomeHubPage() {
@@ -79,6 +118,7 @@ export default function HomeHubPage() {
             path: '/events/new',
             icon: CalendarPlus,
             accent: 'coral',
+            eyebrow: localize(i18n, 'Launch', 'ابدأ'),
             allowed: hasPermission('events.create')
         },
         {
@@ -88,6 +128,7 @@ export default function HomeHubPage() {
             path: '/guests',
             icon: Users,
             accent: 'lavender',
+            eyebrow: localize(i18n, 'Operate', 'إدارة'),
             allowed: hasPermission('guests.view')
         },
         {
@@ -97,6 +138,7 @@ export default function HomeHubPage() {
             path: '/send',
             icon: Mail,
             accent: 'mint',
+            eyebrow: localize(i18n, 'Deliver', 'إرسال'),
             allowed: hasPermission('events.view')
         },
         {
@@ -106,6 +148,7 @@ export default function HomeHubPage() {
             path: '/library',
             icon: BookOpenText,
             accent: 'rose',
+            eyebrow: localize(i18n, 'Design', 'تصميم'),
             allowed: hasPermission('templates.view')
         }
     ].filter((card) => card.allowed), [hasPermission, i18n]);
@@ -120,44 +163,107 @@ export default function HomeHubPage() {
         const diff = target.getTime() - now.getTime();
         return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
     }).length;
+
     const totalGuests = summary?.summary?.guests_total || summary?.summary?.guests || 0;
+    const totalClients = summary?.summary?.clients_total || 0;
+    const activeClients = summary?.summary?.active_clients || 0;
+    const clientActionsVisible = hasPermission('clients.view') || hasPermission('clients.create');
+
+    const heroMetrics = [
+        {
+            id: 'clients',
+            label: localize(i18n, 'Clients', 'العملاء'),
+            value: formatNumber(totalClients)
+        },
+        {
+            id: 'active-clients',
+            label: localize(i18n, 'Active clients', 'العملاء النشطون'),
+            value: formatNumber(activeClients)
+        },
+        {
+            id: 'guests',
+            label: localize(i18n, 'Guests', 'الضيوف'),
+            value: formatNumber(totalGuests)
+        },
+        {
+            id: 'this-week',
+            label: localize(i18n, 'This week', 'هذا الأسبوع'),
+            value: formatNumber(upcomingThisWeek)
+        }
+    ];
 
     return (
         <div className="home-hub-page">
             <section className="home-hub-hero">
-                <p className="home-hub-hero__eyebrow">{new Date().toLocaleDateString(i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                <div className="home-hub-hero__confetti" aria-hidden="true">
+                    {Array.from({ length: 18 }).map((_, index) => (
+                        <span key={index} className={`confetti-piece confetti-piece--${(index % 4) + 1}`} />
+                    ))}
+                </div>
+
+                <p className="home-hub-hero__eyebrow">
+                    {new Date().toLocaleDateString(i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric'
+                    })}
+                </p>
+
                 <h1 className="hub-display-title">
-                    {localize(i18n, `Good evening, ${firstName}`, `مساء الخير، ${firstName}`)}
+                    {localize(i18n, `Good evening, ${firstName}`, `مساء الخير، ${firstName}`)}{' '}
+                    <span className="hub-display-title__accent">+</span>
                 </h1>
+
                 <p className="home-hub-hero__summary">
                     {loading
                         ? t('common.loading')
                         : localize(
                             i18n,
-                            `${upcomingThisWeek} events coming up this week • ${totalGuests} guests in your workspace`,
-                            `${upcomingThisWeek} فعاليات هذا الأسبوع • ${totalGuests} ضيف في مساحة العمل`
+                            `${upcomingThisWeek} events coming up this week. Start with a client, then build the event under it.`,
+                            `${upcomingThisWeek} فعالية هذا الأسبوع. ابدأ بالعميل أولاً ثم أنشئ الفعالية تحته.`
                         )}
                 </p>
+
+                {clientActionsVisible && (
+                    <div className="home-hub-workflow">
+                        <div className="home-hub-workflow__copy">
+                            <span>{localize(i18n, 'Client-first workflow', 'مسار العمل يبدأ من العميل')}</span>
+                            <strong>{localize(i18n, 'Create or open a client before you create the event.', 'أنشئ العميل أو افتحه قبل إنشاء الفعالية.')}</strong>
+                        </div>
+
+                        <div className="home-hub-workflow__actions">
+                            {hasPermission('clients.create') && (
+                                <Link to="/clients/new" className="btn btn-primary home-hub-workflow__button">
+                                    <Briefcase size={16} />
+                                    <span>{localize(i18n, 'Create Client', 'إنشاء عميل')}</span>
+                                </Link>
+                            )}
+                            {hasPermission('clients.view') && (
+                                <Link to="/clients" className="btn btn-secondary home-hub-workflow__button">
+                                    <FolderOpen size={16} />
+                                    <span>{localize(i18n, 'Open Clients', 'فتح العملاء')}</span>
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {!loading && (
+                    <div className="home-hub-metrics">
+                        {heroMetrics.map((metric) => (
+                            <div key={metric.id} className="home-hub-metric">
+                                <strong>{metric.value}</strong>
+                                <span>{metric.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
             <section className="home-hub-actions">
-                {actionCards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <Link key={card.id} to={card.path} className={`home-hub-card home-hub-card--${card.accent}`}>
-                            <div className="home-hub-card__icon">
-                                <Icon size={28} />
-                            </div>
-                            <div>
-                                <h2>{card.title}</h2>
-                                <p>{card.description}</p>
-                            </div>
-                            <span className="home-hub-card__arrow">
-                                <ArrowRight size={18} />
-                            </span>
-                        </Link>
-                    );
-                })}
+                {actionCards.map((card) => (
+                    <ActionCard key={card.id} card={card} />
+                ))}
             </section>
 
             <section className="home-hub-recent">
@@ -178,6 +284,7 @@ export default function HomeHubPage() {
                             const title = localize(i18n, event.name || 'Untitled event', event.name_ar || event.name || 'فعالية');
                             const client = localize(i18n, event.client_name || '', event.client_name_ar || event.client_name || '');
                             const imageUrl = resolveAssetUrl(event.event_logo_path || event.client_logo_path);
+
                             return (
                                 <Link key={event.id} to={`/events/${event.id}`} className="recent-activity-card">
                                     <div className="recent-activity-card__thumb">
@@ -190,6 +297,9 @@ export default function HomeHubPage() {
                                     </div>
                                     <span className={`recent-activity-card__status status-${event.status || 'draft'}`}>
                                         {event.status || localize(i18n, 'Draft', 'مسودة')}
+                                    </span>
+                                    <span className="recent-activity-card__chevron">
+                                        <ArrowRight size={16} />
                                     </span>
                                 </Link>
                             );

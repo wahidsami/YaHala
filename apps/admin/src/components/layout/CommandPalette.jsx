@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, Mail, Palette, Search, Settings, Sparkles, Users } from 'lucide-react';
+import { Briefcase, Link2, Mail, Palette, Search, Settings, Sparkles, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,6 +33,8 @@ export default function CommandPalette({ open, onClose }) {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [sections, setSections] = useState([]);
+    const normalizedQuery = query.trim().replace(/^\/+/, '');
+    const queryTerm = normalizedQuery.toLowerCase();
 
     const quickActions = useMemo(() => {
         const items = [
@@ -43,6 +45,22 @@ export default function CommandPalette({ open, onClose }) {
                 path: '/events/new',
                 icon: Sparkles,
                 allowed: hasPermission('events.create')
+            },
+            {
+                id: 'open-clients',
+                title: localize(i18n, 'Open clients', 'فتح العملاء'),
+                subtitle: localize(i18n, 'Browse and manage all clients', 'تصفح جميع العملاء وإدارتهم'),
+                path: '/clients',
+                icon: Users,
+                allowed: hasPermission('clients.view')
+            },
+            {
+                id: 'create-client',
+                title: localize(i18n, 'Create client', 'إنشاء عميل'),
+                subtitle: localize(i18n, 'Add a client before creating an event', 'أضف عميلاً قبل إنشاء فعالية'),
+                path: '/clients/new',
+                icon: Briefcase,
+                allowed: hasPermission('clients.create')
             },
             {
                 id: 'manage-guests',
@@ -89,6 +107,18 @@ export default function CommandPalette({ open, onClose }) {
         return items.filter((item) => item.allowed);
     }, [hasPermission, i18n]);
 
+    const matchingQuickActions = useMemo(() => {
+        if (!queryTerm) {
+            return quickActions;
+        }
+
+        return quickActions.filter((item) => (
+            [item.title, item.subtitle, item.path]
+                .filter(Boolean)
+                .some((value) => value.toLowerCase().includes(queryTerm))
+        ));
+    }, [queryTerm, quickActions]);
+
     useEffect(() => {
         if (!open) {
             setQuery('');
@@ -98,7 +128,7 @@ export default function CommandPalette({ open, onClose }) {
     }, [open]);
 
     useEffect(() => {
-        if (!open || query.trim().length < 2) {
+        if (!open || normalizedQuery.length < 2) {
             setSections([]);
             setLoading(false);
             return undefined;
@@ -110,27 +140,27 @@ export default function CommandPalette({ open, onClose }) {
 
             const jobs = [];
             if (hasPermission('events.view')) {
-                jobs.push(api.get(`/admin/events?page=1&pageSize=5&search=${encodeURIComponent(query.trim())}`));
+                jobs.push(api.get(`/admin/events?page=1&pageSize=5&search=${encodeURIComponent(normalizedQuery)}`));
             } else {
                 jobs.push(Promise.resolve({ data: { data: [] } }));
             }
             if (hasPermission('clients.view')) {
-                jobs.push(api.get(`/admin/clients?page=1&pageSize=5&search=${encodeURIComponent(query.trim())}`));
+                jobs.push(api.get(`/admin/clients?page=1&pageSize=5&search=${encodeURIComponent(normalizedQuery)}`));
             } else {
                 jobs.push(Promise.resolve({ data: { data: [] } }));
             }
             if (hasPermission('templates.view')) {
-                jobs.push(api.get(`/admin/templates?page=1&pageSize=5&search=${encodeURIComponent(query.trim())}`));
+                jobs.push(api.get(`/admin/templates?page=1&pageSize=5&search=${encodeURIComponent(normalizedQuery)}`));
             } else {
                 jobs.push(Promise.resolve({ data: { data: [] } }));
             }
             if (hasPermission('guests.view')) {
-                jobs.push(api.get(`/admin/guests?page=1&pageSize=5&search=${encodeURIComponent(query.trim())}`));
+                jobs.push(api.get(`/admin/guests?page=1&pageSize=5&search=${encodeURIComponent(normalizedQuery)}`));
             } else {
                 jobs.push(Promise.resolve({ data: { data: [] } }));
             }
             if (hasPermission('events.view')) {
-                jobs.push(api.get(`/admin/invitation-projects?page=1&pageSize=5&search=${encodeURIComponent(query.trim())}`));
+                jobs.push(api.get(`/admin/invitation-projects?page=1&pageSize=5&search=${encodeURIComponent(normalizedQuery)}`));
             } else {
                 jobs.push(Promise.resolve({ data: { data: [] } }));
             }
@@ -159,7 +189,7 @@ export default function CommandPalette({ open, onClose }) {
                 },
                 {
                     label: localize(i18n, 'Guests', 'الضيوف'),
-                    items: normalizeResults(guestsRes, 'guest', (row) => `/clients/${row.client_id}`, i18n)
+                    items: normalizeResults(guestsRes, 'guest', (row) => `/clients/${row.client_id}?tab=guests`, i18n)
                 },
                 {
                     label: localize(i18n, 'Invitation projects', 'مشاريع الدعوات'),
@@ -175,7 +205,7 @@ export default function CommandPalette({ open, onClose }) {
             cancelled = true;
             window.clearTimeout(timer);
         };
-    }, [hasPermission, i18n, open, query]);
+    }, [hasPermission, i18n, normalizedQuery, open]);
 
     if (!open) {
         return null;
@@ -195,16 +225,16 @@ export default function CommandPalette({ open, onClose }) {
                         type="text"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        placeholder={localize(i18n, 'Search events, guests, templates...', 'ابحث عن الفعاليات والضيوف والقوالب...')}
+                        placeholder={localize(i18n, 'Search events, clients, guests, templates...', 'ابحث عن الفعاليات والعملاء والضيوف والقوالب...')}
                         autoFocus
                     />
                     <span className="command-palette__hint">Esc</span>
                 </div>
 
-                {query.trim().length < 2 ? (
+                {normalizedQuery.length < 2 ? (
                     <div className="command-palette__quick-actions">
                         <div className="command-palette__section-title">{localize(i18n, 'Quick actions', 'إجراءات سريعة')}</div>
-                        {quickActions.map((item) => {
+                        {matchingQuickActions.map((item) => {
                             const Icon = item.icon;
                             return (
                                 <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
@@ -221,10 +251,30 @@ export default function CommandPalette({ open, onClose }) {
                     </div>
                 ) : loading ? (
                     <div className="command-palette__empty">{t('common.loading')}</div>
-                ) : sections.length === 0 ? (
+                ) : sections.length === 0 && matchingQuickActions.length === 0 ? (
                     <div className="command-palette__empty">{localize(i18n, 'No matching results', 'لا توجد نتائج مطابقة')}</div>
                 ) : (
                     <div className="command-palette__results">
+                        {matchingQuickActions.length > 0 && (
+                            <div className="command-palette__section">
+                                <div className="command-palette__section-title">{localize(i18n, 'Commands', 'الأوامر')}</div>
+                                {matchingQuickActions.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
+                                            <span className="command-palette__icon">
+                                                <Icon size={16} />
+                                            </span>
+                                            <span>
+                                                <strong>{item.title}</strong>
+                                                <small>{item.subtitle}</small>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+
                         {sections.map((section) => (
                             <div key={section.label} className="command-palette__section">
                                 <div className="command-palette__section-title">{section.label}</div>
