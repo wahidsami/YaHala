@@ -47,6 +47,23 @@ function formatDate(dateString, locale = 'en-US') {
     return new Date(dateString).toLocaleDateString(locale);
 }
 
+function QuickStatCard({ title, value, share, tone, icon: Icon }) {
+    return (
+        <div className={`guest-stat-card guest-stat-card--${tone}`}>
+            <div className="guest-stat-card__head">
+                <span>{title}</span>
+                <div className="guest-stat-card__icon">
+                    <Icon size={18} />
+                </div>
+            </div>
+            <strong>{value}</strong>
+            <div className="guest-stat-card__meta">
+                <span>{share}</span>
+            </div>
+        </div>
+    );
+}
+
 export default function ClientProfilePage() {
     const { t, i18n } = useTranslation();
     const { id } = useParams();
@@ -269,22 +286,6 @@ export default function ClientProfilePage() {
                 </div>
             </div>
 
-                    <div className="header-actions">
-                        <RoleGuard permission="clients.edit">
-                            <Link to={`/clients/${id}/edit`} className="btn btn-secondary">
-                                <Edit size={18} />
-                                <span>{t('common.edit')}</span>
-                            </Link>
-                        </RoleGuard>
-                        <RoleGuard permission="clients.delete">
-                            <button className="btn btn-danger" onClick={handleDeactivate}>
-                                {t('common.deactivate')}
-                            </button>
-                        </RoleGuard>
-                    </div>
-                </div>
-            </div>
-
             <ConfirmDialog
                 open={Boolean(confirmDialog)}
                 title={confirmDialog?.title || ''}
@@ -418,8 +419,6 @@ export default function ClientProfilePage() {
                                 </div>
                             </div>
                         )}
-                    </div>
-                )}
                     </div>
                 )}
 
@@ -633,6 +632,3 @@ export default function ClientProfilePage() {
         </div>
     );
 }
-
-
-

@@ -97,17 +97,17 @@ function flowLabel(i18n, flow) {
     return localize(i18n, 'Ready to invite', 'جاهز للدعوة');
 }
 
-function QuickStatCard({ label, value, icon, trend, color = 'lavender' }) {
+function QuickStatCard({ title, value, share, note, tone, icon: Icon }) {
     return (
-        <article className={`quick-stat-pill quick-stat-pill--${color}`}>
+        <article className={`quick-stat-pill quick-stat-pill--${tone}`}>
             <div className="quick-stat-pill__icon">
-                {icon}
+                <Icon size={18} />
             </div>
             <div className="quick-stat-pill__copy">
-                <span className="quick-stat-pill__label">{label}</span>
+                <span className="quick-stat-pill__label">{title}</span>
                 <div className="quick-stat-pill__value-row">
                     <strong className="quick-stat-pill__value">{value}</strong>
-                    {trend && <span className="quick-stat-pill__trend">{trend}</span>}
+                    {share && <span className="quick-stat-pill__trend">{share}</span>}
                 </div>
             </div>
         </article>
@@ -461,19 +461,12 @@ export default function GuestsPage() {
     const awaitingCount = Math.max(0, invitedCount - respondedCount);
     const readyCount = Math.max(0, Number(summary.active || 0) - invitedCount);
     const totalCount = Number(summary.total || 0);
-    const activeBase = Math.max(Number(summary.active || 0), 1);
-    const totalBase = Math.max(totalCount, 1);
-
-    const clientOptions = useMemo(() => clients.map((client) => ({
-        id: client.id,
-        label: i18n.language?.startsWith('ar') ? (client.name_ar || client.name) : (client.name || client.name_ar)
-    })), [clients, i18n.language]);
 
     const viewTabs = useMemo(() => ([
-        { id: 'all', label: localize(i18n, 'All guests', '?? ??????'), count: totalCount },
-        { id: 'attending', label: localize(i18n, 'Attending', '????'), count: respondedCount },
-        { id: 'pending', label: localize(i18n, 'Pending', '??? ????????'), count: awaitingCount },
-        { id: 'declined', label: localize(i18n, 'Not Attending', '?? ????'), count: 0 }
+        { id: 'all', label: localize(i18n, 'All guests', 'كل الضيوف'), count: totalCount },
+        { id: 'attending', label: localize(i18n, 'Attending', 'حاضر'), count: respondedCount },
+        { id: 'pending', label: localize(i18n, 'Pending', 'بانتظار الرد'), count: awaitingCount },
+        { id: 'declined', label: localize(i18n, 'Not Attending', 'لن يحضر'), count: 0 }
     ]), [awaitingCount, i18n, respondedCount, totalCount]);
 
     const visibleGuests = useMemo(() => guests.filter((guest) => {
@@ -511,14 +504,14 @@ export default function GuestsPage() {
             title: localize(i18n, 'Needs follow-up', 'بحاجة إلى متابعة'),
             caption: localize(i18n, 'Invited but still waiting on a reply', 'تمت دعوتهم وما زالوا بانتظار الرد'),
             value: awaitingCount,
-            onClick: () => setActiveView('awaiting')
+            onClick: () => setActiveView('pending')
         },
         {
             id: 'ready',
             title: localize(i18n, 'Ready to invite', 'جاهزون للدعوة'),
             caption: localize(i18n, 'Active guests with no invite history yet', 'ضيوف نشطون بلا سجل دعوات بعد'),
             value: readyCount,
-            onClick: () => setActiveView('ready')
+            onClick: () => setActiveView('all')
         },
         {
             id: 'restricted',
@@ -577,26 +570,6 @@ export default function GuestsPage() {
                     />
                 </div>
             </div>
-
-            <div className="guests-workspace">
-                <aside className="quick-groups-panel">
-                    <h3>{localize(i18n, 'Quick Groups', '??????? ?????')}</h3>
-                    <div className="quick-groups-list">
-                        {quickGroups.map((group) => (
-                            <button
-                                key={group.id}
-                                className={`quick-group-btn ${activeView === group.id || (group.id === 'restricted' && filters.status === 'banned') ? 'is-active' : '}`}
-                                onClick={group.onClick}
-                            >
-                                <div className="quick-group-btn__info">
-                                    <strong>{group.title}</strong>
-                                    <span>{group.caption}</span>
-                                </div>
-                                <span className="quick-group-btn__count">{formatNumber(group.value)}</span>
-                            </button>
-                        ))}
-                    </div>
-                </aside>
 
             <div className="guests-workspace">
                 <section className="guests-main">
@@ -844,29 +817,17 @@ export default function GuestsPage() {
                 </div>
             )}
 
-            {selectedGuest && (
-                <GuestDrawer
-                    guest={selectedGuest}
+            {selectedGuest && <GuestDrawer guest={selectedGuest} i18n={i18n} onClose={() => setSelectedGuest(null)} />}
+            
+            <RoleGuard permission="guests.create">
+                <ClientActionModal
+                    clients={clients}
                     i18n={i18n}
-                    onClose={() => setSelectedGuest(null)}
+                    mode={launcherMode}
+                    onClose={() => setLauncherMode('')}
+                    onConfirm={(clientId) => openClientGuestbook(clientId, launcherMode)}
                 />
-            )}
-
-            <ClientActionModal
-                clients={clients}
-                i18n={i18n}
-                mode={launcherMode}
-                onClose={() => setLauncherMode('')}
-                onConfirm={(clientId) => {
-                    openClientGuestbook(clientId, launcherMode);
-                    setLauncherMode('');
-                }}
-            />
+            </RoleGuard>
         </div>
     );
 }
-
-
-
-
-
