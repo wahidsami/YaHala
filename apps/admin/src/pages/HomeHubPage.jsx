@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BookOpenText, Briefcase, CalendarPlus, FolderOpen, Mail, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, BookOpenText, Briefcase, CalendarPlus, FolderOpen, Mail, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,37 +34,21 @@ function formatNumber(value) {
     return new Intl.NumberFormat().format(Number(value || 0));
 }
 
-function HubIllustration({ icon: Icon, accent }) {
-    return (
-        <div className={`hub-illustration hub-illustration--${accent}`} aria-hidden="true">
-            <span className="hub-illustration__halo" />
-            <span className="hub-illustration__spark hub-illustration__spark--one" />
-            <span className="hub-illustration__spark hub-illustration__spark--two" />
-            <span className="hub-illustration__spark hub-illustration__spark--three" />
-            <div className="hub-illustration__orb">
-                <Icon size={38} />
-            </div>
-            <div className="hub-illustration__mini">
-                <Sparkles size={15} />
-            </div>
-        </div>
-    );
-}
-
 function ActionCard({ card }) {
     return (
         <Link to={card.path} className={`home-hub-card home-hub-card--${card.accent}`}>
             <div className="home-hub-card__art">
-                <HubIllustration icon={card.icon} accent={card.accent} />
+                <img
+                    src={card.illustration}
+                    alt={card.title}
+                    className="home-hub-card__img"
+                    draggable="false"
+                />
             </div>
             <div className="home-hub-card__copy">
-                <span className="home-hub-card__eyebrow">{card.eyebrow}</span>
-                <h2>{card.title}</h2>
+                <h2 className={`home-hub-card__title home-hub-card__title--${card.accent}`}>{card.title}</h2>
                 <p>{card.description}</p>
             </div>
-            <span className="home-hub-card__arrow">
-                <ArrowRight size={16} />
-            </span>
         </Link>
     );
 }
@@ -114,41 +98,41 @@ export default function HomeHubPage() {
         {
             id: 'create-event',
             title: localize(i18n, 'Create Event', 'إنشاء فعالية'),
-            description: localize(i18n, 'Plan and launch a new event in guided steps.', 'خطط وأطلق فعالية جديدة عبر خطوات واضحة.'),
+            description: localize(i18n, 'Plan and create beautiful events in minutes.', 'خطط وأنشئ فعاليات رائعة في دقائق.'),
             path: '/events/new',
             icon: CalendarPlus,
             accent: 'coral',
-            eyebrow: localize(i18n, 'Launch', 'ابدأ'),
+            illustration: '/illustrations/card-create-event.png',
             allowed: hasPermission('events.create')
         },
         {
             id: 'guests',
             title: localize(i18n, 'Manage Guests', 'إدارة الضيوف'),
-            description: localize(i18n, 'Review guest records and follow the latest activity.', 'راجع سجلات الضيوف وتابع أحدث النشاطات.'),
+            description: localize(i18n, 'View, organize and manage your guest list.', 'عرض وتنظيم وإدارة قائمة ضيوفك.'),
             path: '/guests',
             icon: Users,
             accent: 'lavender',
-            eyebrow: localize(i18n, 'Operate', 'إدارة'),
+            illustration: '/illustrations/card-manage-guests.png',
             allowed: hasPermission('guests.view')
         },
         {
             id: 'send',
             title: localize(i18n, 'Send Invitations', 'إرسال الدعوات'),
-            description: localize(i18n, 'Choose an event, preview the message, and send.', 'اختر فعالية واعرض الرسالة ثم أرسلها.'),
+            description: localize(i18n, 'Design and send invitations with ease.', 'صمم الدعوات وأرسلها بسهولة تامة.'),
             path: '/send',
             icon: Mail,
             accent: 'mint',
-            eyebrow: localize(i18n, 'Deliver', 'إرسال'),
+            illustration: '/illustrations/card-send-invitations.png',
             allowed: hasPermission('events.view')
         },
         {
             id: 'library',
             title: localize(i18n, 'Library & Templates', 'المكتبة والقوالب'),
-            description: localize(i18n, 'Browse designs and jump into the builder.', 'تصفح التصاميم وادخل إلى محرر القوالب.'),
+            description: localize(i18n, 'Browse templates and save your favorites.', 'تصفح القوالب واحفظ مفضلاتك.'),
             path: '/library',
             icon: BookOpenText,
             accent: 'rose',
-            eyebrow: localize(i18n, 'Design', 'تصميم'),
+            illustration: '/illustrations/card-library-templates.png',
             allowed: hasPermission('templates.view')
         }
     ].filter((card) => card.allowed), [hasPermission, i18n]);
@@ -210,18 +194,12 @@ export default function HomeHubPage() {
                 </p>
 
                 <h1 className="hub-display-title">
-                    {localize(i18n, `Good evening, ${firstName}`, `مساء الخير، ${firstName}`)}{' '}
-                    <span className="hub-display-title__accent">+</span>
+                    {localize(i18n, `Good morning, ${firstName}`, `صباح الخير، ${firstName}`)}{' '}
+                    <span className="hub-display-title__accent">🎉</span>
                 </h1>
 
                 <p className="home-hub-hero__summary">
-                    {loading
-                        ? t('common.loading')
-                        : localize(
-                            i18n,
-                            `${upcomingThisWeek} events coming up this week. Start with a client, then build the event under it.`,
-                            `${upcomingThisWeek} فعالية هذا الأسبوع. ابدأ بالعميل أولاً ثم أنشئ الفعالية تحته.`
-                        )}
+                    {localize(i18n, 'What would you like to do?', 'ماذا تريد أن تفعل اليوم؟')}
                 </p>
 
                 {clientActionsVisible && (

@@ -189,7 +189,7 @@ export default function HubChrome() {
                                 <button type="button" onClick={() => { setMenuOpen(false); navigate('/settings'); }}>
                                     {localize(i18n, 'Settings', 'الإعدادات')}
                                 </button>
-                                <button type="button" onClick={async () => { setMenuOpen(false); await logout(); navigate('/login'); }}>
+                                <button type="button" onClick={async () => { setMenuOpen(false); await logout(); }}>
                                     {t('auth.logout')}
                                 </button>
                             </div>

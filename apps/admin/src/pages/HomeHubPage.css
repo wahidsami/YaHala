@@ -217,22 +217,27 @@ html[dir="rtl"] .hub-display-title {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 .home-hub-card {
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    min-height: 17rem;
-    padding: 1.35rem 1.35rem 1.6rem;
-    border-radius: 1.6rem;
-    border: 1px solid rgba(240, 221, 215, 0.88);
-    background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 20px 44px -30px rgba(100, 73, 102, 0.28);
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 15rem;
+    padding: 1.5rem 1.5rem 1.75rem;
+    border-radius: 1.4rem;
+    border: 1px solid rgba(240, 228, 224, 0.9);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 24px -8px rgba(100, 73, 102, 0.1), 0 1px 3px rgba(0,0,0,0.04);
     overflow: hidden;
-    transition: transform 0.24s ease, box-shadow 0.24s ease;
-    animation: hubCardRise 0.65s ease both;
+    text-decoration: none;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    animation: hubCardRise 0.55s ease both;
 }
 
 .home-hub-card:nth-child(2) { animation-delay: 0.08s; }
@@ -274,20 +279,47 @@ html[dir="rtl"] .hub-display-title {
 .home-hub-card__copy {
     position: relative;
     z-index: 1;
+    width: 100%;
+    text-align: center;
 }
 
 .home-hub-card__art {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 7rem;
+    min-height: 7.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.home-hub-card__img {
+    width: 9rem;
+    height: 9rem;
+    object-fit: contain;
+    display: block;
+    user-select: none;
 }
 
 .home-hub-card__copy {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    align-items: center;
+    gap: 0.3rem;
+    text-align: center;
 }
+
+.home-hub-card__title {
+    margin: 0 0 0.15rem;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+}
+
+.home-hub-card__title--coral  { color: #e05a2b; }
+.home-hub-card__title--lavender { color: #6d28d9; }
+.home-hub-card__title--mint   { color: #059669; }
+.home-hub-card__title--rose   { color: #e11d48; }
 
 .home-hub-card__eyebrow {
     color: rgba(138, 93, 89, 0.9);
@@ -311,9 +343,10 @@ html[dir="rtl"] .home-hub-card h2 {
 
 .home-hub-card p {
     margin: 0;
-    max-width: 28ch;
+    max-width: 26ch;
     color: var(--text-secondary);
-    line-height: 1.65;
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
 .home-hub-card__arrow {
