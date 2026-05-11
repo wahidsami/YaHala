@@ -108,11 +108,8 @@ function buildDefaultMessage(channel, i18n, event) {
 function AudienceCard({ audience, count, isActive, i18n, onSelect }) {
     return (
         <button type="button" className={`send-audience-card ${isActive ? 'is-active' : ''}`} onClick={() => onSelect(audience.id)}>
-            <div className="send-audience-card__head">
-                <strong>{localize(i18n, audience.en, audience.ar)}</strong>
-                <span>{formatNumber(count)}</span>
-            </div>
-            <small>{localize(i18n, audience.hintEn, audience.hintAr)}</small>
+            <strong>{localize(i18n, audience.en, audience.ar)}</strong>
+            <span>{formatNumber(count)}</span>
         </button>
     );
 }
@@ -377,7 +374,6 @@ export default function SendInvitationsPage() {
             tone: 'ink'
         }
     ];
-
     function toggleRecipient(recipientId) {
         setSelectedRecipients((current) => (
             current.includes(recipientId)
@@ -481,15 +477,6 @@ export default function SendInvitationsPage() {
                 </div>
             </section>
 
-            <div className="send-performance-grid">
-                {performanceCards.map((card) => (
-                    <article key={card.id} className={`send-performance-card send-performance-card--${card.tone}`}>
-                        <span>{card.label}</span>
-                        <strong>{formatNumber(card.value)}</strong>
-                    </article>
-                ))}
-            </div>
-
             <div className="send-page__layout">
                 <section className="send-card send-card--composer">
                     <div className="send-card__body">
@@ -526,6 +513,15 @@ export default function SendInvitationsPage() {
                                     </button>
                                 );
                             })}
+                        </div>
+
+                        <div className="send-performance-grid send-performance-grid--compact">
+                            {performanceCards.map((card) => (
+                                <article key={card.id} className={`send-performance-card send-performance-card--${card.tone}`}>
+                                    <span>{card.label}</span>
+                                    <strong>{formatNumber(card.value)}</strong>
+                                </article>
+                            ))}
                         </div>
 
                         <div className="send-field-block">
@@ -642,16 +638,28 @@ export default function SendInvitationsPage() {
                                 ))}
                             </div>
 
-                            <textarea
-                                ref={messageRef}
-                                className="send-message-textarea"
-                                value={message}
-                                onChange={(event) => {
-                                    setMessageTouched(true);
-                                    setMessage(event.target.value);
-                                }}
-                                rows={8}
-                            />
+                            <div className="send-message-layout">
+                                <textarea
+                                    ref={messageRef}
+                                    className="send-message-textarea"
+                                    value={message}
+                                    onChange={(event) => {
+                                        setMessageTouched(true);
+                                        setMessage(event.target.value);
+                                    }}
+                                    rows={6}
+                                />
+
+                                <div className="send-attachment-card">
+                                    <div className="send-attachment-card__art" />
+                                    <div className="send-attachment-card__body">
+                                        <span>{localize(i18n, 'Invitation card', 'Ø¨Ø·Ø§Ù‚Ø© Ø§Ù„Ø¯Ø¹ÙˆØ©')}</span>
+                                        <strong>{eventTitle}</strong>
+                                        <small>{eventLine}</small>
+                                        <button type="button">{localize(i18n, 'View details & RSVP', 'Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„ ÙˆØ§Ù„Ø±Ø¯')}</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="send-schedule-card">
@@ -719,16 +727,18 @@ export default function SendInvitationsPage() {
                             </button>
                         </div>
 
-                        <PreviewShell
-                            channel={channel}
-                            title={previewTitle}
-                            subtitle={previewSubtitle}
-                            previewMessage={previewMessage}
-                            eventLine={eventLine}
-                            ctaLabel={ctaLabel}
-                        />
+                        <div className="send-preview-device">
+                            <PreviewShell
+                                channel={channel}
+                                title={previewTitle}
+                                subtitle={previewSubtitle}
+                                previewMessage={previewMessage}
+                                eventLine={eventLine}
+                                ctaLabel={ctaLabel}
+                            />
+                        </div>
 
-                        <div className="send-preview-card__meta">
+                        <div className="send-preview-card__meta send-preview-card__meta--compact">
                             <div className="send-preview-card__meta-item">
                                 <Clock3 size={16} />
                                 <div>
