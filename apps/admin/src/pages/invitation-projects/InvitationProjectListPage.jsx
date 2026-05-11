@@ -145,7 +145,7 @@ export default function InvitationProjectListPage() {
                                 
                                 <div className="project-meta" style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                     <span>{localized(project.event_name, project.event_name_ar)}</span>
-                                    {project.client_name && <span> • {localized(project.client_name, project.client_name_ar)}</span>}
+                                    {project.client_name && <span> â€¢ {localized(project.client_name, project.client_name_ar)}</span>}
                                 </div>
                             </div>
                             <div className="client-card__footer">
@@ -166,7 +166,6 @@ export default function InvitationProjectListPage() {
                     ))
                 )}
             </div>
-
             {pagination.totalPages > 1 && (
                 <div className="pagination">
                     <button
@@ -187,5 +186,3 @@ export default function InvitationProjectListPage() {
         </div>
     );
 }
-
-

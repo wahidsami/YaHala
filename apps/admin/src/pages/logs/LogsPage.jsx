@@ -359,12 +359,12 @@ export default function LogsPage() {
 
     return (
         <div className="logs-page">
-            <div className="page-header hub-display-title">
-                <div className="hub-display-title__copy">
-                    <span className="hub-display-title__eyebrow">{t('nav.logs')}</span>
-                    <h1>{t('logs.subtitle')}</h1>
+            <div className="page-header">
+                <div>
+                    <h1>{t('nav.logs')}</h1>
+                    <p>{t('logs.subtitle')}</p>
                 </div>
-                <div className="hub-display-title__actions">
+                <div className="logs-header-actions">
                     <button type="button" className="btn btn-secondary" onClick={clearFilters} disabled={!hasFilters}>
                         <Filter size={16} />
                         <span>{t('logs.clearFilters')}</span>
@@ -604,4 +604,3 @@ export default function LogsPage() {
         </div>
     );
 }
-

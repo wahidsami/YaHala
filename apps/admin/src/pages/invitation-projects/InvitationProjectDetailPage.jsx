@@ -1490,4 +1490,3 @@ export default function InvitationProjectDetailPage() {
         </div>
     );
 }
-

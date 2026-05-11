@@ -34,11 +34,121 @@
     flex-direction: column;
 }
 
-.project-meta .meta-subtle,
+.project-meta span,
 .muted-copy {
     color: var(--text-secondary);
     font-size: 0.8125rem;
 }
+
+/* Client Card Grid */
+.client-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.client-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px -8px rgba(0,0,0,0.1);
+}
+
+.client-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -10px rgba(0,0,0,0.12);
+    border-color: rgba(159, 114, 175, 0.4);
+}
+
+.client-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.client-card__logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.client-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.client-card__body h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.client-name-ar {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.client-card__meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.client-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.client-card__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.client-card__stat strong {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.client-card__stat span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.loading-state,
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    border-radius: 16px;
+    border: 1px dashed var(--border-color);
+}
+
 
 .detail-hero {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 45%, #0f766e 100%);
@@ -743,4 +853,3 @@
         align-items: flex-start;
     }
 }
-

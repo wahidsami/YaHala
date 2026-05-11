@@ -97,15 +97,18 @@ function flowLabel(i18n, flow) {
     return localize(i18n, 'Ready to invite', 'جاهز للدعوة');
 }
 
-function QuickStatCard({ title, value, tone, icon: Icon }) {
+function QuickStatCard({ label, value, icon, trend, color = 'lavender' }) {
     return (
-        <article className={`guest-stat-card guest-stat-card--${tone}`}>
-            <div className="guest-stat-card__icon">
-                <Icon size={20} strokeWidth={2.5} />
+        <article className={`quick-stat-pill quick-stat-pill--${color}`}>
+            <div className="quick-stat-pill__icon">
+                {icon}
             </div>
-            <div className="guest-stat-card__head">
-                <strong>{value}</strong>
-                <span>{title}</span>
+            <div className="quick-stat-pill__copy">
+                <span className="quick-stat-pill__label">{label}</span>
+                <div className="quick-stat-pill__value-row">
+                    <strong className="quick-stat-pill__value">{value}</strong>
+                    {trend && <span className="quick-stat-pill__trend">{trend}</span>}
+                </div>
             </div>
         </article>
     );
@@ -540,60 +543,39 @@ export default function GuestsPage() {
     return (
         <div className="guests-page guests-redesign-page">
             <div className="page-header guests-page-header">
-                <div className="guests-page-header__copy">
-                    <span className="guests-page-header__eyebrow">{localize(i18n, 'Guest operations', 'عمليات الضيوف')}</span>
-                    <h1>{t('nav.guests')}</h1>
-                    <p>
-                        {localize(
-                            i18n,
-                            'Start with invite progress, then jump into the right client guestbook whenever you need to add, import, or fix records.',
-                            'ابدأ من تقدم الدعوات، ثم انتقل إلى دفتر ضيوف العميل المناسب كلما احتجت إلى إضافة أو استيراد أو تعديل السجلات.'
-                        )}
-                    </p>
+                <div className="hub-display-title">
+                    <div className="hub-display-title__copy">
+                        <span className="hub-display-title__eyebrow">{localize(i18n, 'Guest operations', 'عمليات الضيوف')}</span>
+                        <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '3.5rem', fontWeight: 400 }}>{t('nav.guests')}</h1>
+                    </div>
                 </div>
 
-                <div className="guests-page-header__actions">
-                    <RoleGuard permission="clients.edit">
-                        <button type="button" className="btn btn-secondary" onClick={() => setLauncherMode('import')} disabled={!clients.length}>
-                            <Upload size={16} />
-                            <span>{t('clients.guests.importGuests')}</span>
-                        </button>
-                        <button type="button" className="btn btn-primary" onClick={() => setLauncherMode('create')} disabled={!clients.length}>
-                            <Plus size={16} />
-                            <span>{t('clients.guests.addGuest')}</span>
-                        </button>
-                    </RoleGuard>
-                    <button type="button" className="btn btn-secondary" onClick={fetchGuests} disabled={loading}>
-                        {t('common.refresh')}
-                    </button>
+                <div className="quick-stats-pills">
+                    <QuickStatCard
+                        title={localize(i18n, 'Confirmed', 'تم التأكيد')}
+                        value={formatNumber(respondedCount)}
+                        share={formatPercent((respondedCount / Math.max(invitedCount, 1)) * 100)}
+                        note={localize(i18n, 'Guests who accepted the invitation', 'الضيوف الذين قبلوا الدعوة')}
+                        tone="mint"
+                        icon={BadgeCheck}
+                    />
+                    <QuickStatCard
+                        title={localize(i18n, 'Pending', 'بانتظار الرد')}
+                        value={formatNumber(awaitingCount)}
+                        share={formatPercent((awaitingCount / Math.max(invitedCount, 1)) * 100)}
+                        note={localize(i18n, 'Invited but awaiting reply', 'تمت دعوتهم وبانتظار الرد')}
+                        tone="peach"
+                        icon={Clock3}
+                    />
+                    <QuickStatCard
+                        title={localize(i18n, 'Declined', 'تم الرفض')}
+                        value={formatNumber(0)}
+                        share={formatPercent(0)}
+                        note={localize(i18n, 'Guests who cannot attend', 'الضيوف الذين لن يحضروا')}
+                        tone="red"
+                        icon={CircleDashed}
+                    />
                 </div>
-            </div>
-
-            <div className="guest-stat-grid">
-                <QuickStatCard
-                    title={localize(i18n, 'Invited', '??? ??????')}
-                    value={formatNumber(invitedCount)}
-                    tone="lavender"
-                    icon={Users}
-                />
-                <QuickStatCard
-                    title={localize(i18n, 'Confirmed', '????')}
-                    value={formatNumber(respondedCount)}
-                    tone="mint"
-                    icon={BadgeCheck}
-                />
-                <QuickStatCard
-                    title={localize(i18n, 'Pending', '??? ????????')}
-                    value={formatNumber(awaitingCount)}
-                    tone="peach"
-                    icon={Clock3}
-                />
-                <QuickStatCard
-                    title={localize(i18n, 'Declined', '?????')}
-                    value={formatNumber(0)}
-                    tone="red"
-                    icon={X}
-                />
             </div>
 
             <div className="guests-workspace">
@@ -616,93 +598,56 @@ export default function GuestsPage() {
                     </div>
                 </aside>
 
+            <div className="guests-workspace">
                 <section className="guests-main">
                     <div className="guests-panel">
-                        <div className="guest-tabs" role="tablist" aria-label={localize(i18n, 'Guest views', 'طرق عرض الضيوف')}>
-                            {viewTabs.map((tab) => (
-                                <button
-                                    key={tab.id}
+                        <div className="guest-toolbar">
+                            <div className="guest-tabs">
+                                {viewTabs.map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        className={activeView === tab.id ? 'active' : ''}
+                                        onClick={() => setActiveView(tab.id)}
+                                    >
+                                        <span>{tab.label}</span>
+                                        <small>{tab.count}</small>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="guest-search-actions">
+                                <div className="guest-search-box">
+                                    <Search size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder={t('guests.searchPlaceholder')}
+                                        value={filters.search}
+                                        onChange={handleSearch}
+                                    />
+                                </div>
+                                
+                                <button 
                                     type="button"
-                                    className={activeView === tab.id ? 'is-active' : ''}
-                                    onClick={() => setActiveView(tab.id)}
+                                    className="btn btn-secondary" 
+                                    style={{ background: "white", borderColor: "var(--border-color)", borderRadius: "999px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}
+                                    onClick={fetchGuests}
                                 >
-                                    <span>{tab.label}</span>
-                                    <strong>{formatNumber(tab.count)}</strong>
+                                    <Filter size={16} />
+                                    <span>{t('guests.filters')}</span>
                                 </button>
-                            ))}
-                        </div>
 
-                        <div className="guests-toolbar-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div className="guest-tabs" style={{ marginBottom: 0 }}>
-                            {viewTabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    className={activeView === tab.id ? 'is-active' : ''}
-                                    onClick={() => setActiveView(tab.id)}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-                        
-                        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap", flex: 1, justifyContent: "flex-end" }}>
-                            <div className="guest-search-box" style={{ flex: "0 1 16rem" }}>
-                                <Search size={18} />
-                                <input
-                                    type="text"
-                                    placeholder={localize(i18n, 'Search by name or email...', '????? ?????? ?? ??????...')}
-                                    value={filters.search}
-                                    onChange={(event) => {
-                                        handleFilterChange('search', event.target.value);
-                                        setActiveView('all');
-                                    }}
-                                />
-                            </div>
-
-                            <button type="button" className="btn btn-secondary" style={{ background: "transparent", borderColor: "var(--border-color)", borderRadius: "999px" }}>
-                                <Filter size={16} />
-                                <span>{t('common.filter')}</span>
-                            </button>
-
-                            <RoleGuard permission="clients.edit">
-                                <button type="button" className="btn btn-secondary" onClick={() => setLauncherMode('import')} disabled={!clients.length} style={{ background: "transparent", borderColor: "var(--border-color)", borderRadius: "999px" }}>
-                                    <Upload size={16} />
-                                    <span>{localize(i18n, 'Import CSV', 'Import CSV')}</span>
-                                </button>
-                                <button type="button" className="btn btn-primary" onClick={() => setLauncherMode('create')} disabled={!clients.length} style={{ background: "#ef4444", borderColor: "#ef4444", color: "white", borderRadius: "999px" }}>
-                                    <Plus size={16} />
-                                    <span>{localize(i18n, 'Add Guest', 'Add Guest')}</span>
-                                </button>
-                            </RoleGuard>
-                        </div>
-                    </div>
-
-                            <div className="filter-pill">
-                                <Filter size={16} />
-                                <select value={filters.status} onChange={(event) => handleFilterChange('status', event.target.value)}>
-                                    <option value="all">{t('clients.guests.allStatuses')}</option>
-                                    <option value="active">{t('clients.guests.statusActive')}</option>
-                                    <option value="banned">{t('clients.guests.statusBanned')}</option>
-                                </select>
-                            </div>
-
-                            <div className="filter-pill">
-                                <select value={filters.gender} onChange={(event) => handleFilterChange('gender', event.target.value)}>
-                                    <option value="all">{t('clients.guests.allGenders')}</option>
-                                    <option value="male">{t('clients.guests.genderMale')}</option>
-                                    <option value="female">{t('clients.guests.genderFemale')}</option>
-                                    <option value="other">{t('clients.guests.genderOther')}</option>
-                                </select>
-                            </div>
-
-                            <div className="filter-pill">
-                                <select value={filters.clientId} onChange={(event) => handleFilterChange('clientId', event.target.value)} disabled={loadingClients}>
-                                    <option value="all">{t('guests.allClients')}</option>
-                                    {clientOptions.map((client) => (
-                                        <option key={client.id} value={client.id}>{client.label}</option>
-                                    ))}
-                                </select>
+                                <RoleGuard permission="guests.create">
+                                    <button 
+                                        type="button"
+                                        className="btn btn-primary" 
+                                        style={{ background: "#ef4444", borderColor: "#ef4444", color: "white", borderRadius: "999px" }}
+                                        onClick={() => setLauncherMode('create')}
+                                    >
+                                        <Plus size={16} />
+                                        <span>{t('guests.addGuest')}</span>
+                                    </button>
+                                </RoleGuard>
                             </div>
                         </div>
 
@@ -710,17 +655,6 @@ export default function GuestsPage() {
                         {error && <div className="guests-error">{error}</div>}
 
                         <div className="guests-table-shell">
-                            <div className="guests-table-summary">
-                                <div>
-                                    <strong>{formatNumber(visibleGuests.length)}</strong>
-                                    <span>{localize(i18n, 'guests on this page', 'ضيف في هذه الصفحة')}</span>
-                                </div>
-                                <div>
-                                    <strong>{formatNumber(pagination.total)}</strong>
-                                    <span>{localize(i18n, 'in the filtered directory', 'في الدليل المفلتر')}</span>
-                                </div>
-                            </div>
-
                             <div className="table-container guests-table-container">
                                 <table className="data-table guests-table">
                                     <thead>
@@ -856,35 +790,27 @@ export default function GuestsPage() {
                 </section>
 
                 <aside className="guests-sidebar">
-                    <div className="guests-helper-card">
-                        <div className="guests-helper-card__head">
-                            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "1.25rem", color: "#1e1b4b" }}>{t('Quick groups', 'Quick groups')}</h2>
-                        </div>
-                        <div className="quick-group-list">
+                    <div className="sidebar-card">
+                        <h3>{localize(i18n, 'Quick Groups', 'المجموعات السريعة')}</h3>
+                        <div className="group-list">
                             {quickGroups.map((group) => (
-                                <button
-                                    key={group.id}
-                                    type="button"
-                                    className="quick-group-card"
-                                    onClick={group.onClick}
-                                    style={{ alignItems: "center", borderRadius: "999px", padding: "0.5rem 1rem", border: "1px solid var(--border-color)", background: "white", marginBottom: "0.5rem" }}
-                                >
-                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                        <Users size={16} style={{ color: "var(--text-secondary)" }} />
-                                        <strong style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>{group.title}</strong>
+                                <div key={group.id} className="group-pill" onClick={group.onClick}>
+                                    <div className="group-pill__info">
+                                        <span className="group-pill__title">{group.title}</span>
+                                        <span className="group-pill__caption">{group.caption}</span>
                                     </div>
-                                    <em style={{ background: "rgba(241, 245, 249, 0.8)", padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.8rem", color: "var(--color-primary)" }}>{group.value}</em>
-                                </button>
+                                    <strong className="group-pill__value">{formatNumber(group.value)}</strong>
+                                </div>
                             ))}
-                            <button
-                                type="button"
-                                className="quick-group-card"
-                                style={{ justifyContent: "center", background: "transparent", border: "1px dashed var(--border-color)", color: "var(--text-secondary)", borderRadius: "999px", padding: "0.5rem 1rem" }}
-                            >
-                                <Plus size={16} />
-                                <strong style={{ margin: 0, fontSize: "0.9rem" }}>{t('New group', 'New group')}</strong>
-                            </button>
                         </div>
+                    </div>
+
+                    <div className="sidebar-card" style={{ background: 'rgba(159, 114, 175, 0.05)', borderColor: 'rgba(159, 114, 175, 0.1)' }}>
+                        <h3>{localize(i18n, 'Action routing', 'مسار الإجراءات')}</h3>
+                        <ul className="guests-helper-list" style={{ padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            <li>{localize(i18n, 'Use this page for invite progress and cross-client search.', 'استخدم هذه الصفحة لتقدم الدعوات والبحث عبر العملاء.')}</li>
+                            <li>{localize(i18n, 'Use a client guestbook to add, edit, or delete records.', 'استخدم دفتر ضيوف العميل لإضافة أو تعديل أو حذف السجلات.')}</li>
+                        </ul>
                     </div>
                 </aside>
             </div>
@@ -939,11 +865,6 @@ export default function GuestsPage() {
         </div>
     );
 }
-
-
-
-
-
 
 
 
