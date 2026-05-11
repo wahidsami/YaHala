@@ -135,13 +135,6 @@ export default function ClientListPage() {
                     </RoleGuard>
                 </div>
             </div>
-                <RoleGuard permission="clients.create">
-                    <Link to="/clients/new" className="btn btn-primary">
-                        <Plus size={18} />
-                        <span>{t('clients.createClient')}</span>
-                    </Link>
-                </RoleGuard>
-            </div>
 
             <ConfirmDialog
                 open={Boolean(confirmDialog)}
@@ -237,23 +230,20 @@ export default function ClientListPage() {
             </div>
 
             <div className="pagination">
-                    <button
-                        disabled={pagination.page === 1}
-                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    >
-                        {t('common.previous')}
-                    </button>
-                    <span>{t('common.pageOf', { page: pagination.page, totalPages: pagination.totalPages })}</span>
-                    <button
-                        disabled={pagination.page >= pagination.totalPages}
-                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    >
-                        {t('common.next')}
-                    </button>
-                </div>
-            )}
+                <button
+                    disabled={pagination.page === 1}
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                >
+                    {t('common.previous')}
+                </button>
+                <span>{t('common.pageOf', { page: pagination.page, totalPages: pagination.totalPages })}</span>
+                <button
+                    disabled={pagination.page >= pagination.totalPages}
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                >
+                    {t('common.next')}
+                </button>
+            </div>
         </div>
     );
 }
-
-
