@@ -37,6 +37,7 @@ export default function CommandPalette({ open, onClose }) {
     const itemRefs = useRef([]);
     const normalizedQuery = query.trim().replace(/^\/+/, '');
     const queryTerm = normalizedQuery.toLowerCase();
+    const language = i18n.resolvedLanguage || i18n.language || 'en';
     const hasSearchAccess = hasPermission('events.view') || hasPermission('clients.view') || hasPermission('templates.view') || hasPermission('guests.view');
 
     const quickActions = useMemo(() => {
@@ -108,7 +109,7 @@ export default function CommandPalette({ open, onClose }) {
         ];
 
         return items.filter((item) => item.allowed);
-    }, [hasPermission, i18n]);
+    }, [hasPermission, language]);
 
     const powerTools = useMemo(() => {
         const items = [
@@ -155,7 +156,7 @@ export default function CommandPalette({ open, onClose }) {
         ];
 
         return items.filter((item) => item.allowed);
-    }, [hasPermission, i18n]);
+    }, [hasPermission, language]);
 
     const matchingQuickActions = useMemo(() => {
         if (!queryTerm) {
@@ -272,7 +273,7 @@ export default function CommandPalette({ open, onClose }) {
             cancelled = true;
             window.clearTimeout(timer);
         };
-    }, [hasPermission, i18n, normalizedQuery, open]);
+    }, [hasPermission, language, normalizedQuery, open]);
 
     const commandItems = matchingQuickActions.map((item) => ({ ...item, group: 'commands' }));
     const powerToolItems = matchingPowerTools.map((item) => ({ ...item, group: 'power' }));
