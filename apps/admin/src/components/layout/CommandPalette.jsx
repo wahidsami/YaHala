@@ -91,9 +91,9 @@ export default function CommandPalette({ open, onClose }) {
             },
             {
                 id: 'open-templates',
-                title: localize(i18n, 'Open templates', 'Open templates'),
-                subtitle: localize(i18n, 'Browse saved templates and drafts', 'Browse saved templates and drafts'),
-                path: '/templates',
+                title: localize(i18n, 'Open library', 'Open library'),
+                subtitle: localize(i18n, 'Browse templates, drafts, and favorites', 'Browse templates, drafts, and favorites'),
+                path: '/library',
                 icon: Palette,
                 allowed: hasPermission('templates.view')
             },
@@ -274,10 +274,6 @@ export default function CommandPalette({ open, onClose }) {
         };
     }, [hasPermission, i18n, normalizedQuery, open]);
 
-    if (!open) {
-        return null;
-    }
-
     const commandItems = matchingQuickActions.map((item) => ({ ...item, group: 'commands' }));
     const powerToolItems = matchingPowerTools.map((item) => ({ ...item, group: 'power' }));
     const searchResultItems = sections.flatMap((section) => (
@@ -358,6 +354,10 @@ export default function CommandPalette({ open, onClose }) {
     function handleNavigate(path) {
         navigate(path);
         onClose();
+    }
+
+    if (!open) {
+        return null;
     }
 
     return (

@@ -22,7 +22,7 @@ import dashboardLogo from '../../../../../Logowhite.svg';
 import './SideNavigation.css';
 
 const NAV_ITEMS = [
-    { id: 'dashboard', icon: LayoutDashboard, path: '/dashboard', permission: null },
+    { id: 'dashboard', icon: LayoutDashboard, path: '/', permission: null },
     { id: 'clients', icon: Users, path: '/clients', permission: 'clients.view' },
     { id: 'events', icon: Calendar, path: '/events', permission: 'events.view' },
     { id: 'addons', icon: LayoutGrid, path: '/addons', permission: null },
