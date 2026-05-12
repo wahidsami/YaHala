@@ -79,10 +79,20 @@ export default function HubChrome() {
         }
 
         function onWindowPointerDown(event) {
-            if (!menuRef.current || menuRef.current.contains(event.target)) {
+            const menuNode = menuRef.current;
+            if (!menuNode) {
                 return;
             }
-            addDebugLog('info', 'menu.closed.outside');
+
+            const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+            const clickedInside = path.includes(menuNode) || menuNode.contains(event.target);
+            if (clickedInside) {
+                return;
+            }
+
+            addDebugLog('info', 'menu.closed.outside', {
+                targetTag: event.target?.tagName || null
+            });
             setMenuOpen(false);
         }
 
