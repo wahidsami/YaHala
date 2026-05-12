@@ -255,7 +255,7 @@ export default function LibraryPage() {
                 </div>
             </section>
 
-            <div className="library-stats">
+            <div className="library-stats library-stats--compact">
                 <article className="library-stat">
                     <span>{localize(i18n, 'In library', 'في المكتبة')}</span>
                     <strong>{templates.length}</strong>
@@ -464,3 +464,4 @@ export default function LibraryPage() {
         </div>
     );
 }
+
