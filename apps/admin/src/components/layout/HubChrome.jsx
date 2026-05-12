@@ -32,9 +32,9 @@ function buildCrumbs(pathname, i18n) {
         { test: pathname.startsWith('/clients/'), items: [localize(i18n, 'Clients', 'العملاء'), localize(i18n, 'Client Profile', 'ملف العميل')] },
         { test: pathname.startsWith('/addons'), items: [localize(i18n, 'Addons', 'الإضافات')] },
         { test: pathname.startsWith('/invitation-projects'), items: [localize(i18n, 'Invitation Projects', 'مشاريع الدعوات')] },
-        { test: pathname === '/reports', items: [localize(i18n, 'Reports', 'التقارير')] },
-        { test: pathname === '/logs', items: [localize(i18n, 'Logs', 'السجلات')] },
-        { test: pathname === '/settings', items: [localize(i18n, 'Settings', 'الإعدادات')] }
+        { test: pathname.startsWith('/reports'), items: [localize(i18n, 'Reports', 'التقارير')] },
+        { test: pathname.startsWith('/logs'), items: [localize(i18n, 'Logs', 'السجلات')] },
+        { test: pathname.startsWith('/settings'), items: [localize(i18n, 'Settings', 'الإعدادات')] }
     ];
     return map.find((e) => e.test)?.items || [localize(i18n, 'Workspace', 'مساحة العمل')];
 }
@@ -71,7 +71,12 @@ export default function HubChrome() {
     }, [navigate]);
 
     function handleBack() {
-        window.history.length > 1 ? navigate(-1) : navigate('/');
+        const historyIndex = window.history?.state?.idx;
+        if (typeof historyIndex === 'number' && historyIndex > 0) {
+            navigate(-1);
+            return;
+        }
+        navigate('/');
     }
 
     function doLanguage() {

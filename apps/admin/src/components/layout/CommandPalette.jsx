@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Briefcase, Link2, Mail, Palette, Search, Settings, Sparkles, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +37,7 @@ export default function CommandPalette({ open, onClose }) {
     const itemRefs = useRef([]);
     const normalizedQuery = query.trim().replace(/^\/+/, '');
     const queryTerm = normalizedQuery.toLowerCase();
+    const hasSearchAccess = hasPermission('events.view') || hasPermission('clients.view') || hasPermission('templates.view') || hasPermission('guests.view');
 
     const quickActions = useMemo(() => {
         const items = [
@@ -297,7 +298,7 @@ export default function CommandPalette({ open, onClose }) {
         setActiveIndex(index);
     }
 
-    function moveActiveIndex(direction) {
+    const moveActiveIndex = useCallback((direction) => {
         if (!visibleItems.length) {
             return;
         }
@@ -309,9 +310,9 @@ export default function CommandPalette({ open, onClose }) {
             node.focus();
             node.scrollIntoView({ block: 'nearest' });
         }
-    }
+    }, [boundedActiveIndex, visibleItems]);
 
-    function handleKeyDown(event) {
+    const handleKeyDown = useCallback((event) => {
         if (event.key === 'Escape') {
             event.preventDefault();
             onClose();
@@ -334,7 +335,25 @@ export default function CommandPalette({ open, onClose }) {
             event.preventDefault();
             handleNavigate(visibleItems[boundedActiveIndex].path);
         }
-    }
+    }, [boundedActiveIndex, moveActiveIndex, onClose, visibleItems]);
+
+    useEffect(() => {
+        if (!open) {
+            return undefined;
+        }
+
+        function onWindowKeyDown(event) {
+            if (event.defaultPrevented || event.isComposing) {
+                return;
+            }
+            if (event.key === 'Escape' || event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+                handleKeyDown(event);
+            }
+        }
+
+        window.addEventListener('keydown', onWindowKeyDown);
+        return () => window.removeEventListener('keydown', onWindowKeyDown);
+    }, [handleKeyDown, open]);
 
     function handleNavigate(path) {
         navigate(path);
@@ -398,6 +417,8 @@ export default function CommandPalette({ open, onClose }) {
                     </div>
                 ) : loading ? (
                     <div className="command-palette__empty">{t('common.loading')}</div>
+                ) : sections.length === 0 && normalizedQuery.length >= 2 && !hasSearchAccess ? (
+                    <div className="command-palette__empty">{localize(i18n, 'No searchable resources are available for your role.', 'No searchable resources are available for your role.')}</div>
                 ) : sections.length === 0 && matchingQuickActions.length === 0 && matchingPowerTools.length === 0 ? (
                     <div className="command-palette__empty">{localize(i18n, 'No matching results', 'No matching results')}</div>
                 ) : (
@@ -470,6 +491,10 @@ export default function CommandPalette({ open, onClose }) {
                                 })}
                             </div>
                         ))}
+
+                        {sections.length === 0 && normalizedQuery.length >= 2 && hasSearchAccess && (
+                            <div className="command-palette__empty">{localize(i18n, 'No matching records in searchable resources.', 'No matching records in searchable resources.')}</div>
+                        )}
                     </div>
                 )}
             </div>
