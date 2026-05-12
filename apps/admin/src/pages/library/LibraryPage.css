@@ -7,16 +7,12 @@
 .library-page__hero {
     display: flex;
     justify-content: space-between;
-    align-items: end;
+    align-items: center;
     gap: 1rem;
 }
 
 .library-page__hero-copy {
     max-width: 40rem;
-}
-
-.library-page__hero-copy .hub-display-title {
-    color: var(--text-primary);
 }
 
 .library-page__hero-copy p {
@@ -32,8 +28,9 @@
 .library-page__hero-actions {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 0.55rem;
     min-width: min(480px, 100%);
+    align-self: center;
 }
 
 .library-page__hero-buttons {
@@ -86,10 +83,10 @@
 
 .library-stats--compact {
     grid-template-columns: repeat(4, minmax(90px, 1fr));
-    gap: 0.55rem;
+    gap: 0.45rem;
     max-width: 560px;
     margin-inline-start: auto;
-    margin-top: -0.35rem;
+    margin-top: 0;
 }
 
 .library-stat {
