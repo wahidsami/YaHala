@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bell, ChevronDown, ChevronLeft, Globe, LogOut, MoonStar, Search, Settings, SunMedium } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +47,6 @@ export default function HubChrome() {
     const { language, toggleLanguage } = useLanguage();
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
-    const menuRef = useRef(null);
     const [darkMode, setDarkMode] = useState(() =>
         typeof window !== 'undefined' && window.localStorage.getItem('yahala-admin-theme') === 'dark'
     );
@@ -72,33 +71,6 @@ export default function HubChrome() {
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [navigate]);
-
-    useEffect(() => {
-        if (!menuOpen) {
-            return undefined;
-        }
-
-        function onWindowPointerDown(event) {
-            const menuNode = menuRef.current;
-            if (!menuNode) {
-                return;
-            }
-
-            const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
-            const clickedInside = path.includes(menuNode) || menuNode.contains(event.target);
-            if (clickedInside) {
-                return;
-            }
-
-            addDebugLog('info', 'menu.closed.outside', {
-                targetTag: event.target?.tagName || null
-            });
-            setMenuOpen(false);
-        }
-
-        window.addEventListener('pointerdown', onWindowPointerDown, true);
-        return () => window.removeEventListener('pointerdown', onWindowPointerDown, true);
-    }, [menuOpen]);
 
     useEffect(() => {
         addDebugLog('info', 'menu.state', { open: menuOpen });
@@ -172,7 +144,7 @@ export default function HubChrome() {
                         </button>
 
                         {/* User menu: dropdown sits at z-index 9000 — well above the backdrop at 8000 */}
-                        <div ref={menuRef} className="hub-user-menu" style={{ position: 'relative', zIndex: 9000 }}>
+                        <div className="hub-user-menu" style={{ position: 'relative', zIndex: 9000 }}>
                             <button type="button" className="hub-user-button" onClick={() => {
                                 addDebugLog('info', 'menu.toggle.clicked');
                                 setMenuOpen((c) => !c);
