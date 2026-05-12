@@ -26,11 +26,23 @@
     gap: 1.5rem;
 }
 
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: 1.2rem;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-sm);
+}
+
 .settings-card {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 1.5rem;
+    box-shadow: var(--shadow-xs);
 }
 
 .card-head {

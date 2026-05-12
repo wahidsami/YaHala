@@ -5,6 +5,14 @@
     padding: 0.5rem;
 }
 
+.logs-page .table-container,
+.logs-page .filters-bar {
+    border-radius: 1.2rem;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-sm);
+}
+
 .logs-header-actions {
     display: flex;
     align-items: center;

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -303,7 +303,7 @@
         <div class="task"><input type="checkbox" id="task-062" checked /><label for="task-062">Improve live preview quality.</label></div>
         <div class="task"><input type="checkbox" id="task-063" checked /><label for="task-063">Improve step transitions and completion states.</label></div>
         <div class="task"><input type="checkbox" id="task-064" checked /><label for="task-064">Improve dirty-state / exit confirmation behavior.</label></div>
-        <div class="task"><input type="checkbox" id="task-065" /><label for="task-065">Review whether client selection should stay in step 2 or move earlier for operational clarity.</label></div>
+        <div class="task"><input type="checkbox" id="task-065" checked /><label for="task-065">Review whether client selection should stay in step 2 or move earlier for operational clarity.</label></div>
         <div class="task"><input type="checkbox" id="task-066" checked /><label for="task-066">Review whether guest import options need a dedicated CSV / paste / create-group UI instead of only reusable guest selection.</label></div>
       </div>
     </div>
@@ -371,7 +371,7 @@
     </div>
 
     <div class="section">
-      <h2>Bug Fixes &amp; UI Polish — Session May 2026</h2>
+      <h2>Bug Fixes &amp; UI Polish â€” Session May 2026</h2>
 
       <div class="group">
         <h3>Deployment Stability</h3>
@@ -382,24 +382,24 @@
       </div>
 
       <div class="group">
-        <h3>Home Hub — Action Cards Redesign</h3>
+        <h3>Home Hub â€” Action Cards Redesign</h3>
         <div class="task"><input type="checkbox" id="task-bf-005" checked /><label for="task-bf-005">Resized action cards to compact mockup height (<code>min-height: 15rem</code> down from <code>21.5rem</code>).</label></div>
         <div class="task"><input type="checkbox" id="task-bf-006" checked /><label for="task-bf-006">Replaced Lucide icon orb illustrations with custom flat-vector PNG images matching the mockup.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-007" checked /><label for="task-bf-007">Generated 4 illustration assets: party popper, guests group, paper airplane, greeting cards.</label></div>
-        <div class="task"><input type="checkbox" id="task-bf-008" checked /><label for="task-bf-008">Added color-coded card titles per accent: coral, lavender, mint, rose — matching mockup typography.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-008" checked /><label for="task-bf-008">Added color-coded card titles per accent: coral, lavender, mint, rose â€” matching mockup typography.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-009" checked /><label for="task-bf-009">Applied <code>mix-blend-mode: multiply</code> to card art container so PNG white backgrounds blend into card color.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-010" checked /><label for="task-bf-010">Constrained action cards grid to <code>max-width: 900px</code> centered, matching the mockup proportions.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-011" checked /><label for="task-bf-011">Constrained Recent Activity section to <code>max-width: 900px</code> so it no longer spans full page width.</label></div>
       </div>
 
       <div class="group">
-        <h3>User Menu Dropdown — Logout &amp; Navigation Fix</h3>
+        <h3>User Menu Dropdown â€” Logout &amp; Navigation Fix</h3>
         <div class="task"><input type="checkbox" id="task-bf-012" checked /><label for="task-bf-012">Diagnosed logout race condition: <code>navigate('/login')</code> was competing with <code>ProtectedRoute</code>'s own <code>&lt;Navigate&gt;</code>, causing the redirect to stall.</label></div>
-        <div class="task"><input type="checkbox" id="task-bf-013" checked /><label for="task-bf-013">Removed redundant <code>navigate('/login')</code> from logout handler — <code>ProtectedRoute</code> now handles redirect cleanly when user becomes <code>null</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-013" checked /><label for="task-bf-013">Removed redundant <code>navigate('/login')</code> from logout handler â€” <code>ProtectedRoute</code> now handles redirect cleanly when user becomes <code>null</code>.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-014" checked /><label for="task-bf-014">Diagnosed dropdown button click-through bug: <code>mousedown</code> listener was closing the menu before button's <code>click</code> event fired.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-015" checked /><label for="task-bf-015">Replaced <code>mousedown</code> click-outside listener with a transparent backdrop <code>&lt;div&gt;</code> overlay pattern.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-016" checked /><label for="task-bf-016">Diagnosed CSS stacking context bug: backdrop was inside <code>hub-user-menu</code> (which created an isolated stacking context), trapping pointer events above the dropdown buttons.</label></div>
-        <div class="task"><input type="checkbox" id="task-bf-017" checked /><label for="task-bf-017">Moved backdrop outside <code>hub-shell</code> as a React Fragment sibling — completely separate from any stacking context. Backdrop at <code>z-index: 8000</code>, menu at <code>z-index: 9000</code>.</label></div>
+        <div class="task"><input type="checkbox" id="task-bf-017" checked /><label for="task-bf-017">Moved backdrop outside <code>hub-shell</code> as a React Fragment sibling â€” completely separate from any stacking context. Backdrop at <code>z-index: 8000</code>, menu at <code>z-index: 9000</code>.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-018" checked /><label for="task-bf-018">Added <code>setTimeout(() =&gt; action(), 0)</code> to defer all menu actions (Language, Settings, Logout) to next tick after menu closes.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-019" checked /><label for="task-bf-019">Added icons (Globe, Settings, LogOut) to each dropdown menu item with a divider and red-styled Logout button.</label></div>
         <div class="task"><input type="checkbox" id="task-bf-020" checked /><label for="task-bf-020">Added <code>Escape</code> key handler to close the user menu.</label></div>
@@ -411,17 +411,17 @@
       <div class="task"><input type="checkbox" id="task-105" checked /><label for="task-105">Guests full redesign.</label></div>
       <div class="task"><input type="checkbox" id="task-106" checked /><label for="task-106">Send Invitations polish.</label></div>
       <div class="task"><input type="checkbox" id="task-107" checked /><label for="task-107">Library polish.</label></div>
-      <div class="task"><input type="checkbox" id="task-108" /><label for="task-108">Create Event polish.</label></div>
-      <div class="task"><input type="checkbox" id="task-109" /><label for="task-109">Event workspace restyle.</label></div>
-      <div class="task"><input type="checkbox" id="task-110" /><label for="task-110">Reports / Logs / Clients / Settings restyle.</label></div>
+      <div class="task"><input type="checkbox" id="task-108" checked /><label for="task-108">Create Event polish.</label></div>
+      <div class="task"><input type="checkbox" id="task-109" checked /><label for="task-109">Event workspace restyle.</label></div>
+      <div class="task"><input type="checkbox" id="task-110" checked /><label for="task-110">Reports / Logs / Clients / Settings restyle.</label></div>
       <div class="task"><input type="checkbox" id="task-111" /><label for="task-111">Final responsive + RTL + visual QA pass.</label></div>
     </div>
 
     <p class="footer-note">
       File path: <code>Planning/admin_redesign_v2_tasklist.html</code><br />
       Last updated: <strong>12 May 2026</strong><br />
-      Current next target: <strong>Create Event wizard polish → Event workspace restyle</strong><br />
-      Recent commits: <code>4e73908</code> dropdown stacking fix · <code>64ee139</code> recent activity width · <code>b7102f1</code> card illustrations · <code>c9abd5e</code> logout fix
+      Current next target: <strong>Final responsive + RTL + visual QA pass</strong><br />
+      Recent commits: <code>4e73908</code> dropdown stacking fix Â· <code>64ee139</code> recent activity width Â· <code>b7102f1</code> card illustrations Â· <code>c9abd5e</code> logout fix
     </p>
   </div>
 
@@ -504,6 +504,9 @@
   </script>
 </body>
 </html>
+
+
+
 
 
 

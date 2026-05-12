@@ -267,7 +267,7 @@ export default function ReportsPage() {
 
     return (
         <div className="reports-page">
-            <div className="page-header">
+            <div className="page-header hub-display-title">
                 <div>
                     <h1>{t('nav.reports')}</h1>
                     <p>{t('reports.subtitle')}</p>

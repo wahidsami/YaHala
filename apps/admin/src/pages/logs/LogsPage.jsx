@@ -359,7 +359,7 @@ export default function LogsPage() {
 
     return (
         <div className="logs-page">
-            <div className="page-header">
+            <div className="page-header hub-display-title">
                 <div>
                     <h1>{t('nav.logs')}</h1>
                     <p>{t('logs.subtitle')}</p>
