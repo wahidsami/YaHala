@@ -647,44 +647,44 @@ export default function CreateEventWizardPage() {
                         <div className="guest-pick-stage">
                             <div className="guest-pick-stage__header">
                                 <div>
-                                    <h2>{localize(i18n, 'Guest list', '????? ??????')}</h2>
-                                    <p>{selectedClient ? localize(i18n, `Choose from ${selectedClient.name}'s reusable guests.`, `???? ?? ???? ${selectedClient.name_ar || selectedClient.name} ???????? ?????? ?????????.`) : localize(i18n, 'Select a client first to load guest choices.', '???? ?????? ????? ?????? ??????.')}</p>
+                                    <h2>{localize(i18n, 'Guest list', 'قائمة الضيوف')}</h2>
+                                    <p>{selectedClient ? localize(i18n, `Choose from ${selectedClient.name}'s reusable guests.`, `اختر من الضيوف القابلين لإعادة الاستخدام لدى ${selectedClient.name_ar || selectedClient.name}.`) : localize(i18n, 'Select a client first to load guest choices.', 'اختر عميلًا أولًا لتحميل خيارات الضيوف.')}</p>
                                 </div>
                                 <span className="guest-pick-stage__count">{selectedGuestIds.length}</span>
                             </div>
 
                             <div className="guest-input-modes">
                                 <button type="button" className={guestInputMode === 'reusable' ? 'is-active' : ''} onClick={() => setGuestInputMode('reusable')}>
-                                    {localize(i18n, 'Reusable Guests', '???? ??????')}
+                                    {localize(i18n, 'Reusable Guests', 'الضيوف المتاحون')}
                                 </button>
                                 <button type="button" className={guestInputMode === 'paste' ? 'is-active' : ''} onClick={() => setGuestInputMode('paste')}>
-                                    {localize(i18n, 'Paste CSV', '??? CSV')}
+                                    {localize(i18n, 'Paste CSV', 'لصق CSV')}
                                 </button>
                                 <button type="button" className={guestInputMode === 'csv' ? 'is-active' : ''} onClick={() => setGuestInputMode('csv')}>
-                                    {localize(i18n, 'Upload CSV', '??? CSV')}
+                                    {localize(i18n, 'Upload CSV', 'رفع CSV')}
                                 </button>
                             </div>
 
                             {guestInputMode === 'paste' && (
                                 <div className="guest-import-panel">
-                                    <p>{localize(i18n, 'Paste CSV with headers: name,email,mobileNumber,organization', '???? CSV ????????: name,email,mobileNumber,organization')}</p>
+                                    <p>{localize(i18n, 'Paste CSV with headers: name,email,mobileNumber,organization', 'ألصق CSV بالرؤوس التالية: name,email,mobileNumber,organization')}</p>
                                     <textarea
                                         value={guestPasteValue}
                                         onChange={(event) => setGuestPasteValue(event.target.value)}
                                         placeholder="name,email,mobileNumber,organization&#10;John Doe,john@example.com,+966500000000,Acme"
                                     />
                                     <button type="button" className="btn btn-secondary" onClick={handlePasteImport} disabled={importingGuests}>
-                                        {importingGuests ? localize(i18n, 'Importing...', '???? ?????????...') : localize(i18n, 'Import Pasted Guests', '??????? ?????? ????????')}
+                                        {importingGuests ? localize(i18n, 'Importing...', 'جارٍ الاستيراد...') : localize(i18n, 'Import Pasted Guests', 'استيراد الضيوف الملصقين')}
                                     </button>
                                 </div>
                             )}
 
                             {guestInputMode === 'csv' && (
                                 <div className="guest-import-panel">
-                                    <p>{localize(i18n, 'Upload a CSV file with guest rows.', '???? ??? CSV ????? ??? ???? ??????.')}</p>
+                                    <p>{localize(i18n, 'Upload a CSV file with guest rows.', 'ارفع ملف CSV يتضمن صفوف الضيوف.')}</p>
                                     <input type="file" accept=".csv,text/csv" onChange={(event) => setGuestCsvFile(event.target.files?.[0] || null)} />
                                     <button type="button" className="btn btn-secondary" onClick={handleCsvImport} disabled={importingGuests}>
-                                        {importingGuests ? localize(i18n, 'Importing...', '???? ?????????...') : localize(i18n, 'Import CSV', '??????? CSV')}
+                                        {importingGuests ? localize(i18n, 'Importing...', 'جارٍ الاستيراد...') : localize(i18n, 'Import CSV', 'استيراد CSV')}
                                     </button>
                                 </div>
                             )}
@@ -692,7 +692,7 @@ export default function CreateEventWizardPage() {
                             {importSummary && <p className="guest-import-success">{importSummary}</p>}
 
                             {guestInputMode === 'reusable' && guestOptions.length === 0 ? (
-                                <div className="create-event-empty">{localize(i18n, 'No reusable guests available for this client yet.', '?? ???? ????? ???? ????? ???? ?????? ???.')}</div>
+                                <div className="create-event-empty">{localize(i18n, 'No reusable guests available for this client yet.', 'لا يوجد ضيوف متاحون لإعادة الاستخدام لهذا العميل بعد.')}</div>
                             ) : guestInputMode === 'reusable' ? (
                                 <div className="guest-pick-list">
                                     {guestOptions.map((guest) => (

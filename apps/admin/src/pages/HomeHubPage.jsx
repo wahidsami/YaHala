@@ -98,7 +98,7 @@ export default function HomeHubPage() {
         {
             id: 'create-event',
             title: localize(i18n, 'Create Event', 'إنشاء فعالية'),
-            description: localize(i18n, 'Start a new event with guided setup, schedule, and template selection.', 'خطط وأنشئ فعاليات رائعة في دقائق.'),
+            description: localize(i18n, 'Start a new event with guided setup, schedule, and template selection.', 'ابدأ فعالية جديدة بخطوات موجهة تشمل الإعداد والجدولة واختيار القالب.'),
             path: '/events/new',
             icon: CalendarPlus,
             accent: 'coral',
@@ -108,7 +108,7 @@ export default function HomeHubPage() {
         {
             id: 'guests',
             title: localize(i18n, 'Manage Guests', 'إدارة الضيوف'),
-            description: localize(i18n, 'Import, segment, and track guest responses in one place.', 'عرض وتنظيم وإدارة قائمة ضيوفك.'),
+            description: localize(i18n, 'Import, segment, and track guest responses in one place.', 'استورد الضيوف وقسّمهم وتابع ردودهم في مكان واحد.'),
             path: '/guests',
             icon: Users,
             accent: 'lavender',
@@ -118,7 +118,7 @@ export default function HomeHubPage() {
         {
             id: 'send',
             title: localize(i18n, 'Send Invitations', 'إرسال الدعوات'),
-            description: localize(i18n, 'Choose channels, preview messages, and send confidently.', 'صمم الدعوات وأرسلها بسهولة تامة.'),
+            description: localize(i18n, 'Choose channels, preview messages, and send confidently.', 'اختر القنوات وعاين الرسائل ثم أرسل بثقة.'),
             path: '/send',
             icon: Mail,
             accent: 'mint',
@@ -128,7 +128,7 @@ export default function HomeHubPage() {
         {
             id: 'library',
             title: localize(i18n, 'Library & Templates', 'المكتبة والقوالب'),
-            description: localize(i18n, 'Find, preview, and reuse invitation templates quickly.', 'تصفح القوالب واحفظ مفضلاتك.'),
+            description: localize(i18n, 'Find, preview, and reuse invitation templates quickly.', 'ابحث عن قوالب الدعوات وعاينها وأعد استخدامها بسرعة.'),
             path: '/library',
             icon: BookOpenText,
             accent: 'rose',
