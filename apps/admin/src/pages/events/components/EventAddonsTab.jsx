@@ -8,6 +8,9 @@ import './EventAddonsTab.css';
 function localizedText(i18n, enText, arText) {
     return i18n.language?.startsWith('ar') ? (arText || enText || '') : (enText || arText || '');
 }
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
 
 const ADDON_CATALOG = [
     { id: 'poll', label: 'Poll', icon: MessageSquare, comingSoon: false },
@@ -209,7 +212,7 @@ export default function EventAddonsTab({ event }) {
                 tabs.push({
                     type: 'instructions',
                     addonId: formData.instructionId,
-                    title: linkedInstruction?.name || linkedInstruction?.title || 'Instructions',
+                    title: linkedInstruction?.name || linkedInstruction?.title || localize(i18n, 'Instructions', 'التعليمات'),
                     titleAr: linkedInstruction?.name_ar || linkedInstruction?.title_ar || 'تعليمات',
                     sortOrder: tabs.length,
                     activationRules: rules.activationRules,
@@ -221,11 +224,11 @@ export default function EventAddonsTab({ event }) {
                 addIns: formData.addIns,
                 invitationSetup: { tabs }
             });
-            setSuccess('Add-ons saved successfully.');
+            setSuccess(localize(i18n, 'Add-ons saved successfully.', 'تم حفظ إعدادات الإضافات بنجاح.'));
             await loadAddons();
         } catch (saveError) {
             console.error('Failed to save add-ons setup:', saveError);
-            setError(saveError.response?.data?.message || 'Failed to save add-ons.');
+            setError(saveError.response?.data?.message || localize(i18n, 'Failed to save add-ons.', 'تعذر حفظ إعدادات الإضافات.'));
         } finally {
             setSaving(false);
         }
@@ -260,7 +263,7 @@ export default function EventAddonsTab({ event }) {
         return (
             <div className="addon-rules-editor">
                 <div className="addon-rules-block">
-                    <h5>Activation Rules</h5>
+                    <h5>{localize(i18n, 'Activation Rules', 'قواعد التفعيل')}</h5>
                     <label className="addon-rule-check">
                         <input
                             type="checkbox"
@@ -269,7 +272,7 @@ export default function EventAddonsTab({ event }) {
                                 activationRules: { liveAfterQrScanned: event.target.checked }
                             })}
                         />
-                        <span>Live after QR scanned</span>
+                        <span>{localize(i18n, 'Live after QR scanned', 'يظهر بعد مسح رمز QR')}</span>
                     </label>
                     <label className="addon-rule-check">
                         <input
@@ -279,7 +282,7 @@ export default function EventAddonsTab({ event }) {
                                 activationRules: { liveWhenScannerEnabled: event.target.checked }
                             })}
                         />
-                        <span>Live if scanner user enables</span>
+                        <span>{localize(i18n, 'Live if scanner user enables', 'يظهر إذا فعّله مستخدم الماسح')}</span>
                     </label>
                     <label className="addon-rule-check">
                         <input
@@ -289,12 +292,12 @@ export default function EventAddonsTab({ event }) {
                                 activationRules: { liveOnSchedule: event.target.checked }
                             })}
                         />
-                        <span>Live by date/time schedule</span>
+                        <span>{localize(i18n, 'Live by date/time schedule', 'يظهر وفق الجدولة الزمنية')}</span>
                     </label>
                     {cfg.activationRules.liveOnSchedule && (
                         <div className="addon-schedule-grid">
                             <label>
-                                <span>Start</span>
+                                <span>{localize(i18n, 'Start', 'البداية')}</span>
                                 <input
                                     type="datetime-local"
                                     value={cfg.activationRules.scheduleStartAt || ''}
@@ -304,7 +307,7 @@ export default function EventAddonsTab({ event }) {
                                 />
                             </label>
                             <label>
-                                <span>End</span>
+                                <span>{localize(i18n, 'End', 'النهاية')}</span>
                                 <input
                                     type="datetime-local"
                                     value={cfg.activationRules.scheduleEndAt || ''}
@@ -408,12 +411,12 @@ export default function EventAddonsTab({ event }) {
             {success && <div className="status-banner success">{success}</div>}
             <div className="event-addons-header">
                 <h3>{t('events.addons.title')}</h3>
-                <p>Enable each add-on, then choose one linked record of that type for this event.</p>
+                <p>{localize(i18n, 'Enable each add-on, then choose one linked record of that type for this event.', 'فعّل كل إضافة ثم اختر سجلًا مرتبطًا واحدًا من هذا النوع لهذه الفعالية.')}</p>
             </div>
 
             <div className="event-addons-workspace">
                 <aside className="event-addons-sidebar">
-                    <h4>Add-on List</h4>
+                    <h4>{localize(i18n, 'Add-on List', 'قائمة الإضافات')}</h4>
                     {ADDON_CATALOG.map((addon) => {
                         const Icon = addon.icon;
                         const isActive = activeAddon === addon.id;
@@ -427,7 +430,7 @@ export default function EventAddonsTab({ event }) {
                                 >
                                     <Icon size={16} />
                                     <span>{addon.label}</span>
-                                    {addon.comingSoon && <small className="addon-soon-badge">Soon</small>}
+                                    {addon.comingSoon && <small className="addon-soon-badge">{localize(i18n, 'Soon', 'قريبًا')}</small>}
                                 </button>
                                 <label className="event-addon-toggle">
                                     <input
@@ -435,7 +438,7 @@ export default function EventAddonsTab({ event }) {
                                         checked={isEnabled}
                                         onChange={(eventParam) => toggleAddon(addon.id, eventParam.target.checked)}
                                     />
-                                    <span>Enabled</span>
+                                    <span>{localize(i18n, 'Enabled', 'مفعّلة')}</span>
                                 </label>
                             </div>
                         );
@@ -571,10 +574,10 @@ export default function EventAddonsTab({ event }) {
 
             <div className="event-addons-actions">
                 <button type="button" className="btn btn-primary" onClick={saveAddonsSetup} disabled={saving}>
-                    {saving ? t('common.loading') : 'Save Add-ons Setup'}
+                    {saving ? t('common.loading') : localize(i18n, 'Save Add-ons Setup', 'حفظ إعدادات الإضافات')}
                 </button>
                 <span className="event-addons-meta">
-                    Enabled: {formData.addIns.length} · Linked tabs: {[formData.pollId, formData.questionnaireId, formData.instructionId].filter(Boolean).length}
+                    {localize(i18n, `Enabled: ${formData.addIns.length} · Linked tabs: ${[formData.pollId, formData.questionnaireId, formData.instructionId].filter(Boolean).length}`, `المفعّل: ${formData.addIns.length} · التبويبات المرتبطة: ${[formData.pollId, formData.questionnaireId, formData.instructionId].filter(Boolean).length}`)}
                 </span>
             </div>
 

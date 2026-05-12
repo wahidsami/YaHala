@@ -7,13 +7,17 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import RoleGuard from '../../components/auth/RoleGuard';
 import './AddonsPage.css';
 
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
+
 const ADDON_LABELS = {
-    polls: 'Polls',
-    questionnaires: 'Questionnaires',
-    instructions: 'Instructions',
-    quiz: 'Quiz',
-    'files-downloads': 'Files & Downloads',
-    guestbook: 'Guestbook'
+    polls: { en: 'Polls', ar: 'الاستطلاعات' },
+    questionnaires: { en: 'Questionnaires', ar: 'الاستبيانات' },
+    instructions: { en: 'Instructions', ar: 'التعليمات' },
+    quiz: { en: 'Quiz', ar: 'الاختبار' },
+    'files-downloads': { en: 'Files & Downloads', ar: 'الملفات والتنزيلات' },
+    guestbook: { en: 'Guestbook', ar: 'سجل الزوار' }
 };
 
 const ADDON_META = {
@@ -153,9 +157,9 @@ function AddonListPage() {
 
     function openDeleteDialog(item) {
         setConfirmDialog({
-            title: 'Delete item',
-            description: `Delete "${item.title || item.name || 'this item'}"?`,
-            confirmLabel: 'Delete',
+            title: localize(i18n, 'Delete item', 'حذف العنصر'),
+            description: localize(i18n, `Delete "${item.title || item.name || 'this item'}"?`, `هل تريد حذف "${item.title || item.name || 'هذا العنصر'}"؟`),
+            confirmLabel: localize(i18n, 'Delete', 'حذف'),
             variant: 'danger',
             onConfirm: () => deleteItem(item)
         });
@@ -175,10 +179,13 @@ function AddonListPage() {
         setSelectedIds(items.map((item) => item.id));
     }
 
-    const pageTitle = useMemo(() => ADDON_LABELS[addonType] || 'Addons', [addonType]);
+    const pageTitle = useMemo(() => {
+        const label = ADDON_LABELS[addonType];
+        return label ? localize(i18n, label.en, label.ar) : localize(i18n, 'Addons', 'الإضافات');
+    }, [addonType, i18n]);
     const publishedCount = items.filter((item) => item.status === 'published').length;
     const draftCount = items.filter((item) => item.status === 'draft').length;
-    const contextualEventLabel = selectedEvent ? (selectedEvent.name || selectedEvent.name_ar || 'Selected event') : 'All events';
+    const contextualEventLabel = selectedEvent ? (selectedEvent.name || selectedEvent.name_ar || localize(i18n, 'Selected event', 'الفعالية المحددة')) : localize(i18n, 'All events', 'كل الفعاليات');
 
     return (
         <div className="addons-page">
@@ -188,7 +195,7 @@ function AddonListPage() {
                     return (
                         <Link key={key} to={`/addons/${key}${filters.eventId !== 'all' ? `?eventId=${filters.eventId}` : ''}`} className={`addons-subnav-btn ${addonType === key ? 'active' : ''}`}>
                             <Icon size={16} />
-                            <span>{ADDON_LABELS[key]}</span>
+                            <span>{localize(i18n, ADDON_LABELS[key].en, ADDON_LABELS[key].ar)}</span>
                         </Link>
                     );
                 })}
@@ -208,16 +215,16 @@ function AddonListPage() {
                             <ActiveIcon size={18} />
                         </div>
                         <div>
-                            <strong>{pageTitle} workspace</strong>
-                            <p>Organize this addon around the event first, then manage individual records.</p>
+                            <strong>{localize(i18n, `${pageTitle} workspace`, `مساحة عمل ${pageTitle}`)}</strong>
+                            <p>{localize(i18n, 'Organize this addon around the event first, then manage individual records.', 'نظّم هذه الإضافة حسب الفعالية أولًا، ثم أدر السجلات الفردية.')}</p>
                         </div>
                     </div>
 
                     <div className="addon-overview-card__stats">
-                        <div><span>Loaded</span><strong>{pagination.total || items.length}</strong></div>
-                        <div><span>Published</span><strong>{publishedCount}</strong></div>
-                        <div><span>Draft</span><strong>{draftCount}</strong></div>
-                        <div><span>Selected</span><strong>{selectedIds.length}</strong></div>
+                        <div><span>{localize(i18n, 'Loaded', 'المحمّلة')}</span><strong>{pagination.total || items.length}</strong></div>
+                        <div><span>{localize(i18n, 'Published', 'المنشورة')}</span><strong>{publishedCount}</strong></div>
+                        <div><span>{localize(i18n, 'Draft', 'المسودات')}</span><strong>{draftCount}</strong></div>
+                        <div><span>{localize(i18n, 'Selected', 'المحددة')}</span><strong>{selectedIds.length}</strong></div>
                     </div>
                 </div>
 
@@ -228,18 +235,18 @@ function AddonListPage() {
                         </div>
                         <div>
                             <strong>{contextualEventLabel}</strong>
-                            <p>{selectedEvent ? 'Keep this addon list scoped to the current event and jump back into the event workspace when needed.' : 'Choose an event below to work in event context and keep addon management organized.'}</p>
+                            <p>{selectedEvent ? localize(i18n, 'Keep this addon list scoped to the current event and jump back into the event workspace when needed.', 'أبقِ هذه القائمة مرتبطة بالفعالية الحالية وارجع لمساحة الفعالية عند الحاجة.') : localize(i18n, 'Choose an event below to work in event context and keep addon management organized.', 'اختر فعالية أدناه للعمل ضمن سياق الفعالية وتنظيم إدارة الإضافات.')}</p>
                         </div>
                     </div>
                     <div className="addon-overview-card__links">
                         {selectedEvent && (
                             <Link to={`/events/${selectedEvent.id}`} className="addon-overview-link">
-                                <span>Open event workspace</span>
+                                <span>{localize(i18n, 'Open event workspace', 'فتح مساحة الفعالية')}</span>
                             </Link>
                         )}
                         {selectedEvent && (
                             <Link to={`/reports?eventId=${selectedEvent.id}`} className="addon-overview-link">
-                                <span>Open live report</span>
+                                <span>{localize(i18n, 'Open live report', 'فتح التقرير المباشر')}</span>
                             </Link>
                         )}
                     </div>
@@ -250,12 +257,12 @@ function AddonListPage() {
                 <div className="addon-list-header">
                     <div>
                         <h2>{pageTitle}</h2>
-                        <p>Search, filter, and manage all {pageTitle.toLowerCase()} with event context.</p>
+                        <p>{localize(i18n, `Search, filter, and manage all ${pageTitle.toLowerCase()} with event context.`, `ابحث وصفِّ وأدر جميع عناصر ${pageTitle} ضمن سياق الفعالية.`)}</p>
                     </div>
                     <RoleGuard permission="events.edit">
                         <button type="button" className="btn btn-primary" onClick={() => navigate(`/addons/${addonType}/new`)}>
                             <Plus size={16} />
-                            <span>Add New</span>
+                            <span>{localize(i18n, 'Add New', 'إضافة جديد')}</span>
                         </button>
                     </RoleGuard>
                 </div>
@@ -265,7 +272,7 @@ function AddonListPage() {
                         <Search size={18} />
                         <input
                             type="text"
-                            placeholder={`Search ${pageTitle.toLowerCase()}...`}
+                            placeholder={localize(i18n, `Search ${pageTitle.toLowerCase()}...`, `ابحث في ${pageTitle}...`)}
                             value={filters.search}
                             onChange={(event) => {
                                 setFilters((prev) => ({ ...prev, search: event.target.value }));
@@ -279,9 +286,9 @@ function AddonListPage() {
                             setFilters((prev) => ({ ...prev, eventId: event.target.value }));
                             setPagination((prev) => ({ ...prev, page: 1 }));
                         }}>
-                            <option value="all">All events</option>
+                            <option value="all">{localize(i18n, 'All events', 'كل الفعاليات')}</option>
                             {events.map((event) => (
-                                <option key={event.id} value={event.id}>{event.name || event.name_ar || 'Untitled event'}</option>
+                                <option key={event.id} value={event.id}>{event.name || event.name_ar || localize(i18n, 'Untitled event', 'فعالية بدون عنوان')}</option>
                             ))}
                         </select>
                     )}
@@ -290,18 +297,18 @@ function AddonListPage() {
                         setFilters((prev) => ({ ...prev, status: event.target.value }));
                         setPagination((prev) => ({ ...prev, page: 1 }));
                     }}>
-                        <option value="all">All statuses</option>
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                        <option value="archived">Archived</option>
-                        {addonType === 'polls' && <option value="ended">Ended</option>}
+                        <option value="all">{localize(i18n, 'All statuses', 'كل الحالات')}</option>
+                        <option value="draft">{localize(i18n, 'Draft', 'مسودة')}</option>
+                        <option value="published">{localize(i18n, 'Published', 'منشورة')}</option>
+                        <option value="archived">{localize(i18n, 'Archived', 'مؤرشفة')}</option>
+                        {addonType === 'polls' && <option value="ended">{localize(i18n, 'Ended', 'منتهية')}</option>}
                     </select>
 
                     <select value={filters.clientId} onChange={(event) => {
                         setFilters((prev) => ({ ...prev, clientId: event.target.value }));
                         setPagination((prev) => ({ ...prev, page: 1 }));
                     }}>
-                        <option value="all">All clients</option>
+                        <option value="all">{localize(i18n, 'All clients', 'كل العملاء')}</option>
                         {clients.map((client) => (
                             <option key={client.id} value={client.id}>{client.name}</option>
                         ))}
@@ -320,19 +327,19 @@ function AddonListPage() {
                                         aria-label="Select all"
                                     />
                                 </th>
-                                <th>Title</th>
-                                <th>Client</th>
-                                <th>Created</th>
-                                <th>Actions</th>
+                                <th>{localize(i18n, 'Title', 'العنوان')}</th>
+                                <th>{localize(i18n, 'Client', 'العميل')}</th>
+                                <th>{localize(i18n, 'Created', 'تاريخ الإنشاء')}</th>
+                                <th>{localize(i18n, 'Actions', 'الإجراءات')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="5" className="loading-cell">Loading...</td></tr>
+                                <tr><td colSpan="5" className="loading-cell">{localize(i18n, 'Loading...', 'جارٍ التحميل...')}</td></tr>
                             ) : !supportsApi ? (
-                                <tr><td colSpan="5" className="empty-cell">No data source connected yet for this addon type.</td></tr>
+                                <tr><td colSpan="5" className="empty-cell">{localize(i18n, 'No data source connected yet for this addon type.', 'لا يوجد مصدر بيانات متصل لهذا النوع من الإضافات بعد.')}</td></tr>
                             ) : items.length === 0 ? (
-                                <tr><td colSpan="5" className="empty-cell">No records found.</td></tr>
+                                <tr><td colSpan="5" className="empty-cell">{localize(i18n, 'No records found.', 'لم يتم العثور على سجلات.')}</td></tr>
                             ) : (
                                 items.map((item) => (
                                     <tr key={item.id}>
@@ -344,15 +351,15 @@ function AddonListPage() {
                                                 aria-label={`Select ${item.title || item.name || item.id}`}
                                             />
                                         </td>
-                                        <td><strong>{item.title || item.name || 'Untitled'}</strong></td>
+                                        <td><strong>{item.title || item.name || localize(i18n, 'Untitled', 'بدون عنوان')}</strong></td>
                                         <td>{item.client_name || '-'}</td>
                                         <td>{formatDate(item.created_at, i18n.language)}</td>
                                         <td>
                                             <div className="row-actions">
-                                                <Link to={`/addons/${addonType}/${item.id}/edit`} className="action-btn" title="View"><Eye size={16} /></Link>
-                                                <Link to={`/addons/${addonType}/${item.id}/edit`} className="action-btn" title="Edit">Edit</Link>
+                                                <Link to={`/addons/${addonType}/${item.id}/edit`} className="action-btn" title={localize(i18n, 'View', 'عرض')}><Eye size={16} /></Link>
+                                                <Link to={`/addons/${addonType}/${item.id}/edit`} className="action-btn" title={localize(i18n, 'Edit', 'تحرير')}>{localize(i18n, 'Edit', 'تحرير')}</Link>
                                                 <RoleGuard permission="events.edit">
-                                                    <button type="button" className="action-btn danger" title="Delete" onClick={() => openDeleteDialog(item)}>
+                                                    <button type="button" className="action-btn danger" title={localize(i18n, 'Delete', 'حذف')} onClick={() => openDeleteDialog(item)}>
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </RoleGuard>
@@ -367,9 +374,9 @@ function AddonListPage() {
 
                 {pagination.totalPages > 1 && (
                     <div className="pagination">
-                        <button type="button" onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))} disabled={pagination.page <= 1}>Previous</button>
-                        <span>Page {pagination.page} of {pagination.totalPages}</span>
-                        <button type="button" onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.totalPages || 1, prev.page + 1) }))} disabled={pagination.page >= pagination.totalPages}>Next</button>
+                        <button type="button" onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))} disabled={pagination.page <= 1}>{localize(i18n, 'Previous', 'السابق')}</button>
+                        <span>{localize(i18n, `Page ${pagination.page} of ${pagination.totalPages}`, `الصفحة ${pagination.page} من ${pagination.totalPages}`)}</span>
+                        <button type="button" onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.totalPages || 1, prev.page + 1) }))} disabled={pagination.page >= pagination.totalPages}>{localize(i18n, 'Next', 'التالي')}</button>
                     </div>
                 )}
             </section>
@@ -378,8 +385,8 @@ function AddonListPage() {
                 open={Boolean(confirmDialog)}
                 title={confirmDialog?.title || ''}
                 description={confirmDialog?.description || ''}
-                confirmLabel={confirmDialog?.confirmLabel || 'Confirm'}
-                cancelLabel="Cancel"
+                confirmLabel={confirmDialog?.confirmLabel || localize(i18n, 'Confirm', 'تأكيد')}
+                cancelLabel={localize(i18n, 'Cancel', 'إلغاء')}
                 variant={confirmDialog?.variant || 'danger'}
                 onConfirm={confirmDialog?.onConfirm}
                 onCancel={() => setConfirmDialog(null)}

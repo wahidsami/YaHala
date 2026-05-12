@@ -8,6 +8,9 @@ import './EventInvitationSetupTab.css';
 function localizedText(i18n, primary, secondary) {
     return i18n.language?.startsWith('ar') ? (secondary || primary || '') : (primary || secondary || '');
 }
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
 
 function createDefaultGate() {
     return {
@@ -87,11 +90,11 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
         const tabs = addonsSummary?.invitationTabs || [];
         return [
             { label: t('events.invitationSetup.checklist.template'), done: Boolean(templateId) },
-            { label: 'Add-ons configured', done: Array.isArray(addonsSummary?.addInsEnabled) && addonsSummary.addInsEnabled.length > 0 },
-            { label: 'Card tabs linked', done: tabs.length > 0 },
-            { label: 'RSVP gate configured', done: Boolean(rsvpGate.enabled) }
+            { label: localize(i18n, 'Add-ons configured', 'تم إعداد الإضافات'), done: Array.isArray(addonsSummary?.addInsEnabled) && addonsSummary.addInsEnabled.length > 0 },
+            { label: localize(i18n, 'Card tabs linked', 'تم ربط تبويبات البطاقة'), done: tabs.length > 0 },
+            { label: localize(i18n, 'RSVP gate configured', 'تم إعداد نافذة الرد'), done: Boolean(rsvpGate.enabled) }
         ];
-    }, [addonsSummary, rsvpGate.enabled, t, templateId]);
+    }, [addonsSummary, i18n, rsvpGate.enabled, t, templateId]);
 
     async function saveInvitationSetup() {
         setSaving(true);
@@ -128,7 +131,7 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
             </div>
 
             <section className="invitation-setup-checklist">
-                <div className="section-header"><div><h3>{t('events.invitationSetup.checklistTitle')}</h3><p>Status below reflects Add-ons tab configuration in real-time.</p></div><CheckCircle2 size={18} /></div>
+                <div className="section-header"><div><h3>{t('events.invitationSetup.checklistTitle')}</h3><p>{localize(i18n, 'Status below reflects Add-ons tab configuration in real-time.', 'تعكس الحالة أدناه إعدادات تبويب الإضافات بشكل مباشر.')}</p></div><CheckCircle2 size={18} /></div>
                 <div className="setup-checklist-list">
                     {setupStatus.map((item) => <div key={item.label} className={`setup-checklist-item ${item.done ? 'is-ready' : 'is-pending'}`}><CheckCircle2 size={16} /><span>{item.label}</span><strong>{item.done ? t('settings.ready') : t('common.pending')}</strong></div>)}
                 </div>
@@ -148,13 +151,13 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                 </section>
 
                 <section className="setup-card setup-card--wide">
-                    <div className="section-header"><div><h3>Add-ons Ownership</h3><p>Add-ons and card tabs are managed in the Event Add-ons tab.</p></div></div>
-                    <div className="setup-empty-state"><p>Use <strong>Event &gt; Add-ons</strong> to enable add-ons, select polls/questionnaires, and control which tabs appear on the invitation card.</p><p className="event-addons-empty">Switch to the Add-ons tab above to manage these links.</p></div>
+                    <div className="section-header"><div><h3>{localize(i18n, 'Add-ons Ownership', 'إدارة الإضافات')}</h3><p>{localize(i18n, 'Add-ons and card tabs are managed in the Event Add-ons tab.', 'تتم إدارة الإضافات وتبويبات البطاقة من تبويب إضافات الفعالية.')}</p></div></div>
+                    <div className="setup-empty-state"><p>{localize(i18n, 'Use Event > Add-ons to enable add-ons, select polls/questionnaires, and control which tabs appear on the invitation card.', 'استخدم الفعالية > الإضافات لتفعيل الإضافات واختيار الاستطلاعات/الاستبيانات والتحكم بالتبويبات التي تظهر في بطاقة الدعوة.')}</p><p className="event-addons-empty">{localize(i18n, 'Switch to the Add-ons tab above to manage these links.', 'انتقل إلى تبويب الإضافات أعلاه لإدارة هذه الروابط.')}</p></div>
                 </section>
 
                 <section className="setup-card setup-card--wide">
-                    <div className="section-header"><div><h3>RSVP Gate</h3><p>Configure content and appearance of the first-open RSVP popup.</p></div></div>
-                    <label className="addon-toggle-item"><input type="checkbox" checked={Boolean(rsvpGate.enabled)} onChange={(e) => setRsvpGate((prev) => ({ ...prev, enabled: e.target.checked }))} /><span>Enable RSVP gate popup</span></label>
+                    <div className="section-header"><div><h3>{localize(i18n, 'RSVP Gate', 'نافذة الرد')}</h3><p>{localize(i18n, 'Configure content and appearance of the first-open RSVP popup.', 'اضبط محتوى ومظهر نافذة الرد عند الفتح الأول.')}</p></div></div>
+                    <label className="addon-toggle-item"><input type="checkbox" checked={Boolean(rsvpGate.enabled)} onChange={(e) => setRsvpGate((prev) => ({ ...prev, enabled: e.target.checked }))} /><span>{localize(i18n, 'Enable RSVP gate popup', 'تفعيل نافذة الرد')}</span></label>
 
                     <div className="rsvp-gate-grid">
                         <div className="form-group"><label>Variant</label><select value={rsvpGate.style.variant} onChange={(e) => setGateField(['style', 'variant'], e.target.value)}><option value="minimal">Minimal</option><option value="card">Card</option><option value="brand">Brand</option></select></div>
@@ -184,15 +187,15 @@ export default function EventInvitationSetupTab({ event, onUpdated }) {
                     </div>
 
                     <div className={`rsvp-gate-preview variant-${rsvpGate.style.variant}`} style={{ '--rsvp-primary': rsvpGate.style.primaryColor, '--rsvp-secondary': rsvpGate.style.secondaryColor }}>
-                        <strong>Preview</strong>
-                        <p>{rsvpGate.copy.en.attendanceTitle || 'Will you attend this event?'}</p>
-                        <small>{rsvpGate.copy.en.attendanceBody || 'Please confirm your attendance first.'}</small>
-                        <div className="rsvp-gate-preview-actions"><button type="button">{rsvpGate.copy.en.positiveButton || 'Open invitation'}</button><button type="button">{rsvpGate.copy.en.negativeButton || 'OK'}</button></div>
+                        <strong>{localize(i18n, 'Preview', 'معاينة')}</strong>
+                        <p>{rsvpGate.copy.en.attendanceTitle || localize(i18n, 'Will you attend this event?', 'هل ستحضر هذه الفعالية؟')}</p>
+                        <small>{rsvpGate.copy.en.attendanceBody || localize(i18n, 'Please confirm your attendance first.', 'يرجى تأكيد حضورك أولًا.')}</small>
+                        <div className="rsvp-gate-preview-actions"><button type="button">{rsvpGate.copy.en.positiveButton || localize(i18n, 'Open invitation', 'فتح الدعوة')}</button><button type="button">{rsvpGate.copy.en.negativeButton || localize(i18n, 'OK', 'حسنًا')}</button></div>
                     </div>
 
                     <div className="addon-toggle-row">
-                        <label className="addon-toggle-item"><input type="checkbox" checked={Boolean(rsvpGate.behavior.showReasonOnNo)} onChange={(e) => setGateField(['behavior', 'showReasonOnNo'], e.target.checked)} /><span>Ask reason when guest selects No</span></label>
-                        <label className="addon-toggle-item"><input type="checkbox" checked={Boolean(rsvpGate.behavior.requireReasonOnNo)} disabled={!rsvpGate.behavior.showReasonOnNo} onChange={(e) => setGateField(['behavior', 'requireReasonOnNo'], e.target.checked)} /><span>Require reason on No</span></label>
+                        <label className="addon-toggle-item"><input type="checkbox" checked={Boolean(rsvpGate.behavior.showReasonOnNo)} onChange={(e) => setGateField(['behavior', 'showReasonOnNo'], e.target.checked)} /><span>{localize(i18n, 'Ask reason when guest selects No', 'اطلب سببًا عند اختيار لا')}</span></label>
+                        <label className="addon-toggle-item"><input type="checkbox" checked={Boolean(rsvpGate.behavior.requireReasonOnNo)} disabled={!rsvpGate.behavior.showReasonOnNo} onChange={(e) => setGateField(['behavior', 'requireReasonOnNo'], e.target.checked)} /><span>{localize(i18n, 'Require reason on No', 'اجعل السبب إلزاميًا عند اختيار لا')}</span></label>
                     </div>
                 </section>
             </div>

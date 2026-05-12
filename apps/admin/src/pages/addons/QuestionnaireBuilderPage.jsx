@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CheckSquare, CircleDot, ListChecks, MessageSquareText, Plus, Star, Save, Send, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import './QuestionnaireBuilderPage.css';
@@ -13,12 +14,16 @@ function readFileAsDataUrl(file) {
     });
 }
 
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
+
 const QUESTION_TYPES = [
-    { id: 'yes_no', label: 'Yes / No', icon: CheckSquare },
-    { id: 'single_choice', label: 'Single Choice', icon: CircleDot },
-    { id: 'multiple_choice', label: 'Multiple Choice', icon: ListChecks },
-    { id: 'short_text', label: 'Short Text', icon: MessageSquareText },
-    { id: 'rating', label: 'Rating', icon: Star }
+    { id: 'yes_no', en: 'Yes / No', ar: 'نعم / لا', icon: CheckSquare },
+    { id: 'single_choice', en: 'Single Choice', ar: 'اختيار واحد', icon: CircleDot },
+    { id: 'multiple_choice', en: 'Multiple Choice', ar: 'اختيارات متعددة', icon: ListChecks },
+    { id: 'short_text', en: 'Short Text', ar: 'نص قصير', icon: MessageSquareText },
+    { id: 'rating', en: 'Rating', ar: 'تقييم', icon: Star }
 ];
 
 function createId() {
@@ -64,6 +69,7 @@ function createQuestion(type = 'short_text', index = 0) {
 }
 
 export default function QuestionnaireBuilderPage({ mode = 'create', initialData = {} }) {
+    const { i18n } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [clients, setClients] = useState([]);
@@ -303,7 +309,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
         }
     }
 
-    if (loading) return <div className="loading">Loading...</div>;
+    if (loading) return <div className="loading">{localize(i18n, 'Loading...', 'جارٍ التحميل...')}</div>;
 
     return (
         <div className="questionnaire-builder-page">
@@ -311,10 +317,10 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                 <div>
                     <button type="button" className="back-link" onClick={() => navigate('/addons/questionnaires')}>
                         <ArrowLeft size={18} />
-                        <span>Back to Addons</span>
+                        <span>{localize(i18n, 'Back to Addons', 'العودة إلى الإضافات')}</span>
                     </button>
-                    <h1>{mode === 'edit' ? 'Edit Questionnaire' : 'Create Questionnaire'}</h1>
-                    <p>Step 1: Details, Step 2: Questions and types, Step 3: Save.</p>
+                    <h1>{mode === 'edit' ? localize(i18n, 'Edit Questionnaire', 'تعديل الاستبيان') : localize(i18n, 'Create Questionnaire', 'إنشاء استبيان')}</h1>
+                    <p>{localize(i18n, 'Step 1: Details, Step 2: Questions and types, Step 3: Save.', 'الخطوة 1: التفاصيل، الخطوة 2: الأسئلة والأنواع، الخطوة 3: الحفظ.')}</p>
                 </div>
                 <div className="builder-header-actions">
                     <button
@@ -324,7 +330,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                         disabled={saving || !canSave}
                     >
                         <Save size={16} />
-                        <span>{saving ? 'Saving...' : 'Save Progress'}</span>
+                        <span>{saving ? localize(i18n, 'Saving...', 'جارٍ الحفظ...') : localize(i18n, 'Save Progress', 'حفظ التقدم')}</span>
                     </button>
                 </div>
             </div>
@@ -333,25 +339,25 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
             {saveNotice && <div className="form-success">{saveNotice}</div>}
 
             <div className="builder-steps">
-                <button type="button" className={activeStep === 1 ? 'active' : ''} onClick={() => setActiveStep(1)}>1. Details</button>
-                <button type="button" className={activeStep === 2 ? 'active' : ''} onClick={() => setActiveStep(2)}>2. Questions</button>
-                <button type="button" className={activeStep === 3 ? 'active' : ''} onClick={() => setActiveStep(3)}>3. Review & Save</button>
+                <button type="button" className={activeStep === 1 ? 'active' : ''} onClick={() => setActiveStep(1)}>{localize(i18n, '1. Details', '1. التفاصيل')}</button>
+                <button type="button" className={activeStep === 2 ? 'active' : ''} onClick={() => setActiveStep(2)}>{localize(i18n, '2. Questions', '2. الأسئلة')}</button>
+                <button type="button" className={activeStep === 3 ? 'active' : ''} onClick={() => setActiveStep(3)}>{localize(i18n, '3. Review & Save', '3. المراجعة والحفظ')}</button>
             </div>
 
             {activeStep === 1 && (
                 <section className="builder-card">
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Client</label>
+                            <label>{localize(i18n, 'Client', 'العميل')}</label>
                             <select value={formData.clientId} onChange={(e) => updateField('clientId', e.target.value)}>
-                                <option value="">Select client</option>
+                                <option value="">{localize(i18n, 'Select client', 'اختر العميل')}</option>
                                 {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
                         <div className="form-group">
-                            <label>Event</label>
+                            <label>{localize(i18n, 'Event', 'الفعالية')}</label>
                             <select value={formData.eventId} onChange={(e) => updateField('eventId', e.target.value)}>
-                                <option value="">Select event</option>
+                                <option value="">{localize(i18n, 'Select event', 'اختر الفعالية')}</option>
                                 {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
                             </select>
                         </div>
@@ -397,11 +403,11 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                         </div>
                     </div>
                     <div className="form-group">
-                        <label>Status</label>
+                        <label>{localize(i18n, 'Status', 'الحالة')}</label>
                         <select value={formData.status} onChange={(e) => updateField('status', e.target.value)}>
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
-                            <option value="archived">Archived</option>
+                            <option value="draft">{localize(i18n, 'Draft', 'مسودة')}</option>
+                            <option value="published">{localize(i18n, 'Published', 'منشور')}</option>
+                            <option value="archived">{localize(i18n, 'Archived', 'مؤرشف')}</option>
                         </select>
                     </div>
 
@@ -549,10 +555,10 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                                     type="button"
                                     className="question-type-btn"
                                     onClick={() => addQuestion(type.id)}
-                                    title={`Add ${type.label}`}
+                                    title={localize(i18n, `Add ${type.en}`, `إضافة ${type.ar}`)}
                                 >
                                     <Icon size={16} />
-                                    <span>{type.label}</span>
+                                    <span>{localize(i18n, type.en, type.ar)}</span>
                                     <Plus size={14} />
                                 </button>
                             );
@@ -563,7 +569,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                         {formData.questions.map((question, index) => (
                             <article key={question.id} className="question-card">
                                 <div className="question-card-head">
-                                    <strong>Q{index + 1} · {QUESTION_TYPES.find((item) => item.id === question.questionType)?.label || question.questionType}</strong>
+                                    <strong>Q{index + 1} · {localize(i18n, QUESTION_TYPES.find((item) => item.id === question.questionType)?.en || question.questionType, QUESTION_TYPES.find((item) => item.id === question.questionType)?.ar || question.questionType)}</strong>
                                     <button type="button" className="icon-btn danger" onClick={() => removeQuestion(question.id)}>
                                         <Trash2 size={15} />
                                     </button>
@@ -685,16 +691,16 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
 
             {activeStep === 3 && (
                 <section className="builder-card">
-                    <h3>Review</h3>
-                    <p>Questions count: {formData.questions.length}</p>
+                    <h3>{localize(i18n, 'Review', 'مراجعة')}</h3>
+                    <p>{localize(i18n, `Questions count: ${formData.questions.length}`, `عدد الأسئلة: ${formData.questions.length}`)}</p>
                     <div className="builder-actions">
                         <button type="button" className="btn btn-secondary" onClick={() => saveQuestionnaire('draft')} disabled={saving || !canSave}>
                             <Save size={16} />
-                            <span>Save Draft</span>
+                            <span>{localize(i18n, 'Save Draft', 'حفظ كمسودة')}</span>
                         </button>
                         <button type="button" className="btn btn-primary" onClick={() => saveQuestionnaire('published')} disabled={saving || !canSave}>
                             <Send size={16} />
-                            <span>Publish</span>
+                            <span>{localize(i18n, 'Publish', 'نشر')}</span>
                         </button>
                     </div>
                 </section>
