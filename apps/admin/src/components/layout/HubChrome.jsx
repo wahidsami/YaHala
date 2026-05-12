@@ -78,15 +78,20 @@ export default function HubChrome() {
             return undefined;
         }
 
-        function onWindowClick(event) {
+        function onWindowPointerDown(event) {
             if (!menuRef.current || menuRef.current.contains(event.target)) {
                 return;
             }
+            addDebugLog('info', 'menu.closed.outside');
             setMenuOpen(false);
         }
 
-        window.addEventListener('click', onWindowClick);
-        return () => window.removeEventListener('click', onWindowClick);
+        window.addEventListener('pointerdown', onWindowPointerDown, true);
+        return () => window.removeEventListener('pointerdown', onWindowPointerDown, true);
+    }, [menuOpen]);
+
+    useEffect(() => {
+        addDebugLog('info', 'menu.state', { open: menuOpen });
     }, [menuOpen]);
 
     function handleBack() {
@@ -158,7 +163,10 @@ export default function HubChrome() {
 
                         {/* User menu: dropdown sits at z-index 9000 — well above the backdrop at 8000 */}
                         <div ref={menuRef} className="hub-user-menu" style={{ position: 'relative', zIndex: 9000 }}>
-                            <button type="button" className="hub-user-button" onClick={() => setMenuOpen((c) => !c)}>
+                            <button type="button" className="hub-user-button" onClick={() => {
+                                addDebugLog('info', 'menu.toggle.clicked');
+                                setMenuOpen((c) => !c);
+                            }}>
                                 <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
                                 <span className="hub-user-meta">
                                     <strong>{firstName}</strong>
@@ -168,17 +176,17 @@ export default function HubChrome() {
                             </button>
 
                             {menuOpen && (
-                                <div className="hub-user-dropdown" role="menu">
-                                    <button type="button" role="menuitem" onClick={doLanguage}>
+                                <div className="hub-user-dropdown" role="menu" onMouseDown={(event) => event.stopPropagation()}>
+                                    <button type="button" role="menuitem" onMouseDown={() => addDebugLog('info', 'menu.language.mousedown')} onClick={doLanguage}>
                                         <Globe size={16} />
                                         <span>{language === 'ar' ? 'English' : 'العربية'}</span>
                                     </button>
-                                    <button type="button" role="menuitem" onClick={doSettings}>
+                                    <button type="button" role="menuitem" onMouseDown={() => addDebugLog('info', 'menu.settings.mousedown')} onClick={doSettings}>
                                         <Settings size={16} />
                                         <span>{localize(i18n, 'Settings', 'الإعدادات')}</span>
                                     </button>
                                     <div className="hub-user-dropdown__divider" />
-                                    <button type="button" role="menuitem" className="logout-item" onClick={doLogout}>
+                                    <button type="button" role="menuitem" className="logout-item" onMouseDown={() => addDebugLog('info', 'menu.logout.mousedown')} onClick={doLogout}>
                                         <LogOut size={16} />
                                         <span>{t('auth.logout')}</span>
                                     </button>
