@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { addDebugLog } from '../utils/debugLogger';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
@@ -11,6 +12,10 @@ api.interceptors.request.use((config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+    addDebugLog('info', 'api.request', {
+        method: config.method,
+        url: config.url
+    });
     return config;
 });
 
@@ -30,9 +35,22 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        addDebugLog('info', 'api.response', {
+            status: response.status,
+            method: response.config?.method,
+            url: response.config?.url
+        });
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
+        addDebugLog('error', 'api.error', {
+            status: error.response?.status,
+            method: originalRequest?.method,
+            url: originalRequest?.url,
+            message: error.response?.data?.message || error.message
+        });
         const skipAuthRefresh =
             originalRequest?.skipAuthRefresh ||
             originalRequest?.url?.includes('/admin/auth/login') ||

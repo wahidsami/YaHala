@@ -37,20 +37,22 @@ import GuestsPage from './pages/guests/GuestsPage';
 import LogsPage from './pages/logs/LogsPage';
 import ReportsPage from './pages/reports/ReportsPage';
 import SendInvitationsPage from './pages/send/SendInvitationsPage';
+import DebugPanel from './components/debug/DebugPanel';
 
 function App() {
     return (
-        <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/invite/:token" element={<PublicInvitationPage />} />
-            <Route path="/i/:token" element={<PublicInvitationPage />} />
+        <>
+            <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/invite/:token" element={<PublicInvitationPage />} />
+                <Route path="/i/:token" element={<PublicInvitationPage />} />
 
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
-                <Route element={<HubChrome />}>
-                    <Route path="/" element={<HomeHubPage />} />
-                    <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                {/* Protected Routes */}
+                <Route element={<ProtectedRoute />}>
+                    <Route element={<HubChrome />}>
+                        <Route path="/" element={<HomeHubPage />} />
+                        <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
                     {/* Clients */}
                     <Route path="/clients" element={<ClientListPage />} />
@@ -99,13 +101,15 @@ function App() {
                     <Route path="/guests" element={<GuestsPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
                     <Route path="/logs" element={<LogsPage />} />
-                    <Route path="/settings" element={<DeliverySettingsPage />} />
+                        <Route path="/settings" element={<DeliverySettingsPage />} />
+                    </Route>
                 </Route>
-            </Route>
 
-            {/* Default Redirect */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+                {/* Default Redirect */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            <DebugPanel />
+        </>
     );
 }
 

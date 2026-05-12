@@ -146,8 +146,8 @@ export default function CreateEventWizardPage() {
     const selectedClient = clients.find((client) => client.id === formData.clientId);
     const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
 
+    const canContinueFromTheme = Boolean(formData.clientId);
     const canContinueFromDetails = Boolean(
-        formData.clientId &&
         formData.name.trim() &&
         formData.startDatetime &&
         formData.endDatetime
@@ -197,6 +197,10 @@ export default function CreateEventWizardPage() {
 
         try {
             if (step === 1) {
+                if (!canContinueFromTheme) {
+                    setError(localize(i18n, 'Select a client to continue.', 'اختر العميل للمتابعة.'));
+                    return;
+                }
                 setStep(2);
                 return;
             }
@@ -349,31 +353,33 @@ export default function CreateEventWizardPage() {
                     {loading ? (
                         <div className="create-event-empty">{localize(i18n, 'Loading references...', 'جاري تحميل البيانات...')}</div>
                     ) : step === 1 ? (
-                        <div className="event-type-grid">
-                            {EVENT_TILES.map((tile) => (
-                                <button key={tile.id} type="button" className={`event-type-card ${themeType === tile.id ? 'is-active' : ''}`} onClick={() => {
-                                    dirtyRef.current = true;
-                                    setThemeType(tile.id);
-                                }}>
-                                    <span className="event-type-card__emoji">{tile.emoji}</span>
-                                    <strong>{localize(i18n, tile.en, tile.ar)}</strong>
-                                </button>
-                            ))}
+                        <div className="event-type-stage">
+                            <div className="form-group">
+                                <label htmlFor="wizardClientId">{localize(i18n, 'Client', 'العميل')}</label>
+                                <select id="wizardClientId" value={formData.clientId} onChange={(event) => setField('clientId', event.target.value)} disabled={Boolean(eventId)}>
+                                    <option value="">{localize(i18n, 'Select client', 'اختر العميل')}</option>
+                                    {clients.map((client) => (
+                                        <option key={client.id} value={client.id}>
+                                            {localize(i18n, client.name, client.name_ar || client.name)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="event-type-grid">
+                                {EVENT_TILES.map((tile) => (
+                                    <button key={tile.id} type="button" className={`event-type-card ${themeType === tile.id ? 'is-active' : ''}`} onClick={() => {
+                                        dirtyRef.current = true;
+                                        setThemeType(tile.id);
+                                    }}>
+                                        <span className="event-type-card__emoji">{tile.emoji}</span>
+                                        <strong>{localize(i18n, tile.en, tile.ar)}</strong>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     ) : step === 2 ? (
                         <div className="event-details-form">
                             <div className="form-row">
-                                <div className="form-group">
-                                    <label htmlFor="clientId">{localize(i18n, 'Client', 'العميل')}</label>
-                                    <select id="clientId" value={formData.clientId} onChange={(event) => setField('clientId', event.target.value)} disabled={Boolean(eventId)}>
-                                        <option value="">{localize(i18n, 'Select client', 'اختر العميل')}</option>
-                                        {clients.map((client) => (
-                                            <option key={client.id} value={client.id}>
-                                                {localize(i18n, client.name, client.name_ar || client.name)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
                                 <div className="form-group">
                                     <label htmlFor="timezone">{localize(i18n, 'Timezone', 'المنطقة الزمنية')}</label>
                                     <select id="timezone" value={formData.timezone} onChange={(event) => setField('timezone', event.target.value)}>
@@ -549,7 +555,7 @@ export default function CreateEventWizardPage() {
                 <button type="button" className="btn btn-ghost" onClick={() => navigate('/')}>
                     {localize(i18n, 'Save draft', 'حفظ كمسودة')}
                 </button>
-                <button type="button" className="btn btn-primary" onClick={handleContinue} disabled={saving || (step === 2 && !canContinueFromDetails)}>
+                <button type="button" className="btn btn-primary" onClick={handleContinue} disabled={saving || (step === 1 && !canContinueFromTheme) || (step === 2 && !canContinueFromDetails)}>
                     {saving
                         ? localize(i18n, 'Saving...', 'جاري الحفظ...')
                         : step === 4

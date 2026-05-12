@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, ChevronDown, ChevronLeft, Globe, LogOut, MoonStar, Search, Settings, SunMedium } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { addDebugLog } from '../../utils/debugLogger';
 import logo from '../../../../../LogoColor.svg';
 import CommandPalette from './CommandPalette';
 import './HubChrome.css';
@@ -46,6 +47,7 @@ export default function HubChrome() {
     const { language, toggleLanguage } = useLanguage();
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef(null);
     const [darkMode, setDarkMode] = useState(() =>
         typeof window !== 'undefined' && window.localStorage.getItem('yahala-admin-theme') === 'dark'
     );
@@ -71,22 +73,41 @@ export default function HubChrome() {
         return () => window.removeEventListener('keydown', onKey);
     }, [navigate]);
 
+    useEffect(() => {
+        if (!menuOpen) {
+            return undefined;
+        }
+
+        function onWindowClick(event) {
+            if (!menuRef.current || menuRef.current.contains(event.target)) {
+                return;
+            }
+            setMenuOpen(false);
+        }
+
+        window.addEventListener('click', onWindowClick);
+        return () => window.removeEventListener('click', onWindowClick);
+    }, [menuOpen]);
+
     function handleBack() {
         window.history.length > 1 ? navigate(-1) : navigate('/');
     }
 
     // Each action: close menu AFTER action queued in next tick
     function doLanguage() {
+        addDebugLog('info', 'menu.language.clicked');
         setMenuOpen(false);
         setTimeout(() => toggleLanguage(), 0);
     }
 
     function doSettings() {
+        addDebugLog('info', 'menu.settings.clicked', { from: location.pathname });
         setMenuOpen(false);
         setTimeout(() => navigate('/settings'), 0);
     }
 
     async function doLogout() {
+        addDebugLog('info', 'menu.logout.clicked');
         setMenuOpen(false);
         setTimeout(async () => { await logout(); }, 0);
     }
@@ -136,15 +157,7 @@ export default function HubChrome() {
                         </button>
 
                         {/* User menu: dropdown sits at z-index 9000 — well above the backdrop at 8000 */}
-                        <div className="hub-user-menu" style={{ position: 'relative', zIndex: 9000 }}>
-                            {menuOpen && (
-                                <button
-                                    type="button"
-                                    className="hub-user-backdrop"
-                                    onClick={() => setMenuOpen(false)}
-                                    aria-label={localize(i18n, 'Close user menu', 'إغلاق قائمة المستخدم')}
-                                />
-                            )}
+                        <div ref={menuRef} className="hub-user-menu" style={{ position: 'relative', zIndex: 9000 }}>
                             <button type="button" className="hub-user-button" onClick={() => setMenuOpen((c) => !c)}>
                                 <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
                                 <span className="hub-user-meta">
