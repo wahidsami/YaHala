@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, ChevronLeft, Globe, LogOut, MoonStar, Search, Settings, SunMedium } from 'lucide-react';
+import { Bell, ChevronLeft, Globe, LogOut, MoonStar, Search, SunMedium } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -79,11 +79,6 @@ export default function HubChrome() {
         toggleLanguage();
     }
 
-    function doSettings() {
-        addDebugLog('info', 'topbar.settings.clicked', { from: location.pathname });
-        navigate('/settings');
-    }
-
     async function doLogout() {
         addDebugLog('info', 'topbar.logout.clicked');
         await logout();
@@ -136,10 +131,6 @@ export default function HubChrome() {
                         <button type="button" className="hub-quick-action" onClick={doLanguage}>
                             <Globe size={16} />
                             <span>{language === 'ar' ? 'English' : 'AR'}</span>
-                        </button>
-                        <button type="button" className="hub-quick-action" onClick={doSettings}>
-                            <Settings size={16} />
-                            <span>{localize(i18n, 'Settings', 'Settings')}</span>
                         </button>
                         <button type="button" className="hub-quick-action hub-quick-action--logout" onClick={doLogout}>
                             <LogOut size={16} />

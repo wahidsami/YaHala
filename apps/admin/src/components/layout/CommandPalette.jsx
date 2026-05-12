@@ -40,64 +40,95 @@ export default function CommandPalette({ open, onClose }) {
         const items = [
             {
                 id: 'create-event',
-                title: localize(i18n, 'Create event', 'إنشاء فعالية'),
-                subtitle: localize(i18n, 'Start the guided event wizard', 'ابدأ معالج إنشاء الفعالية'),
+                title: localize(i18n, 'Create event', 'Create event'),
+                subtitle: localize(i18n, 'Start the guided event wizard', 'Start the guided event wizard'),
                 path: '/events/new',
                 icon: Sparkles,
                 allowed: hasPermission('events.create')
             },
             {
                 id: 'open-clients',
-                title: localize(i18n, 'Open clients', 'فتح العملاء'),
-                subtitle: localize(i18n, 'Browse and manage all clients', 'تصفح جميع العملاء وإدارتهم'),
+                title: localize(i18n, 'Open clients', 'Open clients'),
+                subtitle: localize(i18n, 'Browse and manage all clients', 'Browse and manage all clients'),
                 path: '/clients',
                 icon: Users,
                 allowed: hasPermission('clients.view')
             },
             {
                 id: 'create-client',
-                title: localize(i18n, 'Create client', 'إنشاء عميل'),
-                subtitle: localize(i18n, 'Add a client before creating an event', 'أضف عميلاً قبل إنشاء فعالية'),
+                title: localize(i18n, 'Create client', 'Create client'),
+                subtitle: localize(i18n, 'Add a client before creating an event', 'Add a client before creating an event'),
                 path: '/clients/new',
                 icon: Briefcase,
                 allowed: hasPermission('clients.create')
             },
             {
                 id: 'manage-guests',
-                title: localize(i18n, 'Manage guests', 'إدارة الضيوف'),
-                subtitle: localize(i18n, 'Browse your guest directory', 'تصفح دليل الضيوف'),
+                title: localize(i18n, 'Manage guests', 'Manage guests'),
+                subtitle: localize(i18n, 'Browse your guest directory', 'Browse your guest directory'),
                 path: '/guests',
                 icon: Users,
                 allowed: hasPermission('guests.view')
             },
             {
                 id: 'send-invitations',
-                title: localize(i18n, 'Send invitations', 'إرسال الدعوات'),
-                subtitle: localize(i18n, 'Open the event send workspace', 'افتح مساحة إرسال الدعوات'),
+                title: localize(i18n, 'Send invitations', 'Send invitations'),
+                subtitle: localize(i18n, 'Open the event send workspace', 'Open the event send workspace'),
                 path: '/send',
                 icon: Mail,
                 allowed: hasPermission('events.view')
             },
             {
                 id: 'library',
-                title: localize(i18n, 'Library & templates', 'المكتبة والقوالب'),
-                subtitle: localize(i18n, 'Browse and reuse templates', 'تصفح القوالب وأعد استخدامها'),
+                title: localize(i18n, 'Library & templates', 'Library & templates'),
+                subtitle: localize(i18n, 'Browse and reuse templates', 'Browse and reuse templates'),
                 path: '/library',
                 icon: Palette,
                 allowed: hasPermission('templates.view')
-            },
+            }
+        ];
+
+        return items.filter((item) => item.allowed);
+    }, [hasPermission, i18n]);
+
+    const powerTools = useMemo(() => {
+        const items = [
             {
                 id: 'reports',
-                title: localize(i18n, 'Reports', 'التقارير'),
-                subtitle: localize(i18n, 'Operational and RSVP reporting', 'تقارير العمليات والردود'),
+                title: localize(i18n, 'Reports', 'Reports'),
+                subtitle: localize(i18n, 'Operational and RSVP reporting', 'Operational and RSVP reporting'),
                 path: '/reports',
                 icon: Link2,
                 allowed: hasPermission('reports.view')
             },
             {
+                id: 'logs',
+                title: localize(i18n, 'Logs', 'Logs'),
+                subtitle: localize(i18n, 'Inspect operational logs and activity', 'Inspect operational logs and activity'),
+                path: '/logs',
+                icon: Link2,
+                allowed: hasPermission('logs.view')
+            },
+            {
+                id: 'addons',
+                title: localize(i18n, 'Addons', 'Addons'),
+                subtitle: localize(i18n, 'Manage polls, questionnaires, and instructions', 'Manage polls, questionnaires, and instructions'),
+                path: '/addons',
+                icon: Palette,
+                allowed: hasPermission('addons.view')
+            },
+            {
+                id: 'invitation-projects',
+                title: localize(i18n, 'Invitation projects', 'Invitation projects'),
+                subtitle: localize(i18n, 'Manage invitation project workflows', 'Manage invitation project workflows'),
+                path: '/invitation-projects',
+                icon: Link2,
+                allowed: hasPermission('events.view')
+            },
+            {
                 id: 'settings',
-                title: localize(i18n, 'Settings', 'الإعدادات'),
-                subtitle: localize(i18n, 'Delivery and system configuration', 'إعدادات التسليم والنظام'),
+                title: localize(i18n, 'Settings', 'Settings'),
+                subtitle: localize(i18n, 'Delivery and system configuration', 'Delivery and system configuration'),
                 path: '/settings',
                 icon: Settings,
                 allowed: hasPermission('settings.view')
@@ -118,6 +149,18 @@ export default function CommandPalette({ open, onClose }) {
                 .some((value) => value.toLowerCase().includes(queryTerm))
         ));
     }, [queryTerm, quickActions]);
+
+    const matchingPowerTools = useMemo(() => {
+        if (!queryTerm) {
+            return powerTools;
+        }
+
+        return powerTools.filter((item) => (
+            [item.title, item.subtitle, item.path]
+                .filter(Boolean)
+                .some((value) => value.toLowerCase().includes(queryTerm))
+        ));
+    }, [queryTerm, powerTools]);
 
     useEffect(() => {
         if (!open) {
@@ -176,23 +219,23 @@ export default function CommandPalette({ open, onClose }) {
 
             const nextSections = [
                 {
-                    label: localize(i18n, 'Events', 'الفعاليات'),
+                    label: localize(i18n, 'Events', 'Events'),
                     items: normalizeResults(eventsRes, 'event', (row) => `/events/${row.id}`, i18n)
                 },
                 {
-                    label: localize(i18n, 'Clients', 'العملاء'),
+                    label: localize(i18n, 'Clients', 'Clients'),
                     items: normalizeResults(clientsRes, 'client', (row) => `/clients/${row.id}`, i18n)
                 },
                 {
-                    label: localize(i18n, 'Templates', 'القوالب'),
+                    label: localize(i18n, 'Templates', 'Templates'),
                     items: normalizeResults(templatesRes, 'template', (row) => `/templates/${row.id}`, i18n)
                 },
                 {
-                    label: localize(i18n, 'Guests', 'الضيوف'),
+                    label: localize(i18n, 'Guests', 'Guests'),
                     items: normalizeResults(guestsRes, 'guest', (row) => `/clients/${row.client_id}?tab=guests`, i18n)
                 },
                 {
-                    label: localize(i18n, 'Invitation projects', 'مشاريع الدعوات'),
+                    label: localize(i18n, 'Invitation projects', 'Invitation projects'),
                     items: normalizeResults(projectsRes, 'project', (row) => `/invitation-projects/${row.id}`, i18n)
                 }
             ].filter((section) => section.items.length > 0);
@@ -218,14 +261,14 @@ export default function CommandPalette({ open, onClose }) {
 
     return (
         <div className="command-palette-backdrop" role="presentation" onClick={onClose}>
-            <div className="command-palette" role="dialog" aria-modal="true" aria-label={localize(i18n, 'Search the admin workspace', 'ابحث في لوحة التحكم')} onClick={(event) => event.stopPropagation()}>
+            <div className="command-palette" role="dialog" aria-modal="true" aria-label={localize(i18n, 'Search the admin workspace', 'Search the admin workspace')} onClick={(event) => event.stopPropagation()}>
                 <div className="command-palette__search">
                     <Search size={18} />
                     <input
                         type="text"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        placeholder={localize(i18n, 'Search events, clients, guests, templates...', 'ابحث عن الفعاليات والعملاء والضيوف والقوالب...')}
+                        placeholder={localize(i18n, 'Search events, clients, guests, templates...', 'Search events, clients, guests, templates...')}
                         autoFocus
                     />
                     <span className="command-palette__hint">Esc</span>
@@ -233,7 +276,7 @@ export default function CommandPalette({ open, onClose }) {
 
                 {normalizedQuery.length < 2 ? (
                     <div className="command-palette__quick-actions">
-                        <div className="command-palette__section-title">{localize(i18n, 'Quick actions', 'إجراءات سريعة')}</div>
+                        <div className="command-palette__section-title">{localize(i18n, 'Quick actions', 'Quick actions')}</div>
                         {matchingQuickActions.map((item) => {
                             const Icon = item.icon;
                             return (
@@ -248,17 +291,57 @@ export default function CommandPalette({ open, onClose }) {
                                 </button>
                             );
                         })}
+
+                        {matchingPowerTools.length > 0 && (
+                            <>
+                                <div className="command-palette__section-title">{localize(i18n, 'Power tools', 'Power tools')}</div>
+                                {matchingPowerTools.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
+                                            <span className="command-palette__icon">
+                                                <Icon size={16} />
+                                            </span>
+                                            <span>
+                                                <strong>{item.title}</strong>
+                                                <small>{item.subtitle}</small>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </>
+                        )}
                     </div>
                 ) : loading ? (
                     <div className="command-palette__empty">{t('common.loading')}</div>
-                ) : sections.length === 0 && matchingQuickActions.length === 0 ? (
-                    <div className="command-palette__empty">{localize(i18n, 'No matching results', 'لا توجد نتائج مطابقة')}</div>
+                ) : sections.length === 0 && matchingQuickActions.length === 0 && matchingPowerTools.length === 0 ? (
+                    <div className="command-palette__empty">{localize(i18n, 'No matching results', 'No matching results')}</div>
                 ) : (
                     <div className="command-palette__results">
                         {matchingQuickActions.length > 0 && (
                             <div className="command-palette__section">
-                                <div className="command-palette__section-title">{localize(i18n, 'Commands', 'الأوامر')}</div>
+                                <div className="command-palette__section-title">{localize(i18n, 'Commands', 'Commands')}</div>
                                 {matchingQuickActions.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
+                                            <span className="command-palette__icon">
+                                                <Icon size={16} />
+                                            </span>
+                                            <span>
+                                                <strong>{item.title}</strong>
+                                                <small>{item.subtitle}</small>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {matchingPowerTools.length > 0 && (
+                            <div className="command-palette__section">
+                                <div className="command-palette__section-title">{localize(i18n, 'Power tools', 'Power tools')}</div>
+                                {matchingPowerTools.map((item) => {
                                     const Icon = item.icon;
                                     return (
                                         <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
@@ -289,7 +372,7 @@ export default function CommandPalette({ open, onClose }) {
                                         </span>
                                         <span>
                                             <strong>{item.title}</strong>
-                                            <small>{item.subtitle || localize(i18n, 'Open detail', 'افتح التفاصيل')}</small>
+                                            <small>{item.subtitle || localize(i18n, 'Open detail', 'Open detail')}</small>
                                         </span>
                                     </button>
                                 ))}
