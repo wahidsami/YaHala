@@ -515,6 +515,7 @@
 .send-footer__button {
     min-width: 220px;
     justify-content: center;
+    max-width: 100%;
 }
 
 .send-preview-card__header {

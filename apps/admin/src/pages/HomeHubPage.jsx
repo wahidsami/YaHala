@@ -7,7 +7,8 @@ import api from '../services/api';
 import './HomeHubPage.css';
 
 function localize(i18n, english, arabic) {
-    return i18n.language?.startsWith('ar') ? arabic : english;
+    const language = i18n.resolvedLanguage || i18n.language || 'en';
+    return language.startsWith('ar') ? arabic : english;
 }
 
 function resolveAssetUrl(assetPath) {
@@ -59,6 +60,7 @@ export default function HomeHubPage() {
     const [summary, setSummary] = useState(null);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const language = i18n.resolvedLanguage || i18n.language || 'en';
     const firstName = (user?.name || '').trim().split(/\s+/)[0] || t('app.name');
 
     useEffect(() => {
@@ -135,7 +137,7 @@ export default function HomeHubPage() {
             illustration: '/illustrations/card-library-templates.png',
             allowed: hasPermission('templates.view')
         }
-    ].filter((card) => card.allowed), [hasPermission, i18n]);
+    ].filter((card) => card.allowed), [hasPermission, language]);
 
     const recentEvents = events.slice(0, 5);
     const upcomingThisWeek = events.filter((event) => {

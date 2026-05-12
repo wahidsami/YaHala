@@ -2,6 +2,7 @@
     position: relative;
     min-height: 100vh;
     padding: 1.15rem;
+    overflow-x: clip;
     background:
         radial-gradient(circle at top left, rgba(255, 215, 193, 0.56), transparent 28%),
         radial-gradient(circle at top right, rgba(218, 197, 255, 0.48), transparent 24%),
@@ -147,7 +148,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    text-align: left;
+    text-align: start;
 }
 
 .hub-search-pill kbd {
@@ -228,7 +229,7 @@
     display: flex;
     flex-direction: column;
     line-height: 1.1;
-    text-align: left;
+    text-align: start;
 }
 
 .hub-user-meta small {
@@ -239,7 +240,7 @@
 .hub-user-dropdown {
     position: absolute;
     top: calc(100% + 0.6rem);
-    right: 0;
+    inset-inline-end: 0;
     min-width: 210px;
     padding: 0.4rem;
     border-radius: 20px;
@@ -256,7 +257,7 @@
     gap: 0.65rem;
     padding: 0.78rem 1rem;
     border-radius: 12px;
-    text-align: left;
+    text-align: start;
     color: var(--text-primary);
     font-size: 0.93rem;
     font-weight: 500;

@@ -374,4 +374,10 @@
     .pagination {
         width: 100%;
     }
+
+    .logs-filters-bar .search-box,
+    .logs-filters-bar .filter-pill {
+        min-width: 0;
+        width: 100%;
+    }
 }

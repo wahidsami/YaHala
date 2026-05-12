@@ -76,7 +76,7 @@
 .event-guests-table td {
     padding: 0.7rem 0.75rem;
     border-bottom: 1px solid var(--border-color);
-    text-align: left;
+    text-align: start;
 }
 
 .event-guests-table th {

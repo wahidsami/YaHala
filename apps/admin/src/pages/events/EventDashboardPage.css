@@ -154,7 +154,7 @@
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 246, 251, 0.96));
     box-shadow: var(--shadow-sm);
     color: var(--text-primary);
-    text-align: left;
+    text-align: start;
 }
 
 .event-ops-card__icon {

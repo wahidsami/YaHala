@@ -96,7 +96,7 @@
 
 .obs-table th,
 .obs-table td {
-    text-align: left;
+    text-align: start;
     border-bottom: 1px solid #eef2f7;
     padding: 8px 6px;
 }

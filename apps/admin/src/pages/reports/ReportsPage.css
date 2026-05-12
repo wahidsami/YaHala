@@ -379,6 +379,16 @@
     .report-mini-grid {
         grid-template-columns: 1fr;
     }
+
+    .report-live-toggle,
+    .report-live-link {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .event-report-toolbar select {
+        width: 100%;
+    }
 }
 
 @media print {

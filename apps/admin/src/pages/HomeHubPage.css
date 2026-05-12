@@ -155,7 +155,7 @@ html[dir="rtl"] .hub-display-title {
     display: flex;
     flex-direction: column;
     gap: 0.24rem;
-    text-align: left;
+    text-align: start;
 }
 
 .home-hub-workflow__copy span {

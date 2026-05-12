@@ -206,7 +206,7 @@
 
 .ops-rsvp-table th,
 .ops-rsvp-table td {
-    text-align: left;
+    text-align: start;
     padding: 0.6rem 0.7rem;
     border-bottom: 1px solid var(--border-color);
     vertical-align: top;

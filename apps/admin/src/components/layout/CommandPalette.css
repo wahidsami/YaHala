@@ -79,7 +79,7 @@
     gap: 0.85rem;
     padding: 0.9rem 1rem;
     border-radius: 20px;
-    text-align: left;
+    text-align: start;
     color: var(--text-primary);
     transition: transform 0.18s ease, background 0.18s ease;
 }
