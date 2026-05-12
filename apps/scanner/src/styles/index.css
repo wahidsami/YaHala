@@ -276,6 +276,10 @@ textarea {
     align-items: start;
 }
 
+.scanner-layout.single-column {
+    grid-template-columns: 1fr;
+}
+
 .scanner-panel {
     border-radius: var(--radius-xl);
     padding: 18px;

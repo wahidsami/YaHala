@@ -28,11 +28,12 @@ export async function fetchEventStats(eventId) {
     return unwrap(response);
 }
 
-export async function submitScan({ token, eventId, mode = 'manual' }) {
+export async function submitScan({ token, eventId, mode = 'manual', confirmCheckIn = true }) {
     const response = await api.post('/scanner/scan', {
         token,
         eventId,
-        mode
+        mode,
+        confirmCheckIn
     });
 
     return unwrap(response);

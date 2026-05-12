@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { submitScan } from './scannerApi';
 import CameraScanCard from './CameraScanCard';
@@ -16,8 +16,11 @@ export default function ScanScreen({ events, activeEventId, onScanResult }) {
 
     const [manualToken, setManualToken] = useState('');
     const [submittingScan, setSubmittingScan] = useState(false);
+    const [confirmingScan, setConfirmingScan] = useState(false);
     const [result, setResult] = useState(null);
     const [recentScans, setRecentScans] = useState([]);
+    const [pendingScan, setPendingScan] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const activeEvent = useMemo(() => {
         return events.find((event) => event.id === activeEventId) || null;
@@ -31,22 +34,31 @@ export default function ScanScreen({ events, activeEventId, onScanResult }) {
 
         setSubmittingScan(true);
         try {
-            const next = await submitScan({ token: cleanToken, eventId: activeEvent.id, mode });
-            setResult(next);
-            setRecentScans((prev) => [{
+            const next = await submitScan({ token: cleanToken, eventId: activeEvent.id, mode, confirmCheckIn: false });
+            setPendingScan({
+                ...next,
                 token: cleanToken,
-                label: localizedName(i18n.language, next.attendee?.name, next.attendee?.name_ar),
-                status: next.status
-            }, ...prev].slice(0, 6));
+                eventId: activeEvent.id,
+                mode
+            });
+            setModalVisible(true);
+            if (next.status === 'duplicate') {
+                setResult(next);
+                setRecentScans((prev) => [{
+                    token: cleanToken,
+                    label: localizedName(i18n.language, next.attendee?.name, next.attendee?.name_ar),
+                    status: next.status
+                }, ...prev].slice(0, 6));
+            }
             setManualToken('');
             onScanResult(next);
         } catch (error) {
+            Alert.alert('Scan failed', error.response?.data?.message || 'Scan failed');
             setResult({
                 status: 'failed',
                 attendee: { name: 'Unknown guest', attendance_status: 'not_attended' },
                 event: { name: error.response?.data?.message || 'Scan failed' }
             });
-            throw error;
         } finally {
             setSubmittingScan(false);
         }
@@ -60,6 +72,46 @@ export default function ScanScreen({ events, activeEventId, onScanResult }) {
         await doScan(token, 'camera');
     }
 
+    async function handleConfirmScan() {
+        if (!pendingScan?.token || !pendingScan?.eventId) {
+            return;
+        }
+        setConfirmingScan(true);
+        try {
+            const next = await submitScan({
+                token: pendingScan.token,
+                eventId: pendingScan.eventId,
+                mode: pendingScan.mode || 'camera',
+                confirmCheckIn: true
+            });
+            setResult(next);
+            setRecentScans((prev) => [{
+                token: pendingScan.token,
+                label: localizedName(i18n.language, next.attendee?.name, next.attendee?.name_ar),
+                status: next.status
+            }, ...prev].slice(0, 6));
+            setModalVisible(false);
+            setPendingScan(null);
+            onScanResult(next);
+        } catch (error) {
+            Alert.alert('Check-in failed', error.response?.data?.message || 'Check-in failed');
+            setResult({
+                status: 'failed',
+                attendee: { name: 'Unknown guest', attendance_status: 'not_attended' },
+                event: { name: error.response?.data?.message || 'Check-in failed' }
+            });
+            setModalVisible(false);
+            setPendingScan(null);
+        } finally {
+            setConfirmingScan(false);
+        }
+    }
+
+    function handleCloseModal() {
+        setModalVisible(false);
+        setPendingScan(null);
+    }
+
     return (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
             <View style={styles.contextCard}>
@@ -69,7 +121,7 @@ export default function ScanScreen({ events, activeEventId, onScanResult }) {
                 </Text>
             </View>
 
-            <CameraScanCard enabled={Boolean(activeEvent?.id)} onScanned={handleCameraScan} busy={submittingScan} />
+            <CameraScanCard enabled={Boolean(activeEvent?.id)} onScanned={handleCameraScan} busy={submittingScan || confirmingScan || modalVisible} />
 
             <View style={styles.manualScan}>
                 <Text style={[styles.sectionTitle, textStyle]}>Manual Scan</Text>
@@ -108,6 +160,46 @@ export default function ScanScreen({ events, activeEventId, onScanResult }) {
                     ))}
                 </View>
             )}
+
+            <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={handleCloseModal}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <Text style={[styles.modalTitle, textStyle]}>
+                            {pendingScan?.status === 'duplicate' ? 'QR already scanned' : 'Guest found'}
+                        </Text>
+                        <Text style={[styles.modalName, textStyle]}>
+                            {localizedName(i18n.language, pendingScan?.attendee?.name, pendingScan?.attendee?.name_ar)}
+                        </Text>
+                        <Text style={[styles.modalEvent, textStyle]}>
+                            {localizedName(i18n.language, pendingScan?.event?.name, pendingScan?.event?.name_ar)}
+                        </Text>
+                        {pendingScan?.status === 'duplicate' ? (
+                            <Text style={[styles.modalCopy, textStyle]}>
+                                Already checked in at {pendingScan?.attendee?.attended_at ? new Date(pendingScan.attendee.attended_at).toLocaleString() : 'unknown time'}.
+                            </Text>
+                        ) : (
+                            <Text style={[styles.modalCopy, textStyle]}>Review guest details, then click Check In.</Text>
+                        )}
+
+                        <View style={styles.modalActions}>
+                            {pendingScan?.status === 'duplicate' ? (
+                                <Pressable style={styles.button} onPress={handleCloseModal}>
+                                    <Text style={styles.buttonText}>OK</Text>
+                                </Pressable>
+                            ) : (
+                                <>
+                                    <Pressable style={styles.secondaryButton} onPress={handleCloseModal} disabled={confirmingScan}>
+                                        <Text style={[styles.secondaryButtonText, textStyle]}>Cancel</Text>
+                                    </Pressable>
+                                    <Pressable style={styles.button} onPress={handleConfirmScan} disabled={confirmingScan}>
+                                        <Text style={styles.buttonText}>{confirmingScan ? 'Checking in...' : 'Check In'}</Text>
+                                    </Pressable>
+                                </>
+                            )}
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </ScrollView>
     );
 }
@@ -184,4 +276,56 @@ const styles = StyleSheet.create({
         color: tokens.colors.textSecondary,
         marginBottom: tokens.spacing.sm,
     },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(8, 17, 31, 0.45)',
+        justifyContent: 'center',
+        padding: tokens.spacing.lg
+    },
+    modalCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: tokens.borderRadius.lg,
+        borderWidth: 1,
+        borderColor: tokens.colors.border,
+        padding: tokens.spacing.lg
+    },
+    modalTitle: {
+        fontSize: tokens.fontSize.lg,
+        fontWeight: '700',
+        color: tokens.colors.textPrimary
+    },
+    modalName: {
+        marginTop: tokens.spacing.sm,
+        fontSize: tokens.fontSize.md,
+        fontWeight: '700',
+        color: tokens.colors.textPrimary
+    },
+    modalEvent: {
+        marginTop: 4,
+        fontSize: tokens.fontSize.sm,
+        color: tokens.colors.textSecondary
+    },
+    modalCopy: {
+        marginTop: tokens.spacing.md,
+        fontSize: tokens.fontSize.sm,
+        color: tokens.colors.textSecondary
+    },
+    modalActions: {
+        marginTop: tokens.spacing.lg,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: tokens.spacing.sm
+    },
+    secondaryButton: {
+        borderWidth: 1,
+        borderColor: tokens.colors.border,
+        borderRadius: tokens.borderRadius.md,
+        paddingVertical: tokens.spacing.md,
+        paddingHorizontal: tokens.spacing.lg
+    },
+    secondaryButtonText: {
+        color: tokens.colors.textPrimary,
+        fontSize: tokens.fontSize.md,
+        fontWeight: '700'
+    }
 });
