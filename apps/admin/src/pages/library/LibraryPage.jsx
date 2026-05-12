@@ -252,7 +252,25 @@ export default function LibraryPage() {
                             <span>{localize(i18n, 'Open builder', 'افتح المحرر')}</span>
                         </button>
                     </div>
-                </div>
+                
+                    <div className="library-stats library-stats--compact library-stats--inline">
+                        <article className="library-stat">
+                            <span>{localize(i18n, 'In library', 'In library')}</span>
+                            <strong>{templates.length}</strong>
+                        </article>
+                        <article className="library-stat">
+                            <span>{localize(i18n, 'Saved', 'Saved')}</span>
+                            <strong>{savedTemplates.length}</strong>
+                        </article>
+                        <article className="library-stat">
+                            <span>{localize(i18n, 'System set', 'System set')}</span>
+                            <strong>{systemCount}</strong>
+                        </article>
+                        <article className="library-stat">
+                            <span>{localize(i18n, 'Custom-ready', 'Custom-ready')}</span>
+                            <strong>{customCount}</strong>
+                        </article>
+                    </div></div>
             </section>
 
             <div className="library-stats library-stats--compact">
@@ -464,4 +482,5 @@ export default function LibraryPage() {
         </div>
     );
 }
+
 

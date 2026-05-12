@@ -27,9 +27,10 @@
 }
 
 .library-page__hero-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
+    display: grid;
+    grid-template-columns: auto auto minmax(360px, 1fr);
+    align-items: center;
+    gap: 0.65rem;
     width: min(100%, 620px);
     min-width: 0;
     justify-self: center;
@@ -42,6 +43,19 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.7rem;
+    order: 2;
+}
+
+.library-page__search {
+    order: 3;
+}
+
+.library-stats--inline {
+    order: 1;
+}
+
+.library-page > .library-stats--compact:not(.library-stats--inline) {
+    display: none;
 }
 
 .library-ghost-button {
@@ -88,7 +102,7 @@
 .library-stats--compact {
     grid-template-columns: repeat(4, minmax(90px, 1fr));
     gap: 0.45rem;
-    max-width: 620px;
+    max-width: 100%;
     width: 100%;
     margin-inline: auto;
     margin-top: 0;
@@ -549,6 +563,8 @@
 
     .library-page__hero-actions {
         width: 100%;
+        grid-template-columns: 1fr;
+        justify-items: stretch;
     }
 
     .library-page__hero-buttons {
