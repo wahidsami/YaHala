@@ -95,20 +95,6 @@ export default function HubChrome() {
 
     return (
         <>
-            {/* Backdrop renders as sibling to hub-shell — completely outside stacking context */}
-            {menuOpen && (
-                <div
-                    onClick={() => setMenuOpen(false)}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: 8000,
-                        background: 'transparent',
-                        cursor: 'default'
-                    }}
-                    aria-hidden="true"
-                />
-            )}
 
             <div className="hub-shell">
                 <div className="hub-shell__background hub-shell__background--one" />
@@ -151,6 +137,14 @@ export default function HubChrome() {
 
                         {/* User menu: dropdown sits at z-index 9000 — well above the backdrop at 8000 */}
                         <div className="hub-user-menu" style={{ position: 'relative', zIndex: 9000 }}>
+                            {menuOpen && (
+                                <button
+                                    type="button"
+                                    className="hub-user-backdrop"
+                                    onClick={() => setMenuOpen(false)}
+                                    aria-label={localize(i18n, 'Close user menu', 'إغلاق قائمة المستخدم')}
+                                />
+                            )}
                             <button type="button" className="hub-user-button" onClick={() => setMenuOpen((c) => !c)}>
                                 <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
                                 <span className="hub-user-meta">
