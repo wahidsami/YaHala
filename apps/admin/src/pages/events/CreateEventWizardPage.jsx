@@ -30,6 +30,83 @@ function storageUrl(path) {
     return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
+function normalizeCsvHeader(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '');
+}
+
+function splitCsvLine(line) {
+    const values = [];
+    let current = '';
+    let insideQuotes = false;
+    for (let index = 0; index < line.length; index += 1) {
+        const char = line[index];
+        if (char === '"') {
+            if (insideQuotes && line[index + 1] === '"') {
+                current += '"';
+                index += 1;
+            } else {
+                insideQuotes = !insideQuotes;
+            }
+            continue;
+        }
+        if (char === ',' && !insideQuotes) {
+            values.push(current.trim());
+            current = '';
+            continue;
+        }
+        current += char;
+    }
+    values.push(current.trim());
+    return values;
+}
+
+function normalizeGuestRecord(record) {
+    const normalized = Object.entries(record || {}).reduce((accumulator, [key, value]) => {
+        accumulator[normalizeCsvHeader(key)] = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+        return accumulator;
+    }, {});
+    const name = normalized.name || '';
+    if (!name.trim()) {
+        return null;
+    }
+    return {
+        name: name.trim(),
+        position: normalized.position || '',
+        organization: normalized.organization || normalized.org || normalized.company || '',
+        email: normalized.email || '',
+        mobileNumber: normalized.mobilenumber || normalized.mobile || normalized.mobilephone || '',
+        gender: (normalized.gender || 'male').trim().toLowerCase(),
+        status: (normalized.status || 'active').trim().toLowerCase()
+    };
+}
+
+function parseGuestsCsv(text) {
+    const lines = String(text || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+    if (!lines.length) {
+        return [];
+    }
+    const headers = splitCsvLine(lines[0]).map(normalizeCsvHeader);
+    const rows = [];
+    for (const line of lines.slice(1)) {
+        const values = splitCsvLine(line);
+        const row = {};
+        headers.forEach((header, index) => {
+            row[header] = values[index] ?? '';
+        });
+        const normalized = normalizeGuestRecord(row);
+        if (normalized) {
+            rows.push(normalized);
+        }
+    }
+    return rows;
+}
+
 export default function CreateEventWizardPage() {
     const navigate = useNavigate();
     const { i18n } = useTranslation();
@@ -41,6 +118,11 @@ export default function CreateEventWizardPage() {
     const [clientGuests, setClientGuests] = useState([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState(searchParams.get('templateId') || '');
     const [selectedGuestIds, setSelectedGuestIds] = useState([]);
+    const [guestInputMode, setGuestInputMode] = useState('reusable');
+    const [guestPasteValue, setGuestPasteValue] = useState('');
+    const [guestCsvFile, setGuestCsvFile] = useState(null);
+    const [importingGuests, setImportingGuests] = useState(false);
+    const [importSummary, setImportSummary] = useState('');
     const [eventId, setEventId] = useState('');
     const [projectCreated, setProjectCreated] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -128,6 +210,22 @@ export default function CreateEventWizardPage() {
             mounted = false;
         };
     }, [formData.clientId]);
+
+    async function refreshClientGuests() {
+        if (!formData.clientId) {
+            setClientGuests([]);
+            return [];
+        }
+        try {
+            const response = await api.get(`/admin/clients/${formData.clientId}/guests?page=1&pageSize=200&status=active`);
+            const nextGuests = response.data?.data || [];
+            setClientGuests(nextGuests);
+            return nextGuests;
+        } catch (refreshError) {
+            console.error('Failed to refresh client guests:', refreshError);
+            return [];
+        }
+    }
 
     useEffect(() => {
         function handleBeforeUnload(event) {
@@ -327,6 +425,64 @@ export default function CreateEventWizardPage() {
         [clientGuests]
     );
 
+    async function importGuestRows(guestRows) {
+        if (!formData.clientId) {
+            setError(localize(i18n, 'Select a client first.', 'اختر العميل أولاً.'));
+            return;
+        }
+        if (!guestRows.length) {
+            setError(localize(i18n, 'No valid guest rows found.', 'لم يتم العثور على صفوف ضيوف صالحة.'));
+            return;
+        }
+
+        setImportingGuests(true);
+        setError('');
+        setImportSummary('');
+        try {
+            const response = await api.post(`/admin/clients/${formData.clientId}/guests/import`, {
+                guests: guestRows
+            });
+            const refreshedGuests = await refreshClientGuests();
+            const importedByKey = new Set(
+                guestRows.map((row) => `${(row.email || '').toLowerCase()}|${row.mobileNumber || ''}|${row.name.toLowerCase()}`)
+            );
+            const importedIds = refreshedGuests
+                .filter((guest) => importedByKey.has(`${(guest.email || '').toLowerCase()}|${guest.mobile_number || ''}|${(guest.name || '').toLowerCase()}`))
+                .map((guest) => guest.id);
+
+            if (importedIds.length) {
+                setSelectedGuestIds((current) => Array.from(new Set([...current, ...importedIds])));
+            }
+
+            setImportSummary(localize(
+                i18n,
+                `Imported ${response.data?.meta?.imported ?? guestRows.length} guests.`,
+                `تم استيراد ${response.data?.meta?.imported ?? guestRows.length} ضيف.`
+            ));
+            dirtyRef.current = true;
+        } catch (importError) {
+            console.error('Failed to import guests in wizard:', importError);
+            setError(importError.response?.data?.message || localize(i18n, 'Guest import failed.', 'فشل استيراد الضيوف.'));
+        } finally {
+            setImportingGuests(false);
+        }
+    }
+
+    async function handlePasteImport() {
+        const rows = parseGuestsCsv(guestPasteValue);
+        await importGuestRows(rows);
+    }
+
+    async function handleCsvImport() {
+        if (!guestCsvFile) {
+            setError(localize(i18n, 'Choose a CSV file first.', 'اختر ملف CSV أولاً.'));
+            return;
+        }
+        const text = await guestCsvFile.text();
+        const rows = parseGuestsCsv(text);
+        await importGuestRows(rows);
+    }
+
     return (
         <div className="create-event-page">
             <div className="wizard-top-bar">
@@ -491,15 +647,53 @@ export default function CreateEventWizardPage() {
                         <div className="guest-pick-stage">
                             <div className="guest-pick-stage__header">
                                 <div>
-                                    <h2>{localize(i18n, 'Guest list', 'قائمة الضيوف')}</h2>
-                                    <p>{selectedClient ? localize(i18n, `Choose from ${selectedClient.name}'s reusable guests.`, `اختر من ضيوف ${selectedClient.name_ar || selectedClient.name} القابلين لإعادة الاستخدام.`) : localize(i18n, 'Select a client first to load guest choices.', 'اختر العميل أولاً لتحميل الضيوف.')}</p>
+                                    <h2>{localize(i18n, 'Guest list', '????? ??????')}</h2>
+                                    <p>{selectedClient ? localize(i18n, `Choose from ${selectedClient.name}'s reusable guests.`, `???? ?? ???? ${selectedClient.name_ar || selectedClient.name} ???????? ?????? ?????????.`) : localize(i18n, 'Select a client first to load guest choices.', '???? ?????? ????? ?????? ??????.')}</p>
                                 </div>
                                 <span className="guest-pick-stage__count">{selectedGuestIds.length}</span>
                             </div>
 
-                            {guestOptions.length === 0 ? (
-                                <div className="create-event-empty">{localize(i18n, 'No reusable guests available for this client yet.', 'لا توجد قائمة ضيوف جاهزة لهذا العميل بعد.')}</div>
-                            ) : (
+                            <div className="guest-input-modes">
+                                <button type="button" className={guestInputMode === 'reusable' ? 'is-active' : ''} onClick={() => setGuestInputMode('reusable')}>
+                                    {localize(i18n, 'Reusable Guests', '???? ??????')}
+                                </button>
+                                <button type="button" className={guestInputMode === 'paste' ? 'is-active' : ''} onClick={() => setGuestInputMode('paste')}>
+                                    {localize(i18n, 'Paste CSV', '??? CSV')}
+                                </button>
+                                <button type="button" className={guestInputMode === 'csv' ? 'is-active' : ''} onClick={() => setGuestInputMode('csv')}>
+                                    {localize(i18n, 'Upload CSV', '??? CSV')}
+                                </button>
+                            </div>
+
+                            {guestInputMode === 'paste' && (
+                                <div className="guest-import-panel">
+                                    <p>{localize(i18n, 'Paste CSV with headers: name,email,mobileNumber,organization', '???? CSV ????????: name,email,mobileNumber,organization')}</p>
+                                    <textarea
+                                        value={guestPasteValue}
+                                        onChange={(event) => setGuestPasteValue(event.target.value)}
+                                        placeholder="name,email,mobileNumber,organization&#10;John Doe,john@example.com,+966500000000,Acme"
+                                    />
+                                    <button type="button" className="btn btn-secondary" onClick={handlePasteImport} disabled={importingGuests}>
+                                        {importingGuests ? localize(i18n, 'Importing...', '???? ?????????...') : localize(i18n, 'Import Pasted Guests', '??????? ?????? ????????')}
+                                    </button>
+                                </div>
+                            )}
+
+                            {guestInputMode === 'csv' && (
+                                <div className="guest-import-panel">
+                                    <p>{localize(i18n, 'Upload a CSV file with guest rows.', '???? ??? CSV ????? ??? ???? ??????.')}</p>
+                                    <input type="file" accept=".csv,text/csv" onChange={(event) => setGuestCsvFile(event.target.files?.[0] || null)} />
+                                    <button type="button" className="btn btn-secondary" onClick={handleCsvImport} disabled={importingGuests}>
+                                        {importingGuests ? localize(i18n, 'Importing...', '???? ?????????...') : localize(i18n, 'Import CSV', '??????? CSV')}
+                                    </button>
+                                </div>
+                            )}
+
+                            {importSummary && <p className="guest-import-success">{importSummary}</p>}
+
+                            {guestInputMode === 'reusable' && guestOptions.length === 0 ? (
+                                <div className="create-event-empty">{localize(i18n, 'No reusable guests available for this client yet.', '?? ???? ????? ???? ????? ???? ?????? ???.')}</div>
+                            ) : guestInputMode === 'reusable' ? (
                                 <div className="guest-pick-list">
                                     {guestOptions.map((guest) => (
                                         <label key={guest.id} className={`guest-pick-row ${selectedGuestIds.includes(guest.id) ? 'is-active' : ''}`}>
@@ -522,7 +716,7 @@ export default function CreateEventWizardPage() {
                                         </label>
                                     ))}
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     )}
                 </section>
