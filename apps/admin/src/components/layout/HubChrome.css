@@ -164,6 +164,35 @@
     z-index: 9999;
 }
 
+.hub-quick-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.58rem 0.78rem;
+    border-radius: 999px;
+    border: 1px solid rgba(238, 218, 210, 0.88);
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--text-primary);
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.hub-quick-action--logout {
+    color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.28);
+    background: rgba(255, 245, 245, 0.86);
+}
+
+.hub-user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.35rem 0.45rem 0.35rem 0.35rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(238, 218, 210, 0.88);
+}
+
 /* Transparent backdrop catches clicks outside dropdown without mousedown race condition */
 .hub-user-backdrop {
     position: fixed;
@@ -321,6 +350,10 @@
     .hub-breadcrumbs,
     .hub-user-meta,
     .hub-search-pill kbd {
+        display: none;
+    }
+
+    .hub-quick-action span {
         display: none;
     }
 

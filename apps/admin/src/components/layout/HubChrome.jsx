@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, ChevronDown, ChevronLeft, Globe, LogOut, MoonStar, Search, Settings, SunMedium } from 'lucide-react';
+import { Bell, ChevronLeft, Globe, LogOut, MoonStar, Search, Settings, SunMedium } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,7 +46,6 @@ export default function HubChrome() {
     const { user, logout } = useAuth();
     const { language, toggleLanguage } = useLanguage();
     const [paletteOpen, setPaletteOpen] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(() =>
         typeof window !== 'undefined' && window.localStorage.getItem('yahala-admin-theme') === 'dark'
     );
@@ -65,38 +64,29 @@ export default function HubChrome() {
             const tag = e.target?.tagName?.toLowerCase();
             if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
             if (e.key === '?') { e.preventDefault(); setPaletteOpen(true); return; }
-            if (e.key === 'Escape') { setMenuOpen(false); return; }
             if (e.key.toLowerCase() === 'n') { e.preventDefault(); navigate('/events/new'); }
         }
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [navigate]);
 
-    useEffect(() => {
-        addDebugLog('info', 'menu.state', { open: menuOpen });
-    }, [menuOpen]);
-
     function handleBack() {
         window.history.length > 1 ? navigate(-1) : navigate('/');
     }
 
-    // Each action: close menu AFTER action queued in next tick
     function doLanguage() {
-        addDebugLog('info', 'menu.language.clicked');
-        setMenuOpen(false);
-        setTimeout(() => toggleLanguage(), 0);
+        addDebugLog('info', 'topbar.language.clicked');
+        toggleLanguage();
     }
 
     function doSettings() {
-        addDebugLog('info', 'menu.settings.clicked', { from: location.pathname });
-        setMenuOpen(false);
-        setTimeout(() => navigate('/settings'), 0);
+        addDebugLog('info', 'topbar.settings.clicked', { from: location.pathname });
+        navigate('/settings');
     }
 
     async function doLogout() {
-        addDebugLog('info', 'menu.logout.clicked');
-        setMenuOpen(false);
-        setTimeout(async () => { await logout(); }, 0);
+        addDebugLog('info', 'topbar.logout.clicked');
+        await logout();
     }
 
     const firstName = (user?.name || '').trim().split(/\s+/)[0] || t('app.name');
@@ -143,37 +133,24 @@ export default function HubChrome() {
                             <span className="hub-notification__dot" />
                         </button>
 
-                        {/* User menu: dropdown sits at z-index 9000 — well above the backdrop at 8000 */}
-                        <div className="hub-user-menu" style={{ position: 'relative', zIndex: 9000 }}>
-                            <button type="button" className="hub-user-button" onClick={() => {
-                                addDebugLog('info', 'menu.toggle.clicked');
-                                setMenuOpen((c) => !c);
-                            }}>
-                                <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
-                                <span className="hub-user-meta">
-                                    <strong>{firstName}</strong>
-                                    <small>{user?.role?.replace(/_/g, ' ') || localize(i18n, 'Admin', 'مشرف')}</small>
-                                </span>
-                                <ChevronDown size={16} />
-                            </button>
-
-                            {menuOpen && (
-                                <div className="hub-user-dropdown" role="menu" onMouseDown={(event) => event.stopPropagation()}>
-                                    <button type="button" role="menuitem" onMouseDown={() => addDebugLog('info', 'menu.language.mousedown')} onClick={doLanguage}>
-                                        <Globe size={16} />
-                                        <span>{language === 'ar' ? 'English' : 'العربية'}</span>
-                                    </button>
-                                    <button type="button" role="menuitem" onMouseDown={() => addDebugLog('info', 'menu.settings.mousedown')} onClick={doSettings}>
-                                        <Settings size={16} />
-                                        <span>{localize(i18n, 'Settings', 'الإعدادات')}</span>
-                                    </button>
-                                    <div className="hub-user-dropdown__divider" />
-                                    <button type="button" role="menuitem" className="logout-item" onMouseDown={() => addDebugLog('info', 'menu.logout.mousedown')} onClick={doLogout}>
-                                        <LogOut size={16} />
-                                        <span>{t('auth.logout')}</span>
-                                    </button>
-                                </div>
-                            )}
+                        <button type="button" className="hub-quick-action" onClick={doLanguage}>
+                            <Globe size={16} />
+                            <span>{language === 'ar' ? 'English' : 'AR'}</span>
+                        </button>
+                        <button type="button" className="hub-quick-action" onClick={doSettings}>
+                            <Settings size={16} />
+                            <span>{localize(i18n, 'Settings', 'Settings')}</span>
+                        </button>
+                        <button type="button" className="hub-quick-action hub-quick-action--logout" onClick={doLogout}>
+                            <LogOut size={16} />
+                            <span>{t('auth.logout')}</span>
+                        </button>
+                        <div className="hub-user-chip">
+                            <span className="hub-user-avatar">{firstName.slice(0, 1).toUpperCase()}</span>
+                            <span className="hub-user-meta">
+                                <strong>{firstName}</strong>
+                                <small>{user?.role?.replace(/_/g, ' ') || localize(i18n, 'Admin', 'Admin')}</small>
+                            </span>
                         </div>
                     </div>
                 </header>
