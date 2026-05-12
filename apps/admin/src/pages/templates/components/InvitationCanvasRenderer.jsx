@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react';
+﻿import { MapPin } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import api from '../../../services/api';
 import { buildCanvasBackgroundStyle, normalizeLayout } from '../backgroundUtils';
@@ -279,16 +279,16 @@ export function InvitationWidgetPreview({
         case 'text':
             return (
                 <div style={style} className="preview-widget text-widget">
-                    {content.text || localizedText(language, 'Text block', 'كتلة نصية')}
+                    {content.text || localizedText(language, 'Text block', 'ÙƒØªÙ„Ø© Ù†ØµÙŠØ©')}
                 </div>
             );
         case 'image':
             return (
                 <div style={style} className="preview-widget image-widget">
                     {content.url ? (
-                        <img src={resolveStorageUrl(content.url)} alt={content.alt || 'Widget'} style={{ maxWidth: '100%', height: 'auto' }} />
+                        <img src={resolveStorageUrl(content.url)} alt={content.alt || localizedText(language, 'Widget', 'Ø¹Ù†ØµØ±')} style={{ maxWidth: '100%', height: 'auto' }} />
                     ) : (
-                        <div className="image-placeholder">Image</div>
+                        <div className="image-placeholder">{localizedText(language, 'Image', 'ØµÙˆØ±Ø©')}</div>
                     )}
                 </div>
             );
@@ -296,9 +296,9 @@ export function InvitationWidgetPreview({
             return (
                 <div style={style} className="preview-widget image-widget">
                     {content.url ? (
-                        <img src={resolveStorageUrl(content.url)} alt={content.alt || 'Logo'} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }} />
+                        <img src={resolveStorageUrl(content.url)} alt={content.alt || localizedText(language, 'Logo', 'Ø´Ø¹Ø§Ø±')} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }} />
                     ) : (
-                        <div className="image-placeholder">Logo</div>
+                        <div className="image-placeholder">{localizedText(language, 'Logo', 'Ø´Ø¹Ø§Ø±')}</div>
                     )}
                 </div>
             );
@@ -313,7 +313,7 @@ export function InvitationWidgetPreview({
                                     {[
                                         content.showDate !== false ? formatDate(language, project?.event?.start_datetime) : null,
                                         content.showTime !== false ? formatTime(language, project?.event?.start_datetime) : null
-                                    ].filter(Boolean).join(' · ')}
+                                    ].filter(Boolean).join(' Â· ')}
                                 </span>
                             </div>
                         )}
@@ -326,13 +326,13 @@ export function InvitationWidgetPreview({
                                     rel="noreferrer"
                                 >
                                 <MapPin size={16} />
-                                <span>{eventLocation.venue || localizedText(language, 'Open in Google Maps', 'افتح على خرائط جوجل')}</span>
+                                <span>{eventLocation.venue || localizedText(language, 'Open in Google Maps', 'Ø§ÙØªØ­ Ø¹Ù„Ù‰ Ø®Ø±Ø§Ø¦Ø· Ø¬ÙˆØ¬Ù„')}</span>
                             </a>
                         ) : (
                             <div className="detail-row detail-row-stack">
                                 <MapPin size={16} />
                                 <div>
-                                    <span>{eventLocation.venue || localizedText(language, 'Venue not set', 'لم يتم تحديد المكان')}</span>
+                                    <span>{eventLocation.venue || localizedText(language, 'Venue not set', 'Ù„Ù… ÙŠØªÙ… ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…ÙƒØ§Ù†')}</span>
                                     {eventLocation.address && <small>{eventLocation.address}</small>}
                                 </div>
                             </div>
@@ -343,17 +343,17 @@ export function InvitationWidgetPreview({
         }
         case 'guest_name': {
             const guestPosition = mode === 'builder'
-                ? (content.placeholderPosition || localizedText(language, 'Position / Job Title', 'المسمى الوظيفي'))
+                ? (content.placeholderPosition || localizedText(language, 'Position / Job Title', 'Ø§Ù„Ù…Ø³Ù…Ù‰ Ø§Ù„ÙˆØ¸ÙŠÙÙŠ'))
                 : getGuestPosition(recipient, content);
             const guestLabel = mode === 'builder'
-                ? (content.placeholderName || localizedText(language, 'Guest Name', 'اسم الضيف'))
+                ? (content.placeholderName || localizedText(language, 'Guest Name', 'Ø§Ø³Ù… Ø§Ù„Ø¶ÙŠÙ'))
                 : localizedText(language, recipient.display_name, recipient.display_name_ar);
             const nameSize = Number(widget?.style?.guestNameFontSize || widget?.style?.fontSize || 16);
             const positionSize = Number(widget?.style?.guestPositionFontSize || Math.max(12, nameSize - 3));
 
             return (
                 <div style={style} className="preview-widget guest-widget">
-                    <span className="guest-prefix" style={{ font: 'inherit', color: 'inherit' }}>{content.prefix || localizedText(language, 'Welcome', 'مرحباً')} </span>
+                    <span className="guest-prefix" style={{ font: 'inherit', color: 'inherit' }}>{content.prefix || localizedText(language, 'Welcome', 'Ù…Ø±Ø­Ø¨Ø§Ù‹')} </span>
                     <span className="guest-name" style={{ color: 'inherit', fontFamily: widget?.style?.fontFamily, fontWeight: widget?.style?.fontWeight || '700', fontSize: `${nameSize}px` }}>{guestLabel}</span>
                     {guestPosition && <span className="guest-position" style={{ color: 'inherit', fontFamily: widget?.style?.fontFamily, fontWeight: widget?.style?.fontWeight || '500', fontSize: `${positionSize}px` }}>{guestPosition}</span>}
                 </div>
@@ -406,37 +406,37 @@ export function InvitationWidgetPreview({
             return (
                 <div style={style} className="preview-widget voice-widget">
                     {content.label && <div className="voice-label">{content.label}</div>}
-                    <button className="voice-btn" type="button">🎤 Record Voice</button>
-                    <div className="voice-note">Max: {content.maxDuration || 60}s</div>
+                    <button className="voice-btn" type="button">{localizedText(language, 'Record Voice', 'تسجيل صوت')}</button>
+                    <div className="voice-note">{localizedText(language, 'Max', 'الحد الأقصى')}: {content.maxDuration || 60}s</div>
                 </div>
             );
         case 'text_submission':
             return (
                 <div style={style} className="preview-widget submission-widget">
                     {content.label && <div className="submission-label">{content.label}</div>}
-                    <textarea className="submission-input" placeholder={content.placeholder || 'Type here...'} disabled />
+                    <textarea className="submission-input" placeholder={content.placeholder || localizedText(language, 'Type here...', 'Ø§ÙƒØªØ¨ Ù‡Ù†Ø§...')} disabled />
                 </div>
             );
         case 'survey':
             return (
                 <div style={style} className="preview-widget survey-widget">
-                    <div className="survey-question">{content.label || localizedText(language, 'Interactive module', 'وحدة تفاعلية')}</div>
+                    <div className="survey-question">{content.label || localizedText(language, 'Interactive module', 'ÙˆØ­Ø¯Ø© ØªÙØ§Ø¹Ù„ÙŠØ©')}</div>
                     <div className="survey-options">
-                        <label><input type="radio" disabled /> {localizedText(language, 'Yes', 'نعم')}</label>
-                        <label><input type="radio" disabled /> {localizedText(language, 'No', 'لا')}</label>
+                        <label><input type="radio" disabled /> {localizedText(language, 'Yes', 'Ù†Ø¹Ù…')}</label>
+                        <label><input type="radio" disabled /> {localizedText(language, 'No', 'Ù„Ø§')}</label>
                     </div>
                 </div>
             );
         case 'calendar_links':
             return (
                 <div style={style} className="preview-widget calendar-widget">
-                    <button className="cal-btn" type="button">Add to Calendar</button>
+                    <button className="cal-btn" type="button">{localizedText(language, 'Add to Calendar', 'Ø£Ø¶Ù Ø¥Ù„Ù‰ Ø§Ù„ØªÙ‚ÙˆÙŠÙ…')}</button>
                 </div>
             );
         case 'location_map':
             return (
                 <div style={style} className="preview-widget map-widget">
-                    <button className="map-btn" type="button">📍 Open Location Map</button>
+                    <button className="map-btn" type="button">{localizedText(language, 'Open Location Map', 'افتح خريطة الموقع')}</button>
                 </div>
             );
         case 'instructions_link':
@@ -462,9 +462,9 @@ export function InvitationWidgetPreview({
                         }}
                     >
                         {content.iconUrl ? (
-                            <img src={resolveStorageUrl(content.iconUrl)} alt="instructions" style={{ width: `${iconSize}px`, height: `${iconSize}px`, objectFit: 'contain' }} />
+                            <img src={resolveStorageUrl(content.iconUrl)} alt={localizedText(language, 'instructions', 'ØªØ¹Ù„ÙŠÙ…Ø§Øª')} style={{ width: `${iconSize}px`, height: `${iconSize}px`, objectFit: 'contain' }} />
                         ) : (
-                            <span style={{ fontSize: `${iconSize}px`, lineHeight: 1 }}>📘</span>
+                            <span style={{ fontSize: `${iconSize}px`, lineHeight: 1 }}>ðŸ“˜</span>
                         )}
                     </button>
                 </div>
@@ -556,10 +556,11 @@ export default function InvitationCanvasRenderer({
             {hasRsvpPage && !inlineResponseWidget && !rsvpCompleted && (
                 <div className="card-action-row">
                     <button type="button" className="rsvp-launch-btn rsvp-launch-inline" onClick={onOpenRsvp}>
-                        {localizedText(language, 'Confirm attendance', 'تأكيد الحضور')}
+                        {localizedText(language, 'Confirm attendance', 'ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¶ÙˆØ±')}
                     </button>
                 </div>
             )}
         </div>
     );
 }
+

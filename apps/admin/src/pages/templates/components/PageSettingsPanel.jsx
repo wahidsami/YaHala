@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Save, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { BACKGROUND_TYPES, GRADIENT_TYPES, normalizeLayout } from '../backgroundUtils';
 import {
     BACKGROUND_EFFECT_LIBRARY,
@@ -24,14 +25,19 @@ function buildEffectDraft(effect) {
     return draft;
 }
 
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
+
 export default function PageSettingsPanel({ designData, onUpdateDesign }) {
+    const { i18n } = useTranslation();
     const [pageTab, setPageTab] = useState('background');
     const [selectedEffectId, setSelectedEffectId] = useState(null);
     const [effectDraft, setEffectDraft] = useState(null);
     const hasSeededSelectionRef = useRef(false);
 
     if (!designData) {
-        return <div className="properties-panel empty">Loading...</div>;
+        return <div className="properties-panel empty">{localize(i18n, 'Loading...', 'جارٍ التحميل...')}</div>;
     }
 
     const layout = normalizeLayout(designData.layout || {});
@@ -269,7 +275,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
     const backgroundTab = (
         <div className="page-settings-tab-panel">
             <div className="form-group">
-                <label>Background Type</label>
+                <label>{localize(i18n, 'Background Type', 'نوع الخلفية')}</label>
                 <select value={layout.backgroundType || 'solid'} onChange={(e) => setBackgroundType(e.target.value)}>
                     {BACKGROUND_TYPES.map((type) => (
                         <option key={type.value} value={type.value}>
@@ -281,7 +287,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
 
             {layout.backgroundType !== 'image' && (
                 <div className="form-group">
-                    <label>Background Color</label>
+                    <label>{localize(i18n, 'Background Color', 'لون الخلفية')}</label>
                     <input
                         type="color"
                         value={layout.backgroundColor || '#ffffff'}
@@ -293,7 +299,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
             {layout.backgroundType === 'gradient' && (
                 <>
                     <div className="form-group">
-                        <label>Gradient Type</label>
+                        <label>{localize(i18n, 'Gradient Type', 'نوع التدرج')}</label>
                         <select value={layout.backgroundGradient?.type || 'linear'} onChange={(e) => updateGradient('type', e.target.value)}>
                             {GRADIENT_TYPES.map((type) => (
                                 <option key={type.value} value={type.value}>
@@ -305,7 +311,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
 
                     <div className="form-group-row">
                         <div className="form-group tiny">
-                            <label>From</label>
+                            <label>{localize(i18n, 'From', 'من')}</label>
                             <input
                                 type="color"
                                 value={layout.backgroundGradient?.from || '#ffffff'}
@@ -313,7 +319,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                             />
                         </div>
                         <div className="form-group tiny">
-                            <label>To</label>
+                            <label>{localize(i18n, 'To', 'إلى')}</label>
                             <input
                                 type="color"
                                 value={layout.backgroundGradient?.to || '#dbeafe'}
@@ -323,7 +329,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                     </div>
 
                     <div className="form-group">
-                        <label>Middle Color</label>
+                        <label>{localize(i18n, 'Middle Color', 'اللون الأوسط')}</label>
                         <input
                             type="color"
                             value={layout.backgroundGradient?.middle || '#ffffff'}
@@ -333,7 +339,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
 
                     {(layout.backgroundGradient?.type || 'linear') !== 'radial' && (
                         <div className="form-group">
-                            <label>Angle</label>
+                            <label>{localize(i18n, 'Angle', 'الزاوية')}</label>
                             <input
                                 type="range"
                                 min="0"
@@ -346,16 +352,16 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
 
                     {(layout.backgroundGradient?.type || 'linear') === 'radial' && (
                         <div className="form-group">
-                            <label>Radial Position</label>
+                            <label>{localize(i18n, 'Radial Position', 'موضع التدرج الدائري')}</label>
                             <select
                                 value={layout.backgroundGradient?.position || 'center'}
                                 onChange={(e) => updateGradient('position', e.target.value)}
                             >
-                                <option value="center">Center</option>
-                                <option value="top">Top</option>
-                                <option value="bottom">Bottom</option>
-                                <option value="left">Left</option>
-                                <option value="right">Right</option>
+                                <option value="center">{localize(i18n, 'Center', 'الوسط')}</option>
+                                <option value="top">{localize(i18n, 'Top', 'الأعلى')}</option>
+                                <option value="bottom">{localize(i18n, 'Bottom', 'الأسفل')}</option>
+                                <option value="left">{localize(i18n, 'Left', 'اليسار')}</option>
+                                <option value="right">{localize(i18n, 'Right', 'اليمين')}</option>
                             </select>
                         </div>
                     )}
@@ -365,17 +371,17 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
             {layout.backgroundType === 'image' && (
                 <>
                     <div className="form-group">
-                        <label>Background Image URL</label>
+                        <label>{localize(i18n, 'Background Image URL', 'رابط صورة الخلفية')}</label>
                         <input
                             type="url"
                             value={layout.backgroundImage || ''}
                             onChange={(e) => updateLayout({ backgroundType: 'image', backgroundImage: e.target.value })}
-                            placeholder="https://..."
+                            placeholder={localize(i18n, 'https://...', 'https://...')}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label>Or Upload Background</label>
+                        <label>{localize(i18n, 'Or Upload Background', 'أو ارفع خلفية')}</label>
                         <input
                             type="file"
                             accept="image/*"
@@ -396,21 +402,21 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
 
                     {layout.backgroundImage && (
                         <div className="form-group">
-                            <label>Background Size</label>
+                            <label>{localize(i18n, 'Background Size', 'حجم الخلفية')}</label>
                             <select
                                 value={layout.backgroundSize || 'cover'}
                                 onChange={(e) => updateLayout({ backgroundSize: e.target.value })}
                             >
-                                <option value="cover">Cover (Fill)</option>
-                                <option value="contain">Contain (Fit)</option>
-                                <option value="100% 100%">Stretch</option>
-                                <option value="auto">Auto</option>
+                                <option value="cover">{localize(i18n, 'Cover (Fill)', 'تغطية (ملء)')}</option>
+                                <option value="contain">{localize(i18n, 'Contain (Fit)', 'احتواء (ملاءمة)')}</option>
+                                <option value="100% 100%">{localize(i18n, 'Stretch', 'تمديد')}</option>
+                                <option value="auto">{localize(i18n, 'Auto', 'تلقائي')}</option>
                             </select>
                         </div>
                     )}
 
                     <button type="button" className="clear-background-btn" onClick={clearBackgroundImage}>
-                        Remove Background Image
+                        {localize(i18n, 'Remove Background Image', 'إزالة صورة الخلفية')}
                     </button>
                 </>
             )}
@@ -421,7 +427,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                     checked={layout.showGrid !== false}
                     onChange={(e) => updateLayout({ showGrid: e.target.checked })}
                 />
-                <span>Show Grid Overlay</span>
+                <span>{localize(i18n, 'Show Grid Overlay', 'إظهار شبكة التراكب')}</span>
             </label>
         </div>
     );
@@ -431,12 +437,12 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
             <div className="effects-gallery-panel">
                 <div className="effects-gallery-header">
                     <div>
-                        <label>Background Effects Gallery</label>
-                        <p className="info-text">Pick a preset from thumbnails, then tune its controls below.</p>
+                        <label>{localize(i18n, 'Background Effects Gallery', 'معرض تأثيرات الخلفية')}</label>
+                        <p className="info-text">{localize(i18n, 'Pick a preset from thumbnails, then tune its controls below.', 'اختر نمطًا جاهزًا من الصور المصغرة ثم عدّل إعداداته بالأسفل.')}</p>
                     </div>
                     <div className="effects-gallery-actions">
                         <button type="button" className="add-effect-btn" onClick={addEffect}>
-                            + Add Grain
+                            {localize(i18n, '+ Add Grain', '+ إضافة تأثير حبيبي')}
                         </button>
                         <button
                             type="button"
@@ -444,7 +450,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                             onClick={removeAllEffects}
                             disabled={!backgroundEffects.length}
                         >
-                            Remove All
+                            {localize(i18n, 'Remove All', 'إزالة الكل')}
                         </button>
                     </div>
                 </div>
@@ -491,8 +497,8 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                                                     e.stopPropagation();
                                                     removeEffectById(appliedEffect.id);
                                                 }}
-                                                title="Remove effect"
-                                                aria-label="Remove effect"
+                                                title={localize(i18n, 'Remove effect', 'إزالة التأثير')}
+                                                aria-label={localize(i18n, 'Remove effect', 'إزالة التأثير')}
                                             >
                                                 <Trash2 size={12} />
                                             </button>
@@ -509,11 +515,11 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                                                 }
                                             }}
                                         >
-                                            {isSelected ? 'Selected' : isApplied ? 'Edit' : 'Apply'}
+                                            {isSelected ? localize(i18n, 'Selected', 'محدد') : isApplied ? localize(i18n, 'Edit', 'تعديل') : localize(i18n, 'Apply', 'تطبيق')}
                                         </button>
                                         {!isCompatible && (
                                             <span className="effect-gallery-compatibility-note">
-                                                Will switch background
+                                                {localize(i18n, 'Will switch background', 'سيتم تبديل نوع الخلفية')}
                                             </span>
                                         )}
                                     </div>
@@ -525,17 +531,17 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
             </div>
 
             <div className="effects-tab-divider" aria-hidden="true">
-                <span>Selected effect</span>
+                <span>{localize(i18n, 'Selected effect', 'التأثير المحدد')}</span>
             </div>
 
             <div className="selected-effect-panel">
                 <div className="selected-effect-header">
                     <div>
-                        <strong>{selectedEffectDefinition?.label || 'Effect settings'}</strong>
+                        <strong>{selectedEffectDefinition?.label || localize(i18n, 'Effect settings', 'إعدادات التأثير')}</strong>
                         <p>
                             {selectedEffect
-                                ? 'Adjust the selected effect, then save your changes.'
-                                : 'Select an applied effect from the gallery to edit its settings.'}
+                                ? localize(i18n, 'Adjust the selected effect, then save your changes.', 'عدّل التأثير المحدد ثم احفظ التغييرات.')
+                                : localize(i18n, 'Select an applied effect from the gallery to edit its settings.', 'اختر تأثيرًا مطبقًا من المعرض لتعديل إعداداته.')}
                         </p>
                     </div>
                     <div className="selected-effect-actions">
@@ -544,8 +550,8 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                             className="effect-save-btn"
                             onClick={saveSelectedEffect}
                             disabled={!selectedEffect || !effectDraft}
-                            title="Save effect"
-                            aria-label="Save effect"
+                            title={localize(i18n, 'Save effect', 'حفظ التأثير')}
+                            aria-label={localize(i18n, 'Save effect', 'حفظ التأثير')}
                         >
                             <Save size={14} />
                         </button>
@@ -554,8 +560,8 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                             className="effect-remove-btn"
                             onClick={removeSelectedEffect}
                             disabled={!selectedEffect}
-                            title="Remove effect"
-                            aria-label="Remove effect"
+                            title={localize(i18n, 'Remove effect', 'إزالة التأثير')}
+                            aria-label={localize(i18n, 'Remove effect', 'إزالة التأثير')}
                         >
                             <Trash2 size={14} />
                         </button>
@@ -565,7 +571,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                 {selectedEffect && selectedEffectDefinition ? (
                     <>
                         <div className="selected-effect-banner">
-                            <span className="selected-effect-banner-label">Editing</span>
+                            <span className="selected-effect-banner-label">{localize(i18n, 'Editing', 'تعديل')}</span>
                             <strong>{selectedEffectDefinition.label}</strong>
                         </div>
 
@@ -640,7 +646,7 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
                     </>
                 ) : (
                     <div className="selected-effect-empty">
-                        Select an applied effect to edit its settings.
+                        {localize(i18n, 'Select an applied effect to edit its settings.', 'اختر تأثيرًا مطبقًا لتعديل إعداداته.')}
                     </div>
                 )}
             </div>
@@ -650,15 +656,15 @@ export default function PageSettingsPanel({ designData, onUpdateDesign }) {
     return (
         <div className="properties-panel">
             <div className="panel-header">
-                <h3>Page Settings</h3>
+                <h3>{localize(i18n, 'Page Settings', 'إعدادات الصفحة')}</h3>
             </div>
             <div className="panel-content page-settings-content">
                 <div className="settings-tabs">
                     <button type="button" className={pageTab === 'background' ? 'active' : ''} onClick={() => setPageTab('background')}>
-                        Background
+                        {localize(i18n, 'Background', 'الخلفية')}
                     </button>
                     <button type="button" className={pageTab === 'effects' ? 'active' : ''} onClick={() => setPageTab('effects')}>
-                        Effects
+                        {localize(i18n, 'Effects', 'التأثيرات')}
                     </button>
                 </div>
 

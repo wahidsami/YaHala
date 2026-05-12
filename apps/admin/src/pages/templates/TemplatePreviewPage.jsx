@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Eye, Loader2 } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import { normalizeLayout } from './backgroundUtils';
 import TemplatePreviewCanvas from './components/TemplatePreviewCanvas';
 import './TemplatePreviewPage.css';
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
 
 export default function TemplatePreviewPage() {
+    const { i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -68,7 +73,7 @@ export default function TemplatePreviewPage() {
         };
     }, [id, locationState.designData]);
 
-    const templateName = previewState?.templateName || 'Template Preview';
+    const templateName = previewState?.templateName || localize(i18n, 'Template Preview', 'معاينة القالب');
     const templateHash = previewState?.templateHash || '';
     const language = previewState?.activeLanguage || 'ar';
     const designData = previewState?.designData || null;
@@ -89,7 +94,7 @@ export default function TemplatePreviewPage() {
                     }}
                 >
                     <ArrowLeft size={18} />
-                    <span>Back to editor</span>
+                    <span>{localize(i18n, 'Back to editor', 'العودة إلى المحرر')}</span>
                 </button>
 
                 <div className="template-preview-page__title">
@@ -106,7 +111,7 @@ export default function TemplatePreviewPage() {
                 {loading ? (
                     <div className="template-preview-page__loading">
                         <Loader2 size={32} className="spinner" />
-                        <p>Loading preview...</p>
+                        <p>{localize(i18n, 'Loading preview...', 'جارٍ تحميل المعاينة...')}</p>
                     </div>
                 ) : designData ? (
                     <div
@@ -122,8 +127,8 @@ export default function TemplatePreviewPage() {
                 ) : (
                     <div className="template-preview-page__empty">
                         <Eye size={32} />
-                        <h2>Preview unavailable</h2>
-                        <p>We could not find a saved template snapshot for this preview.</p>
+                        <h2>{localize(i18n, 'Preview unavailable', 'المعاينة غير متاحة')}</h2>
+                        <p>{localize(i18n, 'We could not find a saved template snapshot for this preview.', 'تعذر العثور على لقطة قالب محفوظة لهذه المعاينة.')}</p>
                     </div>
                 )}
             </main>

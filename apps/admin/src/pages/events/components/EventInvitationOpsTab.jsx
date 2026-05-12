@@ -5,6 +5,10 @@ import api from '../../../services/api';
 import RoleGuard from '../../../components/auth/RoleGuard';
 import './EventInvitationOpsTab.css';
 
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
+
 function formatTimestamp(value, locale) {
     if (!value) {
         return '-';
@@ -225,7 +229,7 @@ export default function EventInvitationOpsTab({ event }) {
                     <strong>{summary?.totals?.failed || 0}</strong>
                 </article>
                 <article className="ops-kpi-card">
-                    <span>RSVP responses</span>
+                    <span>{localize(i18n, 'RSVP responses', 'ردود الحضور')}</span>
                     <strong>{responseTotals.total || 0}</strong>
                 </article>
                 <article className="ops-kpi-card">
@@ -260,7 +264,7 @@ export default function EventInvitationOpsTab({ event }) {
                             </button>
 
                             <div className="send-controls">
-                                <label htmlFor="sendAudience">Send Audience</label>
+                                <label htmlFor="sendAudience">{localize(i18n, 'Send Audience', 'فئة الإرسال')}</label>
                                 <select
                                     id="sendAudience"
                                     value={sendAudience}
@@ -272,11 +276,11 @@ export default function EventInvitationOpsTab({ event }) {
                                         }
                                     }}
                                 >
-                                    <option value="newly_added">Newly Added (Unsent)</option>
-                                    <option value="failed">Failed Only</option>
-                                    <option value="sent_not_opened">Sent/Delivered Not Opened</option>
-                                    <option value="opened_not_responded">Opened Not Responded</option>
-                                    <option value="custom_selected">Custom Selected</option>
+                                    <option value="newly_added">{localize(i18n, 'Newly Added (Unsent)', 'المضافون حديثًا (غير مُرسَل لهم)')}</option>
+                                    <option value="failed">{localize(i18n, 'Failed Only', 'الفاشلة فقط')}</option>
+                                    <option value="sent_not_opened">{localize(i18n, 'Sent/Delivered Not Opened', 'مُرسلة/مُسلّمة ولم تُفتح')}</option>
+                                    <option value="opened_not_responded">{localize(i18n, 'Opened Not Responded', 'فُتحت بدون رد')}</option>
+                                    <option value="custom_selected">{localize(i18n, 'Custom Selected', 'اختيار مخصص')}</option>
                                 </select>
 
                                 <label htmlFor="sendMode">{t('events.invitationOps.sendMode')}</label>
@@ -296,7 +300,7 @@ export default function EventInvitationOpsTab({ event }) {
                             {sendAudience === 'custom_selected' && (
                                 <div className="ops-custom-recipient-list">
                                     {customRecipients.length === 0 ? (
-                                        <p className="ops-hint">No recipients available yet.</p>
+                                        <p className="ops-hint">{localize(i18n, 'No recipients available yet.', 'لا يوجد مستلمون بعد.')}</p>
                                     ) : (
                                         customRecipients.map((recipient) => (
                                             <label key={recipient.id} className="ops-custom-recipient-row">
@@ -401,7 +405,7 @@ export default function EventInvitationOpsTab({ event }) {
                             <strong>{questionnaires?.totals?.totalQuestionnaires || 0}</strong>
                         </div>
                         <div>
-                            <span>Questionnaire submissions</span>
+                            <span>{localize(i18n, 'Questionnaire submissions', 'إرسالات الاستبيان')}</span>
                             <strong>{questionnaires?.totals?.totalSubmissions || 0}</strong>
                         </div>
                     </div>
@@ -409,23 +413,23 @@ export default function EventInvitationOpsTab({ event }) {
 
                 <section className="ops-card ops-card--wide">
                     <div className="ops-card-header">
-                        <h4>RSVP Responses</h4>
+                        <h4>{localize(i18n, 'RSVP Responses', 'ردود الحضور')}</h4>
                         <Users size={16} />
                     </div>
                     <div className="ops-metrics-list">
-                        <div><span>Attending</span><strong>{responseTotals.attending || 0}</strong></div>
-                        <div><span>Maybe</span><strong>{responseTotals.maybe || 0}</strong></div>
-                        <div><span>Not attending</span><strong>{responseTotals.notAttending || 0}</strong></div>
-                        <div><span>Total responses</span><strong>{responseTotals.total || 0}</strong></div>
+                        <div><span>{localize(i18n, 'Attending', 'حاضر')}</span><strong>{responseTotals.attending || 0}</strong></div>
+                        <div><span>{localize(i18n, 'Maybe', 'ربما')}</span><strong>{responseTotals.maybe || 0}</strong></div>
+                        <div><span>{localize(i18n, 'Not attending', 'غير حاضر')}</span><strong>{responseTotals.notAttending || 0}</strong></div>
+                        <div><span>{localize(i18n, 'Total responses', 'إجمالي الردود')}</span><strong>{responseTotals.total || 0}</strong></div>
                     </div>
                     <div className="ops-rsvp-table-wrap">
                         <table className="ops-rsvp-table">
                             <thead>
                                 <tr>
-                                    <th>Guest</th>
-                                    <th>Attendance</th>
-                                    <th>Reason/Notes</th>
-                                    <th>Responded at</th>
+                                    <th>{localize(i18n, 'Guest', 'الضيف')}</th>
+                                    <th>{localize(i18n, 'Attendance', 'الحضور')}</th>
+                                    <th>{localize(i18n, 'Reason/Notes', 'السبب/ملاحظات')}</th>
+                                    <th>{localize(i18n, 'Responded at', 'وقت الرد')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -441,7 +445,7 @@ export default function EventInvitationOpsTab({ event }) {
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan={4}>No RSVP responses yet.</td>
+                                        <td colSpan={4}>{localize(i18n, 'No RSVP responses yet.', 'لا توجد ردود حضور بعد.')}</td>
                                     </tr>
                                 )}
                             </tbody>

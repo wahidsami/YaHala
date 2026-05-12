@@ -319,45 +319,45 @@ export default function EventAddonsTab({ event }) {
                         </div>
                     )}
                     <label>
-                        <span>Unlock logic</span>
+                        <span>{localize(i18n, 'Unlock logic', 'منطق الإتاحة')}</span>
                         <select
                             value={cfg.activationRules.unlockLogic}
                             onChange={(event) => updateAddonConfig(type, itemId, {
                                 activationRules: { unlockLogic: event.target.value === 'all' ? 'all' : 'any' }
                             })}
                         >
-                            <option value="any">Any rule can unlock</option>
-                            <option value="all">All rules required</option>
+                            <option value="any">{localize(i18n, 'Any rule can unlock', 'يكفي تحقق أي قاعدة')}</option>
+                            <option value="all">{localize(i18n, 'All rules required', 'يجب تحقق جميع القواعد')}</option>
                         </select>
                     </label>
                 </div>
                 <div className="addon-rules-block">
-                    <h5>Display & Submission</h5>
+                    <h5>{localize(i18n, 'Display & Submission', 'العرض والإرسال')}</h5>
                     <label>
-                        <span>Display mode</span>
+                        <span>{localize(i18n, 'Display mode', 'نمط العرض')}</span>
                         <select
                             value={cfg.display.mode}
                             onChange={(event) => updateAddonConfig(type, itemId, {
                                 display: { mode: event.target.value === 'icons' ? 'icons' : 'tabs' }
                             })}
                         >
-                            <option value="tabs">Tabs</option>
-                            <option value="icons">Icons</option>
+                            <option value="tabs">{localize(i18n, 'Tabs', 'تبويبات')}</option>
+                            <option value="icons">{localize(i18n, 'Icons', 'أيقونات')}</option>
                         </select>
                     </label>
                     <label>
-                        <span>Position</span>
+                        <span>{localize(i18n, 'Position', 'الموضع')}</span>
                         <select
                             value={cfg.display.position}
                             onChange={(event) => updateAddonConfig(type, itemId, {
                                 display: { position: event.target.value }
                             })}
                         >
-                            <option value="top">Top</option>
-                            <option value="left">Left</option>
-                            <option value="right">Right</option>
-                            <option value="bottom">Bottom</option>
-                            <option value="qr_slot">QR Slot</option>
+                            <option value="top">{localize(i18n, 'Top', 'أعلى')}</option>
+                            <option value="left">{localize(i18n, 'Left', 'يسار')}</option>
+                            <option value="right">{localize(i18n, 'Right', 'يمين')}</option>
+                            <option value="bottom">{localize(i18n, 'Bottom', 'أسفل')}</option>
+                            <option value="qr_slot">{localize(i18n, 'QR Slot', 'موضع QR')}</option>
                         </select>
                     </label>
                     <label className="addon-rule-check">
@@ -368,7 +368,7 @@ export default function EventAddonsTab({ event }) {
                                 display: { replaceQrSlot: event.target.checked }
                             })}
                         />
-                        <span>Show add-on in QR place</span>
+                        <span>{localize(i18n, 'Show add-on in QR place', 'إظهار الإضافة في موضع QR')}</span>
                     </label>
                     <label className="addon-rule-check">
                         <input
@@ -378,7 +378,7 @@ export default function EventAddonsTab({ event }) {
                                 display: { showBackButton: event.target.checked }
                             })}
                         />
-                        <span>Show back button to card</span>
+                        <span>{localize(i18n, 'Show back button to card', 'إظهار زر الرجوع للبطاقة')}</span>
                     </label>
                     <label className="addon-rule-check">
                         <input
@@ -388,7 +388,7 @@ export default function EventAddonsTab({ event }) {
                                 display: { autoReturnAfterSubmit: event.target.checked }
                             })}
                         />
-                        <span>Auto return after submit</span>
+                        <span>{localize(i18n, 'Auto return after submit', 'العودة التلقائية بعد الإرسال')}</span>
                     </label>
                     <label className="addon-rule-check">
                         <input
@@ -398,7 +398,7 @@ export default function EventAddonsTab({ event }) {
                                 display: { disableAfterSubmission: event.target.checked }
                             })}
                         />
-                        <span>Disable after guest submits</span>
+                        <span>{localize(i18n, 'Disable after guest submits', 'تعطيل بعد إرسال الضيف')}</span>
                     </label>
                 </div>
             </div>
@@ -449,19 +449,19 @@ export default function EventAddonsTab({ event }) {
                     {activeAddon === 'poll' && (
                         <>
                             <div className="event-addons-card-header">
-                                <h4>Poll tabs linked to invitation card</h4>
-                                <Link to={`/addons/polls/new${eventId ? `?eventId=${eventId}` : ''}${clientId ? `${eventId ? '&' : '?'}clientId=${clientId}` : ''}`} className="btn btn-secondary">Create Poll</Link>
+                                <h4>{localize(i18n, 'Poll tabs linked to invitation card', 'تبويبات الاستطلاع المرتبطة ببطاقة الدعوة')}</h4>
+                                <Link to={`/addons/polls/new${eventId ? `?eventId=${eventId}` : ''}${clientId ? `${eventId ? '&' : '?'}clientId=${clientId}` : ''}`} className="btn btn-secondary">{localize(i18n, 'Create Poll', 'إنشاء استطلاع')}</Link>
                             </div>
                             {!enabledAddonSet.has('poll') ? (
-                                <p className="event-addons-empty">Enable Poll addon from the left menu first.</p>
+                                <p className="event-addons-empty">{localize(i18n, 'Enable Poll addon from the left menu first.', 'فعّل إضافة الاستطلاع من القائمة اليسرى أولًا.')}</p>
                             ) : polls.length === 0 ? (
                                 <p className="event-addons-empty">{t('events.invitationSetup.noPolls')}</p>
                             ) : (
                                 <div className="event-addons-polls event-addon-selection-card">
                                     <label>
-                                        <span>Select Poll</span>
+                                        <span>{localize(i18n, 'Select Poll', 'اختر استطلاعًا')}</span>
                                         <select value={formData.pollId} onChange={(event) => selectAddon('poll', event.target.value)}>
-                                            <option value="">Select poll...</option>
+                                            <option value="">{localize(i18n, 'Select poll...', 'اختر استطلاعًا...')}</option>
                                             {polls.map((poll) => (
                                                 <option key={poll.id} value={poll.id}>
                                                     {localizedText(i18n, poll.title, poll.title_ar)}
@@ -486,21 +486,21 @@ export default function EventAddonsTab({ event }) {
                     {activeAddon === 'questionnaire' && (
                         <>
                             <div className="event-addons-card-header">
-                                <h4>Questionnaire tabs linked to invitation card</h4>
+                                <h4>{localize(i18n, 'Questionnaire tabs linked to invitation card', 'تبويبات الاستبيان المرتبطة ببطاقة الدعوة')}</h4>
                                 <Link to={`/addons/questionnaires/new?eventId=${eventId}&clientId=${event?.client_id || ''}`} className="btn btn-secondary">
                                     Create Questionnaire
                                 </Link>
                             </div>
                             {!enabledAddonSet.has('questionnaire') ? (
-                                <p className="event-addons-empty">Enable Questionnaire addon from the left menu first.</p>
+                                <p className="event-addons-empty">{localize(i18n, 'Enable Questionnaire addon from the left menu first.', 'فعّل إضافة الاستبيان من القائمة اليسرى أولًا.')}</p>
                             ) : questionnaires.length === 0 ? (
-                                <p className="event-addons-empty">No questionnaires found for this event.</p>
+                                <p className="event-addons-empty">{localize(i18n, 'No questionnaires found for this event.', 'لم يتم العثور على استبيانات لهذه الفعالية.')}</p>
                             ) : (
                                 <div className="event-addons-polls event-addon-selection-card">
                                     <label>
-                                        <span>Select Questionnaire</span>
+                                        <span>{localize(i18n, 'Select Questionnaire', 'اختر استبيانًا')}</span>
                                         <select value={formData.questionnaireId} onChange={(event) => selectAddon('questionnaire', event.target.value)}>
-                                            <option value="">Select questionnaire...</option>
+                                            <option value="">{localize(i18n, 'Select questionnaire...', 'اختر استبيانًا...')}</option>
                                             {questionnaires.map((questionnaire) => (
                                                 <option key={questionnaire.id} value={questionnaire.id}>
                                                     {localizedText(i18n, questionnaire.title, questionnaire.title_ar)}
@@ -514,7 +514,7 @@ export default function EventAddonsTab({ event }) {
                                                 <strong>{localizedText(i18n, linkedQuestionnaire.title, linkedQuestionnaire.title_ar)}</strong>
                                                 <small>{linkedQuestionnaire.status} · {linkedQuestionnaire.question_count || 0} questions · {linkedQuestionnaire.submission_count || 0} submissions</small>
                                             </div>
-                                            <Link to={`/addons/questionnaires/${linkedQuestionnaire.id}`} className="btn btn-secondary">Open</Link>
+                                            <Link to={`/addons/questionnaires/${linkedQuestionnaire.id}`} className="btn btn-secondary">{localize(i18n, 'Open', 'فتح')}</Link>
                                         </div>
                                     ) : null}
                                 </div>
@@ -525,19 +525,19 @@ export default function EventAddonsTab({ event }) {
                     {activeAddon === 'instructions' && (
                         <>
                             <div className="event-addons-card-header">
-                                <h4>Instructions linked to invitation card</h4>
-                                <Link to="/addons/instructions/new" className="btn btn-secondary">Create Instructions</Link>
+                                <h4>{localize(i18n, 'Instructions linked to invitation card', 'التعليمات المرتبطة ببطاقة الدعوة')}</h4>
+                                <Link to="/addons/instructions/new" className="btn btn-secondary">{localize(i18n, 'Create Instructions', 'إنشاء تعليمات')}</Link>
                             </div>
                             {!enabledAddonSet.has('instructions') ? (
-                                <p className="event-addons-empty">Enable Instructions addon from the left menu first.</p>
+                                <p className="event-addons-empty">{localize(i18n, 'Enable Instructions addon from the left menu first.', 'فعّل إضافة التعليمات من القائمة اليسرى أولًا.')}</p>
                             ) : instructions.length === 0 ? (
-                                <p className="event-addons-empty">No instructions found for this client.</p>
+                                <p className="event-addons-empty">{localize(i18n, 'No instructions found for this client.', 'لم يتم العثور على تعليمات لهذا العميل.')}</p>
                             ) : (
                                 <div className="event-addons-polls event-addon-selection-card">
                                     <label>
-                                        <span>Select Instructions</span>
+                                        <span>{localize(i18n, 'Select Instructions', 'اختر التعليمات')}</span>
                                         <select value={formData.instructionId} onChange={(event) => selectAddon('instructions', event.target.value)}>
-                                            <option value="">Select instructions...</option>
+                                            <option value="">{localize(i18n, 'Select instructions...', 'اختر التعليمات...')}</option>
                                             {instructions.map((instruction) => (
                                                 <option key={instruction.id} value={instruction.id}>
                                                     {localizedText(i18n, instruction.name || instruction.title, instruction.name_ar || instruction.title_ar)}
@@ -551,7 +551,7 @@ export default function EventAddonsTab({ event }) {
                                             <strong>{localizedText(i18n, linkedInstruction.name || linkedInstruction.title, linkedInstruction.name_ar || linkedInstruction.title_ar)}</strong>
                                             <small>{linkedInstruction.status || 'draft'}</small>
                                         </div>
-                                        <Link to={`/addons/instructions/${linkedInstruction.id}`} className="btn btn-secondary">Open</Link>
+                                        <Link to={`/addons/instructions/${linkedInstruction.id}`} className="btn btn-secondary">{localize(i18n, 'Open', 'فتح')}</Link>
                                         </div>
                                     ) : null}
                                 </div>
@@ -562,7 +562,7 @@ export default function EventAddonsTab({ event }) {
                     {!['poll', 'questionnaire', 'instructions'].includes(activeAddon) && (
                         <>
                             <div className="event-addons-card-header">
-                                <h4>{ADDON_CATALOG.find((item) => item.id === activeAddon)?.label || 'Addon'} setup</h4>
+                                <h4>{(ADDON_CATALOG.find((item) => item.id === activeAddon)?.label || localize(i18n, 'Addon', 'إضافة'))} {localize(i18n, 'setup', 'إعداد')}</h4>
                             </div>
                             <p className="event-addons-empty">
                                 This add-on is currently in rollout. You can enable/disable it now, and full content management will be added in next phase.
@@ -600,7 +600,7 @@ export default function EventAddonsTab({ event }) {
 
                 <section className="event-addons-card">
                     <div className="event-addons-card-header">
-                        <h4>Card Tabs Preview</h4>
+                        <h4>{localize(i18n, 'Card Tabs Preview', 'معاينة تبويبات البطاقة')}</h4>
                         <MessageSquare size={16} />
                     </div>
                     {(formData.pollId || formData.questionnaireId || formData.instructionId) ? (
@@ -609,22 +609,22 @@ export default function EventAddonsTab({ event }) {
                                 <div key={`poll-${linkedPoll.id}`} className="linked-preview-item">
                                     <span className="linked-order">1</span>
                                     <div>
-                                        <strong>Poll</strong>
+                                        <strong>{localize(i18n, 'Poll', 'استطلاع')}</strong>
                                         <small>{localizedText(i18n, linkedPoll.title, linkedPoll.title_ar)}</small>
                                         {renderAddonRulesEditor('poll', linkedPoll.id)}
                                     </div>
-                                    <button type="button" className="btn btn-secondary" onClick={() => selectAddon('poll', '')}>Unlink</button>
+                                    <button type="button" className="btn btn-secondary" onClick={() => selectAddon('poll', '')}>{localize(i18n, 'Unlink', 'إلغاء الربط')}</button>
                                 </div>
                             ) : null}
                             {linkedQuestionnaire ? (
                                 <div key={`questionnaire-${linkedQuestionnaire.id}`} className="linked-preview-item">
                                     <span className="linked-order">{linkedPoll ? 2 : 1}</span>
                                     <div>
-                                        <strong>Questionnaire</strong>
+                                        <strong>{localize(i18n, 'Questionnaire', 'استبيان')}</strong>
                                         <small>{localizedText(i18n, linkedQuestionnaire.title, linkedQuestionnaire.title_ar)}</small>
                                         {renderAddonRulesEditor('questionnaire', linkedQuestionnaire.id)}
                                     </div>
-                                    <button type="button" className="btn btn-secondary" onClick={() => selectAddon('questionnaire', '')}>Unlink</button>
+                                    <button type="button" className="btn btn-secondary" onClick={() => selectAddon('questionnaire', '')}>{localize(i18n, 'Unlink', 'إلغاء الربط')}</button>
                                 </div>
                             ) : null}
                             {linkedInstruction ? (
@@ -633,16 +633,16 @@ export default function EventAddonsTab({ event }) {
                                         {(linkedPoll ? 1 : 0) + (linkedQuestionnaire ? 1 : 0) + 1}
                                     </span>
                                     <div>
-                                        <strong>Instructions</strong>
+                                        <strong>{localize(i18n, 'Instructions', 'التعليمات')}</strong>
                                         <small>{localizedText(i18n, linkedInstruction.name || linkedInstruction.title, linkedInstruction.name_ar || linkedInstruction.title_ar)}</small>
                                         {renderAddonRulesEditor('instructions', linkedInstruction.id)}
                                     </div>
-                                    <button type="button" className="btn btn-secondary" onClick={() => selectAddon('instructions', '')}>Unlink</button>
+                                    <button type="button" className="btn btn-secondary" onClick={() => selectAddon('instructions', '')}>{localize(i18n, 'Unlink', 'إلغاء الربط')}</button>
                                 </div>
                             ) : null}
                         </div>
                     ) : (
-                        <p className="event-addons-empty">No card tabs linked yet.</p>
+                        <p className="event-addons-empty">{localize(i18n, 'No card tabs linked yet.', 'لا توجد تبويبات بطاقة مرتبطة بعد.')}</p>
                     )}
                 </section>
             </div>

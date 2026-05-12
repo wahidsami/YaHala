@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, Bold, CaseUpper, FileImage, Frame, Italic, List, Monitor, MoveDown, MoveUp, Save, Smartphone, Square, Trash2, Underline, ZoomIn, ZoomOut } from 'lucide-react';
 import api from '../../services/api';
 import './InstructionsBuilderPage.css';
@@ -39,6 +40,10 @@ const DEFAULT_EDITOR_SETTINGS = {
     previewMode: 'desktop',
     activeLanguage: 'en'
 };
+
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
 
 function toBulletArray(value) {
     if (Array.isArray(value)) return value.map((item) => `${item || ''}`.trim()).filter(Boolean);
@@ -177,6 +182,7 @@ function readFileAsDataUrl(file) {
 }
 
 export default function InstructionsBuilderPage({ mode = 'create', initialData = null }) {
+    const { i18n } = useTranslation();
     const navigate = useNavigate();
     const canvasRef = useRef(null);
     const [clients, setClients] = useState([]);
@@ -400,11 +406,11 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
     async function handleSave() {
         const name = formData.name.trim();
         if (!name) {
-            setError('Instruction name is required.');
+            setError(localize(i18n, 'Instruction name is required.', 'اسم التعليمات مطلوب.'));
             return;
         }
         if (!formData.clientId) {
-            setError('Please select a client.');
+            setError(localize(i18n, 'Please select a client.', 'يرجى اختيار عميل.'));
             return;
         }
 
@@ -449,7 +455,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             }
             setSaveSuccessOpen(true);
         } catch (saveError) {
-            setError(saveError.response?.data?.message || 'Failed to save instruction.');
+            setError(saveError.response?.data?.message || localize(i18n, 'Failed to save instruction.', 'تعذر حفظ التعليمات.'));
         } finally {
             setSaving(false);
         }
@@ -514,7 +520,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             alt={widget.content.alt || 'instruction image'}
                             style={{ width: '100%', height: '100%', objectFit: widget.style.objectFit || 'cover', borderRadius: `${widget.style.borderRadius || 0}px` }}
                         />
-                    ) : <div className="widget-placeholder">Upload image</div>}
+                    ) : <div className="widget-placeholder">{localize(i18n, 'Upload image', 'رفع صورة')}</div>}
                 </div>
             );
         }
@@ -569,7 +575,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             );
         }
 
-        return <div className="instruction-widget-content">Unsupported widget</div>;
+        return <div className="instruction-widget-content">{localize(i18n, 'Unsupported widget', 'عنصر غير مدعوم')}</div>;
     }
 
     return (
@@ -578,12 +584,12 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                 <div className="instructions-header-left">
                     <button type="button" className="back-link" onClick={() => navigate('/addons/instructions')}>
                         <ArrowLeft size={18} />
-                        <span>Back</span>
+                        <span>{localize(i18n, 'Back', 'رجوع')}</span>
                     </button>
                     <div className="instructions-top-fields">
                         <input type="text" value={formData.name} onChange={(event) => updateField('name', event.target.value)} placeholder="Instruction name (required)" />
                         <select value={formData.clientId} onChange={(event) => updateField('clientId', event.target.value)}>
-                            <option value="">Select client</option>
+                            <option value="">{localize(i18n, 'Select client', 'اختر العميل')}</option>
                             {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
                         </select>
                     </div>
@@ -597,10 +603,10 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             {error && <div className="form-error">{error}</div>}
             <section className="instructions-editor-layout">
                 <div className="instructions-panel simple-instructions-panel">
-                    <h3>Instructions Popup Content</h3>
-                    <p className="text-muted">Unified popup mode: use bullets and popup colors only.</p>
+                        <h3>{localize(i18n, 'Instructions Popup Content', 'محتوى نافذة التعليمات')}</h3>
+                        <p className="text-muted">{localize(i18n, 'Unified popup mode: use bullets and popup colors only.', 'وضع نافذة موحّد: استخدم النقاط وألوان النافذة فقط.')}</p>
                     <label>
-                        <span>Bullets (EN)</span>
+                        <span>{localize(i18n, 'Bullets (EN)', 'النقاط (EN)')}</span>
                         <textarea
                             rows="8"
                             value={simpleInstructions.bulletsEn}
@@ -609,7 +615,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         />
                     </label>
                     <label>
-                        <span>Bullets (AR)</span>
+                        <span>{localize(i18n, 'Bullets (AR)', 'النقاط (AR)')}</span>
                         <textarea
                             rows="8"
                             dir="rtl"
@@ -620,7 +626,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     </label>
                     <div className="compact-grid-2">
                         <label>
-                            <span>Popup background</span>
+                            <span>{localize(i18n, 'Popup background', 'خلفية النافذة')}</span>
                             <input
                                 type="color"
                                 value={simpleInstructions.popupBackground}
@@ -628,7 +634,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             />
                         </label>
                         <label>
-                            <span>Popup text color</span>
+                            <span>{localize(i18n, 'Popup text color', 'لون نص النافذة')}</span>
                             <input
                                 type="color"
                                 value={simpleInstructions.popupTextColor}
@@ -636,7 +642,7 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             />
                         </label>
                         <label>
-                            <span>Popup body color</span>
+                            <span>{localize(i18n, 'Popup body color', 'لون جسم النافذة')}</span>
                             <input
                                 type="color"
                                 value={simpleInstructions.popupBodyColor}
@@ -647,13 +653,13 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                 </div>
 
                 <aside className="instructions-panel instructions-widgets-panel">
-                    <h3>Widgets</h3>
+                    <h3>{localize(i18n, 'Widgets', 'العناصر')}</h3>
                     <ul>
-                        <li><button type="button" onClick={() => addWidget('title')}><CaseUpper size={16} /> <span>Title</span></button></li>
-                        <li><button type="button" onClick={() => addWidget('text')}><List size={16} /> <span>Text</span></button></li>
-                        <li><button type="button" onClick={() => addWidget('image')}><FileImage size={16} /> <span>Image</span></button></li>
-                        <li><button type="button" onClick={() => addWidget('background')}><Frame size={16} /> <span>Background</span></button></li>
-                        <li><button type="button" onClick={() => addWidget('item_block')}><Square size={16} /> <span>Item Block</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('title')}><CaseUpper size={16} /> <span>{localize(i18n, 'Title', 'عنوان')}</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('text')}><List size={16} /> <span>{localize(i18n, 'Text', 'نص')}</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('image')}><FileImage size={16} /> <span>{localize(i18n, 'Image', 'صورة')}</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('background')}><Frame size={16} /> <span>{localize(i18n, 'Background', 'خلفية')}</span></button></li>
+                        <li><button type="button" onClick={() => addWidget('item_block')}><Square size={16} /> <span>{localize(i18n, 'Item Block', 'عنصر')}</span></button></li>
                     </ul>
                     <div className="lang-toggle">
                         <button type="button" className={activeLanguage === 'en' ? 'active' : ''} onClick={() => updateEditorSettings({ activeLanguage: 'en' })}>EN</button>
@@ -674,12 +680,12 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     </div>
                     <div className="panel-divider" />
                     <div className="page-tools-compact">
-                        <h4>Canvas</h4>
-                        <label className="switch-row"><span>Show Grid</span><input type="checkbox" checked={Boolean(formData.editorSettings.showGrid)} onChange={(event) => updateEditorSettings({ showGrid: event.target.checked })} /></label>
-                        <label className="switch-row"><span>Snap</span><input type="checkbox" checked={Boolean(formData.editorSettings.snapToGrid)} onChange={(event) => updateEditorSettings({ snapToGrid: event.target.checked })} /></label>
+                        <h4>{localize(i18n, 'Canvas', 'لوحة العمل')}</h4>
+                        <label className="switch-row"><span>{localize(i18n, 'Show Grid', 'إظهار الشبكة')}</span><input type="checkbox" checked={Boolean(formData.editorSettings.showGrid)} onChange={(event) => updateEditorSettings({ showGrid: event.target.checked })} /></label>
+                        <label className="switch-row"><span>{localize(i18n, 'Snap', 'المحاذاة للشبكة')}</span><input type="checkbox" checked={Boolean(formData.editorSettings.snapToGrid)} onChange={(event) => updateEditorSettings({ snapToGrid: event.target.checked })} /></label>
                         <div className="compact-grid-2">
-                            <label><span>Grid</span><input type="number" min={GRID_MIN} max={GRID_MAX} value={canvasGrid} onChange={(event) => updateEditorSettings({ gridSize: clamp(Number.parseInt(event.target.value, 10) || 16, GRID_MIN, GRID_MAX) })} /></label>
-                            <label><span>Height</span><input type="number" min="600" max="6000" value={canvasHeight} onChange={(event) => { const nextHeight = clamp(Number.parseInt(event.target.value, 10) || 1600, 600, 6000); updateEditorSettings({ pageHeight: nextHeight }); updatePage({ height: nextHeight }); }} /></label>
+                            <label><span>{localize(i18n, 'Grid', 'الشبكة')}</span><input type="number" min={GRID_MIN} max={GRID_MAX} value={canvasGrid} onChange={(event) => updateEditorSettings({ gridSize: clamp(Number.parseInt(event.target.value, 10) || 16, GRID_MIN, GRID_MAX) })} /></label>
+                            <label><span>{localize(i18n, 'Height', 'الارتفاع')}</span><input type="number" min="600" max="6000" value={canvasHeight} onChange={(event) => { const nextHeight = clamp(Number.parseInt(event.target.value, 10) || 1600, 600, 6000); updateEditorSettings({ pageHeight: nextHeight }); updatePage({ height: nextHeight }); }} /></label>
                         </div>
                     </div>
                 </aside>
@@ -715,8 +721,8 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                         )}
                         {widgets.length === 0 && (
                             <div className="canvas-empty">
-                                <h4>Instruction Canvas</h4>
-                                <p>Add widgets from the left panel.</p>
+                                <h4>{localize(i18n, 'Instruction Canvas', 'لوحة التعليمات')}</h4>
+                                <p>{localize(i18n, 'Add widgets from the left panel.', 'أضف العناصر من اللوحة اليسرى.')}</p>
                             </div>
                         )}
 
@@ -745,59 +751,59 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                 </div>
 
                 <aside className="instructions-panel instructions-settings-panel">
-                    <h3>Settings</h3>
+                    <h3>{localize(i18n, 'Settings', 'الإعدادات')}</h3>
 
                     {!selectedWidget && (
                         <>
                             <hr />
-                            <h4>Background</h4>
+                            <h4>{localize(i18n, 'Background', 'الخلفية')}</h4>
                             <label>
-                                <span>Type</span>
+                                <span>{localize(i18n, 'Type', 'النوع')}</span>
                                 <select
                                     value={formData.contentSchema.page.background.type || 'solid'}
                                     onChange={(event) => updatePageBackground({ type: event.target.value })}
                                 >
-                                    <option value="solid">Solid</option>
-                                    <option value="gradient">Gradient</option>
-                                    <option value="image">Image</option>
+                                    <option value="solid">{localize(i18n, 'Solid', 'لون ثابت')}</option>
+                                    <option value="gradient">{localize(i18n, 'Gradient', 'تدرج')}</option>
+                                    <option value="image">{localize(i18n, 'Image', 'صورة')}</option>
                                 </select>
                             </label>
-                            <label><span>Color</span><input type="color" value={formData.contentSchema.page.background.color || '#ffffff'} onChange={(event) => updatePageBackground({ color: event.target.value })} /></label>
+                            <label><span>{localize(i18n, 'Color', 'اللون')}</span><input type="color" value={formData.contentSchema.page.background.color || '#ffffff'} onChange={(event) => updatePageBackground({ color: event.target.value })} /></label>
                             {(formData.contentSchema.page.background.type || 'solid') === 'gradient' && (
                                 <>
-                                    <label><span>Gradient From</span><input type="color" value={formData.contentSchema.page.background.gradient?.from || '#ffffff'} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), from: event.target.value } })} /></label>
-                                    <label><span>Gradient To</span><input type="color" value={formData.contentSchema.page.background.gradient?.to || '#dbeafe'} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), to: event.target.value } })} /></label>
-                                    <label><span>Gradient Angle</span><input type="number" min="0" max="360" value={formData.contentSchema.page.background.gradient?.angle ?? 135} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), angle: Number.parseInt(event.target.value, 10) || 135 } })} /></label>
+                                    <label><span>{localize(i18n, 'Gradient From', 'بداية التدرج')}</span><input type="color" value={formData.contentSchema.page.background.gradient?.from || '#ffffff'} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), from: event.target.value } })} /></label>
+                                    <label><span>{localize(i18n, 'Gradient To', 'نهاية التدرج')}</span><input type="color" value={formData.contentSchema.page.background.gradient?.to || '#dbeafe'} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), to: event.target.value } })} /></label>
+                                    <label><span>{localize(i18n, 'Gradient Angle', 'زاوية التدرج')}</span><input type="number" min="0" max="360" value={formData.contentSchema.page.background.gradient?.angle ?? 135} onChange={(event) => updatePageBackground({ gradient: { ...(formData.contentSchema.page.background.gradient || {}), angle: Number.parseInt(event.target.value, 10) || 135 } })} /></label>
                                 </>
                             )}
-                            <label><span>Upload background</span><input type="file" accept="image/*" onChange={onUploadBackgroundImage} /></label>
+                            <label><span>{localize(i18n, 'Upload background', 'رفع خلفية')}</span><input type="file" accept="image/*" onChange={onUploadBackgroundImage} /></label>
                             <label>
-                                <span>Size</span>
+                                <span>{localize(i18n, 'Size', 'الحجم')}</span>
                                 <select value={formData.contentSchema.page.background.size || 'cover'} onChange={(event) => updatePageBackground({ size: event.target.value })}>
-                                    <option value="cover">cover</option>
-                                    <option value="contain">fit/contain</option>
-                                    <option value="auto">auto</option>
-                                    <option value="100% 100%">stretch</option>
-                                    <option value="64px 64px">tile</option>
+                                    <option value="cover">{localize(i18n, 'cover', 'تغطية')}</option>
+                                    <option value="contain">{localize(i18n, 'fit/contain', 'احتواء')}</option>
+                                    <option value="auto">{localize(i18n, 'auto', 'تلقائي')}</option>
+                                    <option value="100% 100%">{localize(i18n, 'stretch', 'تمديد')}</option>
+                                    <option value="64px 64px">{localize(i18n, 'tile', 'تكرار مربعات')}</option>
                                 </select>
                             </label>
                             <label>
-                                <span>Repeat</span>
+                                <span>{localize(i18n, 'Repeat', 'التكرار')}</span>
                                 <select value={formData.contentSchema.page.background.repeat || 'no-repeat'} onChange={(event) => updatePageBackground({ repeat: event.target.value })}>
-                                    <option value="no-repeat">no-repeat</option>
-                                    <option value="repeat">repeat</option>
-                                    <option value="repeat-x">repeat-x</option>
-                                    <option value="repeat-y">repeat-y</option>
+                                    <option value="no-repeat">{localize(i18n, 'no-repeat', 'بدون تكرار')}</option>
+                                    <option value="repeat">{localize(i18n, 'repeat', 'تكرار')}</option>
+                                    <option value="repeat-x">{localize(i18n, 'repeat-x', 'تكرار أفقي')}</option>
+                                    <option value="repeat-y">{localize(i18n, 'repeat-y', 'تكرار عمودي')}</option>
                                 </select>
                             </label>
                             <label>
-                                <span>Position</span>
+                                <span>{localize(i18n, 'Position', 'الموضع')}</span>
                                 <select value={formData.contentSchema.page.background.position || 'center center'} onChange={(event) => updatePageBackground({ position: event.target.value })}>
-                                    <option value="center center">center</option>
-                                    <option value="top center">top</option>
-                                    <option value="bottom center">bottom</option>
-                                    <option value="left center">left</option>
-                                    <option value="right center">right</option>
+                                    <option value="center center">{localize(i18n, 'center', 'الوسط')}</option>
+                                    <option value="top center">{localize(i18n, 'top', 'أعلى')}</option>
+                                    <option value="bottom center">{localize(i18n, 'bottom', 'أسفل')}</option>
+                                    <option value="left center">{localize(i18n, 'left', 'يسار')}</option>
+                                    <option value="right center">{localize(i18n, 'right', 'يمين')}</option>
                                 </select>
                             </label>
                         </>
@@ -806,20 +812,20 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                     {selectedWidget && (
                         <>
                             <hr />
-                            <h4>Widget</h4>
-                            <label><span>X</span><input type="number" value={selectedWidget.x} onChange={(e) => updateWidget(selectedWidget.id, { x: Number.parseInt(e.target.value, 10) || 0 })} /></label>
-                            <label><span>Y</span><input type="number" value={selectedWidget.y} onChange={(e) => updateWidget(selectedWidget.id, { y: Number.parseInt(e.target.value, 10) || 0 })} /></label>
-                            <label><span>Width</span><input type="number" value={selectedWidget.w} onChange={(e) => updateWidget(selectedWidget.id, { w: Math.max(80, Number.parseInt(e.target.value, 10) || 80) })} /></label>
-                            <label><span>Height</span><input type="number" value={selectedWidget.h} onChange={(e) => updateWidget(selectedWidget.id, { h: Math.max(50, Number.parseInt(e.target.value, 10) || 50) })} /></label>
+                            <h4>{localize(i18n, 'Widget', 'العنصر')}</h4>
+                            <label><span>{localize(i18n, 'X', 'س')}</span><input type="number" value={selectedWidget.x} onChange={(e) => updateWidget(selectedWidget.id, { x: Number.parseInt(e.target.value, 10) || 0 })} /></label>
+                            <label><span>{localize(i18n, 'Y', 'ص')}</span><input type="number" value={selectedWidget.y} onChange={(e) => updateWidget(selectedWidget.id, { y: Number.parseInt(e.target.value, 10) || 0 })} /></label>
+                            <label><span>{localize(i18n, 'Width', 'العرض')}</span><input type="number" value={selectedWidget.w} onChange={(e) => updateWidget(selectedWidget.id, { w: Math.max(80, Number.parseInt(e.target.value, 10) || 80) })} /></label>
+                            <label><span>{localize(i18n, 'Height', 'الارتفاع')}</span><input type="number" value={selectedWidget.h} onChange={(e) => updateWidget(selectedWidget.id, { h: Math.max(50, Number.parseInt(e.target.value, 10) || 50) })} /></label>
 
                             {(selectedWidget.type === 'title' || selectedWidget.type === 'text' || selectedWidget.type === 'item_block') && (
                                 <>
-                                    <label><span>Text (EN)</span><input type="text" value={selectedWidget.content.text || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { text: e.target.value } })} /></label>
-                                    <label><span>Text (AR)</span><input type="text" value={selectedWidget.content.textAr || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { textAr: e.target.value } })} dir="rtl" /></label>
+                                    <label><span>{localize(i18n, 'Text (EN)', 'النص (EN)')}</span><input type="text" value={selectedWidget.content.text || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { text: e.target.value } })} /></label>
+                                    <label><span>{localize(i18n, 'Text (AR)', 'النص (AR)')}</span><input type="text" value={selectedWidget.content.textAr || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { textAr: e.target.value } })} dir="rtl" /></label>
 
                                     <div className="typography-compact-card">
                                         <label>
-                                            <span>Font Family</span>
+                                            <span>{localize(i18n, 'Font Family', 'نوع الخط')}</span>
                                             <select value={selectedWidget.style.fontFamily || 'Cairo'} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontFamily: e.target.value } })}>
                                                 {FONT_OPTIONS.map((font) => <option key={font} value={font}>{font}</option>)}
                                             </select>
@@ -827,34 +833,34 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
                                         <div className="typography-inline-row">
                                             <label>
-                                                <span>Size</span>
+                                                <span>{localize(i18n, 'Size', 'الحجم')}</span>
                                                 <input type="number" value={selectedWidget.style.fontSize || 24} onChange={(e) => updateWidget(selectedWidget.id, { style: { fontSize: Number.parseInt(e.target.value, 10) || 24 } })} />
                                             </label>
                                             <label>
-                                                <span>Color</span>
+                                                <span>{localize(i18n, 'Color', 'اللون')}</span>
                                                 <input type="color" value={selectedWidget.style.color || '#0f172a'} onChange={(e) => updateWidget(selectedWidget.id, { style: { color: e.target.value } })} />
                                             </label>
-                                            <div className="format-icon-group" aria-label="Text format">
-                                                <button type="button" className={`icon-btn ${String(selectedWidget.style.fontWeight || '400') >= '600' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { fontWeight: String(selectedWidget.style.fontWeight || '400') >= '600' ? '400' : '700' } })} title="Bold">
+                                            <div className="format-icon-group" aria-label={localize(i18n, 'Text format', 'تنسيق النص')}>
+                                                <button type="button" className={`icon-btn ${String(selectedWidget.style.fontWeight || '400') >= '600' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { fontWeight: String(selectedWidget.style.fontWeight || '400') >= '600' ? '400' : '700' } })} title={localize(i18n, 'Bold', 'عريض')}>
                                                     <Bold size={14} />
                                                 </button>
-                                                <button type="button" className={`icon-btn ${Boolean(selectedWidget.style.italic) ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { italic: !Boolean(selectedWidget.style.italic) } })} title="Italic">
+                                                <button type="button" className={`icon-btn ${Boolean(selectedWidget.style.italic) ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { italic: !Boolean(selectedWidget.style.italic) } })} title={localize(i18n, 'Italic', 'مائل')}>
                                                     <Italic size={14} />
                                                 </button>
-                                                <button type="button" className={`icon-btn ${Boolean(selectedWidget.style.underline) ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { underline: !Boolean(selectedWidget.style.underline) } })} title="Underline">
+                                                <button type="button" className={`icon-btn ${Boolean(selectedWidget.style.underline) ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { underline: !Boolean(selectedWidget.style.underline) } })} title={localize(i18n, 'Underline', 'تحته خط')}>
                                                     <Underline size={14} />
                                                 </button>
                                             </div>
                                         </div>
 
-                                        <div className="align-icon-group" aria-label="Text align">
-                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'start' || !selectedWidget.style.textAlign ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'start' } })} title="Align start">
+                                        <div className="align-icon-group" aria-label={localize(i18n, 'Text align', 'محاذاة النص')}>
+                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'start' || !selectedWidget.style.textAlign ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'start' } })} title={localize(i18n, 'Align start', 'محاذاة للبداية')}>
                                                 <AlignLeft size={14} />
                                             </button>
-                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'center' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'center' } })} title="Align center">
+                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'center' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'center' } })} title={localize(i18n, 'Align center', 'محاذاة للوسط')}>
                                                 <AlignCenter size={14} />
                                             </button>
-                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'end' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'end' } })} title="Align end">
+                                            <button type="button" className={`icon-btn ${selectedWidget.style.textAlign === 'end' ? 'active' : ''}`} onClick={() => updateWidget(selectedWidget.id, { style: { textAlign: 'end' } })} title={localize(i18n, 'Align end', 'محاذاة للنهاية')}>
                                                 <AlignRight size={14} />
                                             </button>
                                         </div>
@@ -865,20 +871,20 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
 
                             {selectedWidget.type === 'text' && (
                                 <>
-                                    <label><span>Line height</span><input type="number" step="0.05" min="1" max="2.4" value={selectedWidget.style.lineHeight || 1.45} onChange={(e) => updateWidget(selectedWidget.id, { style: { lineHeight: Number.parseFloat(e.target.value) || 1.45 } })} /></label>
-                                    <label><span>Bullet list mode</span><input type="checkbox" checked={Boolean(selectedWidget.content.asBullets)} onChange={(e) => updateWidget(selectedWidget.id, { content: { asBullets: e.target.checked } })} /></label>
-                                    <label><span>Bullets (EN)</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bullets) ? selectedWidget.content.bullets.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bullets: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} /></label>
-                                    <label><span>Bullets (AR)</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bulletsAr) ? selectedWidget.content.bulletsAr.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bulletsAr: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} dir="rtl" /></label>
+                                    <label><span>{localize(i18n, 'Line height', 'ارتفاع السطر')}</span><input type="number" step="0.05" min="1" max="2.4" value={selectedWidget.style.lineHeight || 1.45} onChange={(e) => updateWidget(selectedWidget.id, { style: { lineHeight: Number.parseFloat(e.target.value) || 1.45 } })} /></label>
+                                    <label><span>{localize(i18n, 'Bullet list mode', 'وضع القائمة النقطية')}</span><input type="checkbox" checked={Boolean(selectedWidget.content.asBullets)} onChange={(e) => updateWidget(selectedWidget.id, { content: { asBullets: e.target.checked } })} /></label>
+                                    <label><span>{localize(i18n, 'Bullets (EN)', 'النقاط (EN)')}</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bullets) ? selectedWidget.content.bullets.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bullets: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} /></label>
+                                    <label><span>{localize(i18n, 'Bullets (AR)', 'النقاط (AR)')}</span><textarea rows="4" value={Array.isArray(selectedWidget.content.bulletsAr) ? selectedWidget.content.bulletsAr.join('\n') : ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { bulletsAr: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean) } })} dir="rtl" /></label>
                                 </>
                             )}
 
                             {selectedWidget.type === 'image' && (
                                 <div className="compact-widget-card">
-                                    <label><span>Upload</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'src')} /></label>
-                                    <label><span>Image Source</span><input type="text" value={selectedWidget.content.src || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { src: e.target.value } })} /></label>
+                                    <label><span>{localize(i18n, 'Upload', 'رفع')}</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'src')} /></label>
+                                    <label><span>{localize(i18n, 'Image Source', 'مصدر الصورة')}</span><input type="text" value={selectedWidget.content.src || ''} onChange={(e) => updateWidget(selectedWidget.id, { content: { src: e.target.value } })} /></label>
                                     <div className="compact-grid-2">
-                                        <label><span>Fit</span><select value={selectedWidget.style.objectFit || 'cover'} onChange={(e) => updateWidget(selectedWidget.id, { style: { objectFit: e.target.value } })}><option value="cover">cover</option><option value="contain">contain</option><option value="fill">fill</option></select></label>
-                                        <label className="switch-row"><span>Lock Ratio</span><input type="checkbox" checked={Boolean(selectedWidget.style.lockRatio)} onChange={(e) => updateWidget(selectedWidget.id, { style: { lockRatio: e.target.checked } })} /></label>
+                                        <label><span>{localize(i18n, 'Fit', 'الملاءمة')}</span><select value={selectedWidget.style.objectFit || 'cover'} onChange={(e) => updateWidget(selectedWidget.id, { style: { objectFit: e.target.value } })}><option value="cover">{localize(i18n, 'cover', 'تغطية')}</option><option value="contain">{localize(i18n, 'contain', 'احتواء')}</option><option value="fill">{localize(i18n, 'fill', 'تمدد')}</option></select></label>
+                                        <label className="switch-row"><span>{localize(i18n, 'Lock Ratio', 'قفل النسبة')}</span><input type="checkbox" checked={Boolean(selectedWidget.style.lockRatio)} onChange={(e) => updateWidget(selectedWidget.id, { style: { lockRatio: e.target.checked } })} /></label>
                                     </div>
                                 </div>
                             )}
@@ -886,34 +892,34 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
                             {selectedWidget.type === 'item_block' && (
                                 <div className="compact-widget-card">
                                     <div className="compact-grid-2">
-                                        <label><span>Icon</span><input type="text" value={selectedWidget.content.icon || '•'} onChange={(e) => updateWidget(selectedWidget.id, { content: { icon: e.target.value } })} /></label>
-                                        <label><span>Mode</span><select value={selectedWidget.style.blockMode || 'boxed'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockMode: e.target.value } })}><option value="boxed">Boxed</option><option value="transparent">Transparent</option></select></label>
+                                        <label><span>{localize(i18n, 'Icon', 'الأيقونة')}</span><input type="text" value={selectedWidget.content.icon || '•'} onChange={(e) => updateWidget(selectedWidget.id, { content: { icon: e.target.value } })} /></label>
+                                        <label><span>{localize(i18n, 'Mode', 'الوضع')}</span><select value={selectedWidget.style.blockMode || 'boxed'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockMode: e.target.value } })}><option value="boxed">{localize(i18n, 'Boxed', 'مربع')}</option><option value="transparent">{localize(i18n, 'Transparent', 'شفاف')}</option></select></label>
                                     </div>
-                                    <label><span>Icon Image</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'iconImage')} /></label>
-                                    <label className="switch-row"><span>Use Icon Image</span><input type="checkbox" checked={Boolean(selectedWidget.content.useIconImage)} onChange={(e) => updateWidget(selectedWidget.id, { content: { useIconImage: e.target.checked } })} /></label>
+                                    <label><span>{localize(i18n, 'Icon Image', 'صورة الأيقونة')}</span><input type="file" accept="image/*" onChange={(e) => onUploadWidgetImage(e, selectedWidget.id, 'iconImage')} /></label>
+                                    <label className="switch-row"><span>{localize(i18n, 'Use Icon Image', 'استخدام صورة الأيقونة')}</span><input type="checkbox" checked={Boolean(selectedWidget.content.useIconImage)} onChange={(e) => updateWidget(selectedWidget.id, { content: { useIconImage: e.target.checked } })} /></label>
                                     <div className="compact-grid-2">
-                                        <label><span>Block</span><input type="color" value={selectedWidget.style.blockColor || '#e2e8f0'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockColor: e.target.value } })} /></label>
-                                        <label><span>Icon</span><input type="color" value={selectedWidget.style.iconColor || '#0f766e'} onChange={(e) => updateWidget(selectedWidget.id, { style: { iconColor: e.target.value } })} /></label>
+                                        <label><span>{localize(i18n, 'Block', 'لون الكتلة')}</span><input type="color" value={selectedWidget.style.blockColor || '#e2e8f0'} onChange={(e) => updateWidget(selectedWidget.id, { style: { blockColor: e.target.value } })} /></label>
+                                        <label><span>{localize(i18n, 'Icon', 'لون الأيقونة')}</span><input type="color" value={selectedWidget.style.iconColor || '#0f766e'} onChange={(e) => updateWidget(selectedWidget.id, { style: { iconColor: e.target.value } })} /></label>
                                     </div>
-                                    <label><span>Corners</span><input type="number" min="0" max="80" value={selectedWidget.style.borderRadius ?? 10} onChange={(e) => updateWidget(selectedWidget.id, { style: { borderRadius: Number.parseInt(e.target.value, 10) || 0 } })} /></label>
-                                    <label><span>Text Vertical Align</span><select value={selectedWidget.style.textVerticalAlign || 'center'} onChange={(e) => updateWidget(selectedWidget.id, { style: { textVerticalAlign: e.target.value } })}><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+                                    <label><span>{localize(i18n, 'Corners', 'زوايا')}</span><input type="number" min="0" max="80" value={selectedWidget.style.borderRadius ?? 10} onChange={(e) => updateWidget(selectedWidget.id, { style: { borderRadius: Number.parseInt(e.target.value, 10) || 0 } })} /></label>
+                                    <label><span>{localize(i18n, 'Text Vertical Align', 'محاذاة النص عموديًا')}</span><select value={selectedWidget.style.textVerticalAlign || 'center'} onChange={(e) => updateWidget(selectedWidget.id, { style: { textVerticalAlign: e.target.value } })}><option value="top">{localize(i18n, 'Top', 'أعلى')}</option><option value="center">{localize(i18n, 'Center', 'وسط')}</option><option value="bottom">{localize(i18n, 'Bottom', 'أسفل')}</option></select></label>
                                     </div>
                             )}
 
                             <div className="layer-controls">
                                 <button type="button" className="btn btn-secondary" onClick={() => moveSelectedLayer('down')}>
                                     <MoveDown size={14} />
-                                    <span>Send Backward</span>
+                                    <span>{localize(i18n, 'Send Backward', 'إرسال للخلف')}</span>
                                 </button>
                                 <button type="button" className="btn btn-secondary" onClick={() => moveSelectedLayer('up')}>
                                     <MoveUp size={14} />
-                                    <span>Bring Forward</span>
+                                    <span>{localize(i18n, 'Bring Forward', 'إحضار للأمام')}</span>
                                 </button>
                             </div>
 
                             <button type="button" className="btn btn-danger btn-delete-widget" onClick={removeSelectedWidget}>
                                 <Trash2 size={14} />
-                                <span>Delete Widget</span>
+                                <span>{localize(i18n, 'Delete Widget', 'حذف العنصر')}</span>
                             </button>
                         </>
                     )}
@@ -923,9 +929,9 @@ export default function InstructionsBuilderPage({ mode = 'create', initialData =
             {saveSuccessOpen && (
                 <div className="save-modal-backdrop" role="dialog" aria-modal="true">
                     <div className="save-modal-card">
-                        <h4>Saved</h4>
-                        <p>Instruction design progress saved successfully.</p>
-                        <button type="button" className="btn btn-primary" onClick={() => setSaveSuccessOpen(false)}>OK</button>
+                        <h4>{localize(i18n, 'Saved', 'تم الحفظ')}</h4>
+                        <p>{localize(i18n, 'Instruction design progress saved successfully.', 'تم حفظ تقدم تصميم التعليمات بنجاح.')}</p>
+                        <button type="button" className="btn btn-primary" onClick={() => setSaveSuccessOpen(false)}>{localize(i18n, 'OK', 'حسنًا')}</button>
                     </div>
                 </div>
             )}

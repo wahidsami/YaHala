@@ -179,7 +179,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
             const dataUrl = await readFileAsDataUrl(file);
             updateTheme({ backgroundType: 'image', backgroundImage: dataUrl });
         } catch {
-            setError('Failed to upload background image.');
+            setError(localize(i18n, 'Failed to upload background image.', 'تعذر رفع صورة الخلفية.'));
         }
     }
 
@@ -256,7 +256,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
     async function saveQuestionnaire(nextStatus = formData.status, options = {}) {
         const { stayOnPage = false } = options;
         if (!canSave) {
-            setError('Please complete details and add at least one question.');
+            setError(localize(i18n, 'Please complete details and add at least one question.', 'يرجى إكمال التفاصيل وإضافة سؤال واحد على الأقل.'));
             return;
         }
         setSaving(true);
@@ -298,12 +298,12 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                 await api.post('/admin/questionnaires', payload);
             }
             if (stayOnPage) {
-                setSaveNotice('Progress saved.');
+                setSaveNotice(localize(i18n, 'Progress saved.', 'تم حفظ التقدم.'));
             } else {
                 navigate('/addons/questionnaires');
             }
         } catch (saveError) {
-            setError(saveError.response?.data?.message || 'Failed to save questionnaire.');
+            setError(saveError.response?.data?.message || localize(i18n, 'Failed to save questionnaire.', 'تعذر حفظ الاستبيان.'));
         } finally {
             setSaving(false);
         }
@@ -364,36 +364,36 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                     </div>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Title (EN)</label>
+                            <label>{localize(i18n, 'Title (EN)', 'العنوان (EN)')}</label>
                             <input value={formData.title} onChange={(e) => updateField('title', e.target.value)} />
                         </div>
                         <div className="form-group">
-                            <label>Title (AR)</label>
+                            <label>{localize(i18n, 'Title (AR)', 'العنوان (AR)')}</label>
                             <input value={formData.titleAr} onChange={(e) => updateField('titleAr', e.target.value)} />
                         </div>
                     </div>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Description (EN)</label>
+                            <label>{localize(i18n, 'Description (EN)', 'الوصف (EN)')}</label>
                             <textarea rows="3" value={formData.description} onChange={(e) => updateField('description', e.target.value)} />
                         </div>
                         <div className="form-group">
-                            <label>Description (AR)</label>
+                            <label>{localize(i18n, 'Description (AR)', 'الوصف (AR)')}</label>
                             <textarea rows="3" value={formData.descriptionAr} onChange={(e) => updateField('descriptionAr', e.target.value)} />
                         </div>
                     </div>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Questionnaire Purpose (EN)</label>
+                            <label>{localize(i18n, 'Questionnaire Purpose (EN)', 'هدف الاستبيان (EN)')}</label>
                             <textarea
                                 rows="3"
                                 value={formData.settings?.purpose || ''}
                                 onChange={(e) => updateField('settings', { ...formData.settings, purpose: e.target.value })}
-                                placeholder="Why this questionnaire exists and what decisions it should support"
+                                placeholder={localize(i18n, 'Why this questionnaire exists and what decisions it should support', 'سبب إنشاء هذا الاستبيان وما القرارات التي يدعمها')}
                             />
                         </div>
                         <div className="form-group">
-                            <label>Questionnaire Purpose (AR)</label>
+                            <label>{localize(i18n, 'Questionnaire Purpose (AR)', 'هدف الاستبيان (AR)')}</label>
                             <textarea
                                 rows="3"
                                 value={formData.settings?.purposeAr || ''}
@@ -412,20 +412,20 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                     </div>
 
                     <div className="theme-settings-block">
-                        <h4>Questionnaire Theme</h4>
+                        <h4>{localize(i18n, 'Questionnaire Theme', 'سمة الاستبيان')}</h4>
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Background Type</label>
+                                <label>{localize(i18n, 'Background Type', 'نوع الخلفية')}</label>
                                 <select
                                     value={formData.settings?.theme?.backgroundType || 'color'}
                                     onChange={(e) => updateTheme({ backgroundType: e.target.value })}
                                 >
-                                    <option value="color">Color</option>
-                                    <option value="image">Image</option>
+                                    <option value="color">{localize(i18n, 'Color', 'لون')}</option>
+                                    <option value="image">{localize(i18n, 'Image', 'صورة')}</option>
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Background Color</label>
+                                <label>{localize(i18n, 'Background Color', 'لون الخلفية')}</label>
                                 <input
                                     type="color"
                                     value={formData.settings?.theme?.backgroundColor || '#f8fafc'}
@@ -436,60 +436,60 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Upload Background Image</label>
+                                <label>{localize(i18n, 'Upload Background Image', 'رفع صورة الخلفية')}</label>
                                 <input type="file" accept="image/*" onChange={uploadThemeBackgroundImage} />
                                 <small className="info-text">
                                     {formData.settings?.theme?.backgroundImage
-                                        ? 'Background image is set.'
-                                        : 'No background image selected.'}
+                                        ? localize(i18n, 'Background image is set.', 'تم تعيين صورة الخلفية.')
+                                        : localize(i18n, 'No background image selected.', 'لم يتم اختيار صورة خلفية.')}
                                 </small>
                                 {formData.settings?.theme?.backgroundImage && (
                                     <img
                                         src={formData.settings.theme.backgroundImage}
-                                        alt="Questionnaire background preview"
+                                        alt={localize(i18n, 'Questionnaire background preview', 'معاينة خلفية الاستبيان')}
                                         className="theme-bg-preview"
                                     />
                                 )}
                             </div>
                             <div className="form-group">
-                                <label>Background Size</label>
+                                <label>{localize(i18n, 'Background Size', 'حجم الخلفية')}</label>
                                 <select
                                     value={formData.settings?.theme?.backgroundSize || 'cover'}
                                     onChange={(e) => updateTheme({ backgroundSize: e.target.value })}
                                 >
-                                    <option value="cover">Cover</option>
-                                    <option value="contain">Fit / Contain</option>
-                                    <option value="auto">Auto</option>
-                                    <option value="100% 100%">Stretch</option>
-                                    <option value="64px 64px">Tile</option>
+                                    <option value="cover">{localize(i18n, 'Cover', 'تغطية')}</option>
+                                    <option value="contain">{localize(i18n, 'Fit / Contain', 'احتواء')}</option>
+                                    <option value="auto">{localize(i18n, 'Auto', 'تلقائي')}</option>
+                                    <option value="100% 100%">{localize(i18n, 'Stretch', 'تمديد')}</option>
+                                    <option value="64px 64px">{localize(i18n, 'Tile', 'تكرار مربعات')}</option>
                                 </select>
                             </div>
                         </div>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Background Repeat</label>
+                                <label>{localize(i18n, 'Background Repeat', 'تكرار الخلفية')}</label>
                                 <select
                                     value={formData.settings?.theme?.backgroundRepeat || 'no-repeat'}
                                     onChange={(e) => updateTheme({ backgroundRepeat: e.target.value })}
                                 >
-                                    <option value="no-repeat">No Repeat</option>
-                                    <option value="repeat">Repeat</option>
-                                    <option value="repeat-x">Repeat X</option>
-                                    <option value="repeat-y">Repeat Y</option>
+                                    <option value="no-repeat">{localize(i18n, 'No Repeat', 'بدون تكرار')}</option>
+                                    <option value="repeat">{localize(i18n, 'Repeat', 'تكرار')}</option>
+                                    <option value="repeat-x">{localize(i18n, 'Repeat X', 'تكرار أفقي')}</option>
+                                    <option value="repeat-y">{localize(i18n, 'Repeat Y', 'تكرار عمودي')}</option>
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Background Position</label>
+                                <label>{localize(i18n, 'Background Position', 'موضع الخلفية')}</label>
                                 <select
                                     value={formData.settings?.theme?.backgroundPosition || 'center center'}
                                     onChange={(e) => updateTheme({ backgroundPosition: e.target.value })}
                                 >
-                                    <option value="center center">Center</option>
-                                    <option value="top center">Top</option>
-                                    <option value="bottom center">Bottom</option>
-                                    <option value="left center">Left</option>
-                                    <option value="right center">Right</option>
+                                    <option value="center center">{localize(i18n, 'Center', 'الوسط')}</option>
+                                    <option value="top center">{localize(i18n, 'Top', 'الأعلى')}</option>
+                                    <option value="bottom center">{localize(i18n, 'Bottom', 'الأسفل')}</option>
+                                    <option value="left center">{localize(i18n, 'Left', 'اليسار')}</option>
+                                    <option value="right center">{localize(i18n, 'Right', 'اليمين')}</option>
                                 </select>
                             </div>
                         </div>
@@ -590,12 +590,12 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                                         checked={question.isRequired}
                                         onChange={(e) => updateQuestion(question.id, { isRequired: e.target.checked })}
                                     />
-                                    <span>Required</span>
+                                    <span>{localize(i18n, 'Required', 'مطلوب')}</span>
                                 </label>
 
                                 {question.questionType === 'yes_no' && (
                                     <div className="form-group">
-                                        <label>Correct Answer (optional)</label>
+                                        <label>{localize(i18n, 'Correct Answer (optional)', 'الإجابة الصحيحة (اختياري)')}</label>
                                         <select
                                             value={
                                                 question.settings?.correctBoolean === true
@@ -612,7 +612,7 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                                                 });
                                             }}
                                         >
-                                            <option value="">No correct answer</option>
+                                            <option value="">{localize(i18n, 'No correct answer', 'لا توجد إجابة صحيحة')}</option>
                                             <option value="yes">Yes</option>
                                             <option value="no">No</option>
                                         </select>
@@ -622,20 +622,20 @@ export default function QuestionnaireBuilderPage({ mode = 'create', initialData 
                                 {(question.questionType === 'single_choice' || question.questionType === 'multiple_choice') && (
                                     <div className="question-options">
                                         <div className="question-options-head">
-                                            <strong>Options</strong>
-                                            <button type="button" className="btn btn-secondary" onClick={() => addOption(question.id)}>Add Option</button>
+                                            <strong>{localize(i18n, 'Options', 'الخيارات')}</strong>
+                                            <button type="button" className="btn btn-secondary" onClick={() => addOption(question.id)}>{localize(i18n, 'Add Option', 'إضافة خيار')}</button>
                                         </div>
                                         {question.options.map((option) => (
                                             <div key={option.id} className="option-row">
                                                 <input
                                                     value={option.label}
                                                     onChange={(e) => updateOption(question.id, option.id, { label: e.target.value })}
-                                                    placeholder="Option label"
+                                                    placeholder={localize(i18n, 'Option label', 'عنوان الخيار')}
                                                 />
                                                 <input
                                                     value={option.labelAr}
                                                     onChange={(e) => updateOption(question.id, option.id, { labelAr: e.target.value })}
-                                                    placeholder="Arabic label"
+                                                    placeholder={localize(i18n, 'Arabic label', 'العنوان بالعربية')}
                                                 />
                                                 <button type="button" className="icon-btn danger" onClick={() => removeOption(question.id, option.id)}>
                                                     <Trash2 size={14} />

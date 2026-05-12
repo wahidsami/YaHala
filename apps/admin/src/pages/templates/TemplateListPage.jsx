@@ -82,7 +82,7 @@ export default function TemplateListPage() {
 
             <div className="template-grid">
                 {loading ? (
-                    <p className="loading">Loading...</p>
+                    <p className="loading">{t('common.loading')}</p>
                 ) : templates.length === 0 ? (
                     <div className="empty-state">
                         <Palette size={48} />

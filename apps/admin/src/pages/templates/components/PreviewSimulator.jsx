@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, AlertCircle, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../../../services/api';
 import { buildCanvasBackgroundStyle, normalizeLayout } from '../backgroundUtils';
 import InvitationCanvasRenderer from './InvitationCanvasRenderer';
@@ -15,6 +16,10 @@ import SilkBackground from './SilkBackground';
 import { buildBubbleRuntimeProps, buildDarkVeilRuntimeProps, buildFireworksRuntimeProps, buildGravityStarsRuntimeProps, buildHexagonRuntimeProps, buildLightPillarRuntimeProps, buildPrismRuntimeProps, buildSilkRuntimeProps, buildStarsRuntimeProps } from '../backgroundEffectCatalog';
 import './PreviewSimulator.css';
 import '../../public-invitations/PublicInvitationPage.css';
+
+function localize(isArabic, english, arabic) {
+    return isArabic ? arabic : english;
+}
 
 function resolveEffectValue(effect, key, fallback) {
     const value = effect?.settings?.[key] ?? effect?.[key] ?? fallback;
@@ -45,6 +50,8 @@ function resolvePreviewAssetUrl(assetPath) {
 }
 
 export default function PreviewSimulator({ templateId, templateHash, designData, onClose }) {
+    const { i18n } = useTranslation();
+    const isArabicUi = i18n.language?.startsWith('ar');
     const previewCanvasBaseWidth = 360;
     const [context, setContext] = useState({
         timeState: 'before_event',
@@ -115,7 +122,7 @@ export default function PreviewSimulator({ templateId, templateHash, designData,
                 setPreviewResult(result);
             }
         } catch (error) {
-            console.error('Preview failed:', error);
+            console.error(localize(isArabicUi, 'Preview failed:', 'ÙØ´Ù„ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø©:'), error);
         } finally {
             setLoading(false);
         }
@@ -328,7 +335,7 @@ export default function PreviewSimulator({ templateId, templateHash, designData,
             <div className="preview-modal">
                 <div className="preview-header">
                     <div className="preview-header-title">
-                        <h2>Preview Simulator</h2>
+                        <h2>{localize(isArabicUi, 'Preview Simulator', 'Ù…Ø­Ø§ÙƒÙŠ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø©')}</h2>
                         {previewVersionHash && (
                             <span className="preview-version-chip" title={previewVersionHash}>
                                 v {previewVersionHash.slice(0, 8)}
@@ -340,10 +347,10 @@ export default function PreviewSimulator({ templateId, templateHash, designData,
 
                 <div className="preview-body">
                     <div className="context-controls">
-                        <h3>Simulation Context</h3>
+                        <h3>{localize(isArabicUi, 'Simulation Context', 'Ø³ÙŠØ§Ù‚ Ø§Ù„Ù…Ø­Ø§ÙƒØ§Ø©')}</h3>
 
                         <div className="control-group">
-                            <label>Time State</label>
+                            <label>{localize(isArabicUi, 'Time State', 'Ø­Ø§Ù„Ø© Ø§Ù„ÙˆÙ‚Øª')}</label>
                             <div className="radio-group">
                                 {['before_event', 'during_event', 'after_event'].map(t => (
                                     <label key={t} className="radio-option">
@@ -361,7 +368,7 @@ export default function PreviewSimulator({ templateId, templateHash, designData,
                         </div>
 
                         <div className="control-group">
-                            <label>Scan Status</label>
+                            <label>{localize(isArabicUi, 'Scan Status', 'Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø³Ø­')}</label>
                             <div className="radio-group">
                                 {['not_scanned', 'checked_in'].map(s => (
                                     <label key={s} className="radio-option">
@@ -379,35 +386,35 @@ export default function PreviewSimulator({ templateId, templateHash, designData,
                         </div>
 
                         <div className="control-group">
-                            <label>Language</label>
+                            <label>{localize(isArabicUi, 'Language', 'Ø§Ù„Ù„ØºØ©')}</label>
                             <select value={context.language} onChange={(e) => setContext(prev => ({ ...prev, language: e.target.value }))}>
-                                <option value="ar">Arabic (RTL)</option>
-                                <option value="en">English (LTR)</option>
+                                <option value="ar">{localize(isArabicUi, 'Arabic (RTL)', 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© (RTL)')}</option>
+                                <option value="en">{localize(isArabicUi, 'English (LTR)', 'Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© (LTR)')}</option>
                             </select>
                         </div>
 
                         <div className="control-group">
-                            <label>Guest Group</label>
+                            <label>{localize(isArabicUi, 'Guest Group', 'ÙØ¦Ø© Ø§Ù„Ø¶ÙŠÙ')}</label>
                             <select value={context.guestGroup} onChange={(e) => setContext(prev => ({ ...prev, guestGroup: e.target.value }))}>
-                                <option value="regular">Regular</option>
-                                <option value="vip">VIP</option>
-                                <option value="family">Family</option>
+                                <option value="regular">{localize(isArabicUi, 'Regular', 'Ø¹Ø§Ø¯ÙŠ')}</option>
+                                <option value="vip">{localize(isArabicUi, 'VIP', 'ÙƒØ¨Ø§Ø± Ø§Ù„Ø´Ø®ØµÙŠØ§Øª')}</option>
+                                <option value="family">{localize(isArabicUi, 'Family', 'Ø¹Ø§Ø¦Ù„Ø©')}</option>
                             </select>
                         </div>
 
                         <button className="run-preview-btn" onClick={runPreview} disabled={loading}>
-                            {loading ? 'Evaluating...' : 'Run Preview / Refresh'}
+                            {loading ? localize(isArabicUi, 'Evaluating...', 'Ø¬Ø§Ø±Ù Ø§Ù„ØªÙ‚ÙŠÙŠÙ…...') : localize(isArabicUi, 'Run Preview / Refresh', 'ØªØ´ØºÙŠÙ„ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© / ØªØ­Ø¯ÙŠØ«')}
                         </button>
 
                         <div className="debug-summary">
-                            <h4>Debug Log</h4>
+                            <h4>{localize(isArabicUi, 'Debug Log', 'Ø³Ø¬Ù„ Ø§Ù„ØªØµØ­ÙŠØ­')}</h4>
                             {!previewResult ? (
-                                <p className="empty-debug">Run preview to see logs</p>
+                                <p className="empty-debug">{localize(isArabicUi, 'Run preview to see logs', 'Ø´ØºÙ‘Ù„ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ø³Ø¬Ù„Ø§Øª')}</p>
                             ) : (
                                 <div className="debug-tiny-list">
                                     {previewResult.debug.map((item, idx) => (
                                         <div key={idx} className={`tiny-item ${item.visible ? 'visible' : 'hidden'}`}>
-                                            <span className="tiny-icon">{item.visible ? '✓' : '✗'}</span>
+                                            <span className="tiny-icon">{item.visible ? 'âœ“' : 'âœ—'}</span>
                                             <span className="tiny-text">{item.widgetType}: {item.reason}</span>
                                         </div>
                                     ))}
@@ -420,7 +427,7 @@ export default function PreviewSimulator({ templateId, templateHash, designData,
                         {!previewResult ? (
                             <div className="preview-placeholder">
                                 <AlertCircle size={48} className="placeholder-icon" />
-                                <p>Click "Run Preview" to generate the invitation card visual based on the current context.</p>
+                                <p>{localize(isArabicUi, 'Click "Run Preview" to generate the invitation card visual based on the current context.', 'Ø§Ø¶ØºØ· "ØªØ´ØºÙŠÙ„ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø©" Ù„Ø¥Ù†Ø´Ø§Ø¡ Ø¹Ø±Ø¶ Ø¨Ø·Ø§Ù‚Ø© Ø§Ù„Ø¯Ø¹ÙˆØ© Ø­Ø³Ø¨ Ø§Ù„Ø³ÙŠØ§Ù‚ Ø§Ù„Ø­Ø§Ù„ÙŠ.')}</p>
                             </div>
                         ) : (
                             <div
@@ -493,6 +500,7 @@ function getGuestPosition(content) {
 }
 
 function PreviewWidget({ widget, context, eventData }) {
+    const isArabic = context.language === 'ar';
     const content = widget.content?.[context.language] || widget.content?.ar || widget.content?.en || widget.content || {};
     const isLogoWidget = widget.type === 'logo';
     const style = {
@@ -507,15 +515,15 @@ function PreviewWidget({ widget, context, eventData }) {
 
     switch (widget.type) {
         case 'text':
-            return <div style={style} className="preview-widget text-widget">{content.text || 'Sample Text'}</div>;
+            return <div style={style} className="preview-widget text-widget">{content.text || localize(isArabic, 'Sample Text', 'نص تجريبي')}</div>;
 
         case 'image':
             return (
                 <div style={style} className="preview-widget image-widget">
                     {content.url ? (
-                        <img src={resolvePreviewAssetUrl(content.url)} alt={content.alt || 'Widget'} style={{ maxWidth: '100%', height: 'auto' }} />
+                        <img src={resolvePreviewAssetUrl(content.url)} alt={content.alt || localize(isArabic, 'Widget', 'عنصر')} style={{ maxWidth: '100%', height: 'auto' }} />
                     ) : (
-                        <div className="image-placeholder">Image</div>
+                        <div className="image-placeholder">{localize(isArabic, 'Image', 'صورة')}</div>
                     )}
                 </div>
             );
@@ -524,9 +532,9 @@ function PreviewWidget({ widget, context, eventData }) {
             return (
                 <div style={style} className="preview-widget image-widget">
                     {content.url ? (
-                        <img src={resolvePreviewAssetUrl(content.url)} alt={content.alt || 'Logo'} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }} />
+                        <img src={resolvePreviewAssetUrl(content.url)} alt={content.alt || localize(isArabic, 'Logo', 'شعار')} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }} />
                     ) : (
-                        <div className="image-placeholder">Logo</div>
+                        <div className="image-placeholder">{localize(isArabic, 'Logo', 'شعار')}</div>
                     )}
                 </div>
             );
@@ -543,7 +551,7 @@ function PreviewWidget({ widget, context, eventData }) {
                                     {[
                                         content.showDate !== false ? (eventData ? '20 Oct 2025' : '20 Oct 2025') : null,
                                         content.showTime !== false ? (eventData ? '18:00 PM' : '18:00 PM') : null
-                                    ].filter(Boolean).join(' · ')}
+                                    ].filter(Boolean).join(' Â· ')}
                                 </span>
                             </div>
                         )}
@@ -551,13 +559,13 @@ function PreviewWidget({ widget, context, eventData }) {
                             eventData?.location_mode !== 'manual' && eventData?.google_map_url ? (
                                 <a className="detail-row detail-row-link" href={eventData.google_map_url} target="_blank" rel="noreferrer">
                                     <MapPin size={16} />
-                                    <span>{eventLocation.venue || 'Open in Google Maps'}</span>
+                                    <span>{eventLocation.venue || localize(isArabic, 'Open in Google Maps', 'افتح على خرائط جوجل')}</span>
                                 </a>
                             ) : (
                                 <div className="detail-row detail-row-stack">
                                     <MapPin size={16} />
                                     <div>
-                                        <span>{eventLocation.venue || 'Venue not set'}</span>
+                                        <span>{eventLocation.venue || localize(isArabic, 'Venue not set', 'لم يتم تحديد المكان')}</span>
                                         {eventLocation.address && <small>{eventLocation.address}</small>}
                                     </div>
                                 </div>
@@ -584,7 +592,7 @@ function PreviewWidget({ widget, context, eventData }) {
             return (
                 <div style={style} className="preview-widget response-widget">
                     <button className="response-btn" type="button" style={{ font: 'inherit' }}>
-                        {content.label || 'Confirm attendance'}
+                        {content.label || localize(isArabic, 'Confirm attendance', 'تأكيد الحضور')}
                     </button>
                 </div>
             );
@@ -601,7 +609,7 @@ function PreviewWidget({ widget, context, eventData }) {
             return (
                 <div style={style} className="preview-widget voice-widget">
                     {content.label && <div className="voice-label">{content.label}</div>}
-                    <button className="voice-btn">🎤 Record Voice</button>
+                    <button className="voice-btn">{localize(isArabic, 'Record Voice', 'تسجيل صوت')}</button>
                     <div className="voice-note">Max: {content.maxDuration || 60}s</div>
                 </div>
             );
@@ -610,17 +618,17 @@ function PreviewWidget({ widget, context, eventData }) {
             return (
                 <div style={style} className="preview-widget submission-widget">
                     {content.label && <div className="submission-label">{content.label}</div>}
-                    <textarea className="submission-input" placeholder={content.placeholder || 'Type here...'} disabled></textarea>
+                    <textarea className="submission-input" placeholder={content.placeholder || localize(isArabic, 'Type here...', 'اكتب هنا...')} disabled></textarea>
                 </div>
             );
 
         case 'survey':
             return (
                 <div style={style} className="preview-widget survey-widget">
-                    <div className="survey-question">Do you need transportation?</div>
+                    <div className="survey-question">{localize(isArabic, 'Do you need transportation?', 'هل تحتاج إلى مواصلات؟')}</div>
                     <div className="survey-options">
-                        <label><input type="radio" disabled /> Yes</label>
-                        <label><input type="radio" disabled /> No</label>
+                        <label><input type="radio" disabled /> {localize(isArabic, 'Yes', 'نعم')}</label>
+                        <label><input type="radio" disabled /> {localize(isArabic, 'No', 'لا')}</label>
                     </div>
                 </div>
             );
@@ -628,14 +636,14 @@ function PreviewWidget({ widget, context, eventData }) {
         case 'calendar_links':
             return (
                 <div style={style} className="preview-widget calendar-widget">
-                    <button className="cal-btn">Add to Calendar</button>
+                    <button className="cal-btn">{localize(isArabic, 'Add to Calendar', 'أضف إلى التقويم')}</button>
                 </div>
             );
 
         case 'location_map':
             return (
                 <div style={style} className="preview-widget map-widget">
-                    <button className="map-btn">📍 Open Location Map</button>
+                    <button className="map-btn">{localize(isArabic, 'Open Location Map', 'افتح خريطة الموقع')}</button>
                 </div>
             );
         case 'instructions_link':
@@ -644,15 +652,16 @@ function PreviewWidget({ widget, context, eventData }) {
                 <div style={style} className="preview-widget map-widget">
                     <button className="instructions-icon-btn">
                         {content.iconUrl ? (
-                            <img src={resolvePreviewAssetUrl(content.iconUrl)} alt="instructions" style={{ width: `${Number(widget.style?.iconSize || 28)}px`, height: `${Number(widget.style?.iconSize || 28)}px`, objectFit: 'contain' }} />
+                            <img src={resolvePreviewAssetUrl(content.iconUrl)} alt={localize(isArabic, 'instructions', 'تعليمات')} style={{ width: `${Number(widget.style?.iconSize || 28)}px`, height: `${Number(widget.style?.iconSize || 28)}px`, objectFit: 'contain' }} />
                         ) : (
-                            <span style={{ fontSize: `${Number(widget.style?.iconSize || 28)}px`, lineHeight: 1 }}>📘</span>
+                            <span style={{ fontSize: `${Number(widget.style?.iconSize || 28)}px`, lineHeight: 1 }}>ðŸ“˜</span>
                         )}
                     </button>
                 </div>
             );
 
         default:
-            return <div className="preview-widget unknown">Unknown Widget: {widget.type}</div>;
+            return <div className="preview-widget unknown">{localize(isArabic, 'Unknown Widget', 'عنصر غير معروف')}: {widget.type}</div>;
     }
 }
+

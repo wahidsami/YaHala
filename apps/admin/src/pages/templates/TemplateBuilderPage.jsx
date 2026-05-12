@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Save, Eye, ArrowLeft } from 'lucide-react';
@@ -10,6 +11,9 @@ import PropertiesPanel from './components/PropertiesPanel';
 import { createDefaultWidget, WIDGET_TYPES } from './widgetConfig';
 import { normalizeLayout } from './backgroundUtils';
 import './TemplateBuilderPage.css';
+function localize(i18n, english, arabic) {
+    return i18n.language?.startsWith('ar') ? arabic : english;
+}
 
 const DEFAULT_TEMPLATE = {
     layout: {
@@ -35,6 +39,7 @@ const DEFAULT_TEMPLATE = {
 };
 
 export default function TemplateBuilderPage() {
+    const { i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const [template, setTemplate] = useState(null);
@@ -227,7 +232,7 @@ export default function TemplateBuilderPage() {
             const normalizedName = templateName.trim();
 
             if (!normalizedName) {
-                window.alert('Please enter a template name before saving.');
+                window.alert(localize(i18n, 'Please enter a template name before saving.', 'يرجى إدخال اسم القالب قبل الحفظ.'));
                 return;
             }
 
@@ -266,7 +271,7 @@ export default function TemplateBuilderPage() {
                         className="template-name-input"
                         value={templateName}
                         onChange={(e) => setTemplateName(e.target.value)}
-                        placeholder="Template Name"
+                        placeholder={localize(i18n, 'Template Name', 'اسم القالب')}
                     />
                     {templateHash && (
                         <span className="template-version-chip" title={templateHash}>
@@ -281,11 +286,11 @@ export default function TemplateBuilderPage() {
                     </div>
                     <button className="btn btn-secondary" onClick={handlePreview}>
                         <Eye size={18} />
-                        <span>Preview</span>
+                        <span>{localize(i18n, 'Preview', 'معاينة')}</span>
                     </button>
                     <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
                         <Save size={18} />
-                        <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                        <span>{isSaving ? localize(i18n, 'Saving...', 'جارٍ الحفظ...') : localize(i18n, 'Save', 'حفظ')}</span>
                     </button>
                 </div>
             </div>
