@@ -22,10 +22,10 @@ import api from '../../services/api';
 import './SendInvitationsPage.css';
 
 const CHANNELS = [
-    { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircleMore, accent: 'green' },
-    { id: 'email', label: 'Email', icon: Mail, accent: 'rose' },
-    { id: 'sms', label: 'SMS', icon: MessageCircleMore, accent: 'sand' },
-    { id: 'link', label: 'Public Link', icon: Link2, accent: 'lavender' }
+    { id: 'whatsapp', en: 'WhatsApp', ar: 'واتساب', icon: MessageCircleMore, accent: 'green' },
+    { id: 'email', en: 'Email', ar: 'البريد الإلكتروني', icon: Mail, accent: 'rose' },
+    { id: 'sms', en: 'SMS', ar: 'رسائل SMS', icon: MessageCircleMore, accent: 'sand' },
+    { id: 'link', en: 'Public Link', ar: 'الرابط العام', icon: Link2, accent: 'lavender' }
 ];
 
 const AUDIENCES = [
@@ -114,7 +114,7 @@ function AudienceCard({ audience, count, isActive, i18n, onSelect }) {
     );
 }
 
-function PreviewShell({ channel, title, subtitle, previewMessage, eventLine, ctaLabel }) {
+function PreviewShell({ channel, title, subtitle, previewMessage, eventLine, ctaLabel, i18n }) {
     if (channel === 'email') {
         return (
             <div className="send-preview-shell send-preview-shell--email">
@@ -124,7 +124,7 @@ function PreviewShell({ channel, title, subtitle, previewMessage, eventLine, cta
                         <small>{subtitle}</small>
                     </div>
                     <div className="send-preview-shell__mailcard">
-                        <span className="send-preview-shell__label">Subject</span>
+                        <span className="send-preview-shell__label">{localize(i18n, 'Subject', 'الموضوع')}</span>
                         <strong>{title}</strong>
                         <small>{eventLine}</small>
                         <div className="send-preview-shell__body">
@@ -144,7 +144,7 @@ function PreviewShell({ channel, title, subtitle, previewMessage, eventLine, cta
             <div className="send-preview-shell send-preview-shell--link">
                 <div className="send-preview-shell__frame">
                     <div className="send-preview-shell__linkcard">
-                        <span className="send-preview-shell__label">Share preview</span>
+                        <span className="send-preview-shell__label">{localize(i18n, 'Share preview', 'معاينة المشاركة')}</span>
                         <strong>{title}</strong>
                         <small>{eventLine}</small>
                         <div className="send-preview-shell__body">
@@ -513,7 +513,7 @@ export default function SendInvitationsPage() {
                                 return (
                                     <button key={item.id} type="button" className={`send-channel send-channel--${item.accent} ${channel === item.id ? 'is-active' : ''}`} onClick={() => setChannel(item.id)}>
                                         <Icon size={17} />
-                                        <span>{item.label}</span>
+                                        <span>{localize(i18n, item.en, item.ar)}</span>
                                     </button>
                                 );
                             })}
@@ -657,10 +657,10 @@ export default function SendInvitationsPage() {
                                 <div className="send-attachment-card">
                                     <div className="send-attachment-card__art" />
                                     <div className="send-attachment-card__body">
-                                        <span>{localize(i18n, 'Invitation card', 'Ø¨Ø·Ø§Ù‚Ø© Ø§Ù„Ø¯Ø¹ÙˆØ©')}</span>
+                                        <span>{localize(i18n, 'Invitation card', 'بطاقة الدعوة')}</span>
                                         <strong>{eventTitle}</strong>
                                         <small>{eventLine}</small>
-                                        <button type="button">{localize(i18n, 'View details & RSVP', 'Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„ ÙˆØ§Ù„Ø±Ø¯')}</button>
+                                        <button type="button">{localize(i18n, 'View details & RSVP', 'عرض التفاصيل والرد')}</button>
                                     </div>
                                 </div>
                             </div>
@@ -739,6 +739,7 @@ export default function SendInvitationsPage() {
                                 previewMessage={previewMessage}
                                 eventLine={eventLine}
                                 ctaLabel={ctaLabel}
+                                i18n={i18n}
                             />
                         </div>
 

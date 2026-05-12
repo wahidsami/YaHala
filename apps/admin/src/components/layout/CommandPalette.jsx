@@ -43,64 +43,64 @@ export default function CommandPalette({ open, onClose }) {
         const items = [
             {
                 id: 'create-event',
-                title: localize(i18n, 'Create event', 'Create event'),
-                subtitle: localize(i18n, 'Start the guided event wizard', 'Start the guided event wizard'),
+                title: localize(i18n, 'Create event', 'إنشاء فعالية'),
+                subtitle: localize(i18n, 'Start the guided event wizard', 'ابدأ معالج إنشاء الفعالية الموجه'),
                 path: '/events/new',
                 icon: Sparkles,
                 allowed: hasPermission('events.create')
             },
             {
                 id: 'open-events',
-                title: localize(i18n, 'Open events', 'Open events'),
-                subtitle: localize(i18n, 'View all events and workspaces', 'View all events and workspaces'),
+                title: localize(i18n, 'Open events', 'فتح الفعاليات'),
+                subtitle: localize(i18n, 'View all events and workspaces', 'عرض كل الفعاليات ومساحات العمل'),
                 path: '/events',
                 icon: Sparkles,
                 allowed: hasPermission('events.view')
             },
             {
                 id: 'open-clients',
-                title: localize(i18n, 'Open clients', 'Open clients'),
-                subtitle: localize(i18n, 'Browse and manage all clients', 'Browse and manage all clients'),
+                title: localize(i18n, 'Open clients', 'فتح العملاء'),
+                subtitle: localize(i18n, 'Browse and manage all clients', 'تصفح جميع العملاء وإدارتهم'),
                 path: '/clients',
                 icon: Users,
                 allowed: hasPermission('clients.view')
             },
             {
                 id: 'create-client',
-                title: localize(i18n, 'Create client', 'Create client'),
-                subtitle: localize(i18n, 'Add a client before creating an event', 'Add a client before creating an event'),
+                title: localize(i18n, 'Create client', 'إنشاء عميل'),
+                subtitle: localize(i18n, 'Add a client before creating an event', 'أضف عميلاً قبل إنشاء الفعالية'),
                 path: '/clients/new',
                 icon: Briefcase,
                 allowed: hasPermission('clients.create')
             },
             {
                 id: 'manage-guests',
-                title: localize(i18n, 'Manage guests', 'Manage guests'),
-                subtitle: localize(i18n, 'Browse your guest directory', 'Browse your guest directory'),
+                title: localize(i18n, 'Manage guests', 'إدارة الضيوف'),
+                subtitle: localize(i18n, 'Browse your guest directory', 'تصفح دليل الضيوف'),
                 path: '/guests',
                 icon: Users,
                 allowed: hasPermission('guests.view')
             },
             {
                 id: 'send-invitations',
-                title: localize(i18n, 'Send invitations', 'Send invitations'),
-                subtitle: localize(i18n, 'Open the event send workspace', 'Open the event send workspace'),
+                title: localize(i18n, 'Send invitations', 'إرسال الدعوات'),
+                subtitle: localize(i18n, 'Open the event send workspace', 'افتح مساحة إرسال الدعوات'),
                 path: '/send',
                 icon: Mail,
                 allowed: hasPermission('events.view')
             },
             {
                 id: 'open-templates',
-                title: localize(i18n, 'Open library', 'Open library'),
-                subtitle: localize(i18n, 'Browse templates, drafts, and favorites', 'Browse templates, drafts, and favorites'),
+                title: localize(i18n, 'Open library', 'فتح المكتبة'),
+                subtitle: localize(i18n, 'Browse templates, drafts, and favorites', 'تصفح القوالب والمسودات والمفضلات'),
                 path: '/library',
                 icon: Palette,
                 allowed: hasPermission('templates.view')
             },
             {
                 id: 'library',
-                title: localize(i18n, 'Library & templates', 'Library & templates'),
-                subtitle: localize(i18n, 'Browse and reuse templates', 'Browse and reuse templates'),
+                title: localize(i18n, 'Library & templates', 'المكتبة والقوالب'),
+                subtitle: localize(i18n, 'Browse and reuse templates', 'تصفح القوالب وأعد استخدامها'),
                 path: '/library',
                 icon: Palette,
                 allowed: hasPermission('templates.view')
@@ -114,40 +114,40 @@ export default function CommandPalette({ open, onClose }) {
         const items = [
             {
                 id: 'reports',
-                title: localize(i18n, 'Reports', 'Reports'),
-                subtitle: localize(i18n, 'Operational and RSVP reporting', 'Operational and RSVP reporting'),
+                title: localize(i18n, 'Reports', 'التقارير'),
+                subtitle: localize(i18n, 'Operational and RSVP reporting', 'تقارير التشغيل والردود'),
                 path: '/reports',
                 icon: Link2,
                 allowed: hasPermission('reports.view')
             },
             {
                 id: 'logs',
-                title: localize(i18n, 'Logs', 'Logs'),
-                subtitle: localize(i18n, 'Inspect operational logs and activity', 'Inspect operational logs and activity'),
+                title: localize(i18n, 'Logs', 'السجلات'),
+                subtitle: localize(i18n, 'Inspect operational logs and activity', 'مراجعة سجلات التشغيل والنشاط'),
                 path: '/logs',
                 icon: Link2,
                 allowed: hasPermission('logs.view')
             },
             {
                 id: 'addons',
-                title: localize(i18n, 'Addons', 'Addons'),
-                subtitle: localize(i18n, 'Manage polls, questionnaires, and instructions', 'Manage polls, questionnaires, and instructions'),
+                title: localize(i18n, 'Addons', 'الإضافات'),
+                subtitle: localize(i18n, 'Manage polls, questionnaires, and instructions', 'إدارة الاستطلاعات والاستبيانات والتعليمات'),
                 path: '/addons',
                 icon: Palette,
                 allowed: hasPermission('addons.view')
             },
             {
                 id: 'invitation-projects',
-                title: localize(i18n, 'Invitation projects', 'Invitation projects'),
-                subtitle: localize(i18n, 'Manage invitation project workflows', 'Manage invitation project workflows'),
+                title: localize(i18n, 'Invitation projects', 'مشاريع الدعوات'),
+                subtitle: localize(i18n, 'Manage invitation project workflows', 'إدارة سير عمل مشاريع الدعوات'),
                 path: '/invitation-projects',
                 icon: Link2,
                 allowed: hasPermission('events.view')
             },
             {
                 id: 'settings',
-                title: localize(i18n, 'Settings', 'Settings'),
-                subtitle: localize(i18n, 'Delivery and system configuration', 'Delivery and system configuration'),
+                title: localize(i18n, 'Settings', 'الإعدادات'),
+                subtitle: localize(i18n, 'Delivery and system configuration', 'تهيئة الإرسال وإعدادات النظام'),
                 path: '/settings',
                 icon: Settings,
                 allowed: hasPermission('settings.view')
@@ -369,7 +369,7 @@ export default function CommandPalette({ open, onClose }) {
                         type="text"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        placeholder={localize(i18n, 'Search events, clients, guests, templates...', 'Search events, clients, guests, templates...')}
+                        placeholder={localize(i18n, 'Search events, clients, guests, templates...', 'ابحث عن الفعاليات والعملاء والضيوف والقوالب...')}
                         autoFocus
                     />
                     <span className="command-palette__hint">Esc</span>

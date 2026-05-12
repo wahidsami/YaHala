@@ -35,12 +35,12 @@ const NAV_ITEMS = [
 ];
 
 const ADDON_SUB_ITEMS = [
-    { id: 'polls', label: 'Polls', path: '/addons/polls' },
-    { id: 'questionnaires', label: 'Questionnaires', path: '/addons/questionnaires' },
-    { id: 'instructions', label: 'Instructions', path: '/addons/instructions' },
-    { id: 'guestbook', label: 'Guestbook', path: '/addons/guestbook' },
-    { id: 'quiz', label: 'Quiz', path: '/addons/quiz' },
-    { id: 'files-downloads', label: 'Files & Downloads', path: '/addons/files-downloads' }
+    { id: 'polls', en: 'Polls', ar: 'الاستطلاعات', path: '/addons/polls' },
+    { id: 'questionnaires', en: 'Questionnaires', ar: 'الاستبيانات', path: '/addons/questionnaires' },
+    { id: 'instructions', en: 'Instructions', ar: 'التعليمات', path: '/addons/instructions' },
+    { id: 'guestbook', en: 'Guestbook', ar: 'سجل الزوار', path: '/addons/guestbook' },
+    { id: 'quiz', en: 'Quiz', ar: 'الاختبار', path: '/addons/quiz' },
+    { id: 'files-downloads', en: 'Files & Downloads', ar: 'الملفات والتنزيلات', path: '/addons/files-downloads' }
 ];
 
 export default function SideNavigation({ collapsed = false, onToggleCollapse }) {
@@ -120,7 +120,7 @@ export default function SideNavigation({ collapsed = false, onToggleCollapse }) 
                                                     to={subItem.path}
                                                     className={({ isActive }) => `nav-sub-item ${isActive ? 'active' : ''}`}
                                                 >
-                                                    {subItem.label}
+                                                    {isArabic ? subItem.ar : subItem.en}
                                                 </NavLink>
                                             </li>
                                         ))}
