@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Briefcase, Link2, Mail, Palette, Search, Settings, Sparkles, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,8 @@ export default function CommandPalette({ open, onClose }) {
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [sections, setSections] = useState([]);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const itemRefs = useRef([]);
     const normalizedQuery = query.trim().replace(/^\/+/, '');
     const queryTerm = normalizedQuery.toLowerCase();
 
@@ -45,6 +47,14 @@ export default function CommandPalette({ open, onClose }) {
                 path: '/events/new',
                 icon: Sparkles,
                 allowed: hasPermission('events.create')
+            },
+            {
+                id: 'open-events',
+                title: localize(i18n, 'Open events', 'Open events'),
+                subtitle: localize(i18n, 'View all events and workspaces', 'View all events and workspaces'),
+                path: '/events',
+                icon: Sparkles,
+                allowed: hasPermission('events.view')
             },
             {
                 id: 'open-clients',
@@ -77,6 +87,14 @@ export default function CommandPalette({ open, onClose }) {
                 path: '/send',
                 icon: Mail,
                 allowed: hasPermission('events.view')
+            },
+            {
+                id: 'open-templates',
+                title: localize(i18n, 'Open templates', 'Open templates'),
+                subtitle: localize(i18n, 'Browse saved templates and drafts', 'Browse saved templates and drafts'),
+                path: '/templates',
+                icon: Palette,
+                allowed: hasPermission('templates.view')
             },
             {
                 id: 'library',
@@ -167,8 +185,13 @@ export default function CommandPalette({ open, onClose }) {
             setQuery('');
             setSections([]);
             setLoading(false);
+            setActiveIndex(0);
         }
     }, [open]);
+
+    useEffect(() => {
+        setActiveIndex(0);
+    }, [normalizedQuery]);
 
     useEffect(() => {
         if (!open || normalizedQuery.length < 2) {
@@ -254,6 +277,65 @@ export default function CommandPalette({ open, onClose }) {
         return null;
     }
 
+    const commandItems = matchingQuickActions.map((item) => ({ ...item, group: 'commands' }));
+    const powerToolItems = matchingPowerTools.map((item) => ({ ...item, group: 'power' }));
+    const searchResultItems = sections.flatMap((section) => (
+        section.items.map((item) => ({ ...item, group: `section-${section.label}` }))
+    ));
+
+    const visibleItems = normalizedQuery.length < 2
+        ? [...commandItems, ...powerToolItems]
+        : [...commandItems, ...powerToolItems, ...searchResultItems];
+
+    const boundedActiveIndex = visibleItems.length === 0 ? -1 : Math.min(activeIndex, visibleItems.length - 1);
+
+    function setItemRef(index, node) {
+        itemRefs.current[index] = node;
+    }
+
+    function onItemFocus(index) {
+        setActiveIndex(index);
+    }
+
+    function moveActiveIndex(direction) {
+        if (!visibleItems.length) {
+            return;
+        }
+        const current = boundedActiveIndex === -1 ? 0 : boundedActiveIndex;
+        const next = (current + direction + visibleItems.length) % visibleItems.length;
+        setActiveIndex(next);
+        const node = itemRefs.current[next];
+        if (node) {
+            node.focus();
+            node.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function handleKeyDown(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            onClose();
+            return;
+        }
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            moveActiveIndex(1);
+            return;
+        }
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            moveActiveIndex(-1);
+            return;
+        }
+        if (event.key === 'Enter') {
+            if (boundedActiveIndex < 0) {
+                return;
+            }
+            event.preventDefault();
+            handleNavigate(visibleItems[boundedActiveIndex].path);
+        }
+    }
+
     function handleNavigate(path) {
         navigate(path);
         onClose();
@@ -261,7 +343,7 @@ export default function CommandPalette({ open, onClose }) {
 
     return (
         <div className="command-palette-backdrop" role="presentation" onClick={onClose}>
-            <div className="command-palette" role="dialog" aria-modal="true" aria-label={localize(i18n, 'Search the admin workspace', 'Search the admin workspace')} onClick={(event) => event.stopPropagation()}>
+            <div className="command-palette" role="dialog" aria-modal="true" aria-label={localize(i18n, 'Search the admin workspace', 'Search the admin workspace')} onClick={(event) => event.stopPropagation()} onKeyDown={handleKeyDown}>
                 <div className="command-palette__search">
                     <Search size={18} />
                     <input
@@ -277,10 +359,11 @@ export default function CommandPalette({ open, onClose }) {
                 {normalizedQuery.length < 2 ? (
                     <div className="command-palette__quick-actions">
                         <div className="command-palette__section-title">{localize(i18n, 'Quick actions', 'Quick actions')}</div>
-                        {matchingQuickActions.map((item) => {
+                        {matchingQuickActions.map((item, index) => {
                             const Icon = item.icon;
+                            const itemIndex = index;
                             return (
-                                <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
+                                <button key={item.id} type="button" className={`command-palette__item ${itemIndex === boundedActiveIndex ? 'is-active' : ''}`} onClick={() => handleNavigate(item.path)} onFocus={() => onItemFocus(itemIndex)} ref={(node) => setItemRef(itemIndex, node)}>
                                     <span className="command-palette__icon">
                                         <Icon size={16} />
                                     </span>
@@ -295,10 +378,11 @@ export default function CommandPalette({ open, onClose }) {
                         {matchingPowerTools.length > 0 && (
                             <>
                                 <div className="command-palette__section-title">{localize(i18n, 'Power tools', 'Power tools')}</div>
-                                {matchingPowerTools.map((item) => {
+                                {matchingPowerTools.map((item, index) => {
                                     const Icon = item.icon;
+                                    const itemIndex = matchingQuickActions.length + index;
                                     return (
-                                        <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
+                                        <button key={item.id} type="button" className={`command-palette__item ${itemIndex === boundedActiveIndex ? 'is-active' : ''}`} onClick={() => handleNavigate(item.path)} onFocus={() => onItemFocus(itemIndex)} ref={(node) => setItemRef(itemIndex, node)}>
                                             <span className="command-palette__icon">
                                                 <Icon size={16} />
                                             </span>
@@ -321,10 +405,11 @@ export default function CommandPalette({ open, onClose }) {
                         {matchingQuickActions.length > 0 && (
                             <div className="command-palette__section">
                                 <div className="command-palette__section-title">{localize(i18n, 'Commands', 'Commands')}</div>
-                                {matchingQuickActions.map((item) => {
+                                {matchingQuickActions.map((item, index) => {
                                     const Icon = item.icon;
+                                    const itemIndex = index;
                                     return (
-                                        <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
+                                        <button key={item.id} type="button" className={`command-palette__item ${itemIndex === boundedActiveIndex ? 'is-active' : ''}`} onClick={() => handleNavigate(item.path)} onFocus={() => onItemFocus(itemIndex)} ref={(node) => setItemRef(itemIndex, node)}>
                                             <span className="command-palette__icon">
                                                 <Icon size={16} />
                                             </span>
@@ -341,10 +426,11 @@ export default function CommandPalette({ open, onClose }) {
                         {matchingPowerTools.length > 0 && (
                             <div className="command-palette__section">
                                 <div className="command-palette__section-title">{localize(i18n, 'Power tools', 'Power tools')}</div>
-                                {matchingPowerTools.map((item) => {
+                                {matchingPowerTools.map((item, index) => {
                                     const Icon = item.icon;
+                                    const itemIndex = matchingQuickActions.length + index;
                                     return (
-                                        <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
+                                        <button key={item.id} type="button" className={`command-palette__item ${itemIndex === boundedActiveIndex ? 'is-active' : ''}`} onClick={() => handleNavigate(item.path)} onFocus={() => onItemFocus(itemIndex)} ref={(node) => setItemRef(itemIndex, node)}>
                                             <span className="command-palette__icon">
                                                 <Icon size={16} />
                                             </span>
@@ -358,24 +444,30 @@ export default function CommandPalette({ open, onClose }) {
                             </div>
                         )}
 
-                        {sections.map((section) => (
+                        {sections.map((section, sectionIndex) => (
                             <div key={section.label} className="command-palette__section">
                                 <div className="command-palette__section-title">{section.label}</div>
-                                {section.items.map((item) => (
-                                    <button key={item.id} type="button" className="command-palette__item" onClick={() => handleNavigate(item.path)}>
-                                        <span className="command-palette__icon">
-                                            {item.type === 'event' && <Sparkles size={16} />}
-                                            {item.type === 'client' && <Users size={16} />}
-                                            {item.type === 'template' && <Palette size={16} />}
-                                            {item.type === 'guest' && <Mail size={16} />}
-                                            {item.type === 'project' && <Link2 size={16} />}
-                                        </span>
-                                        <span>
-                                            <strong>{item.title}</strong>
-                                            <small>{item.subtitle || localize(i18n, 'Open detail', 'Open detail')}</small>
-                                        </span>
-                                    </button>
-                                ))}
+                                {section.items.map((item, index) => {
+                                    const sectionOffset = matchingQuickActions.length + matchingPowerTools.length + sections
+                                        .slice(0, sectionIndex)
+                                        .reduce((sum, candidate) => sum + candidate.items.length, 0);
+                                    const itemIndex = sectionOffset + index;
+                                    return (
+                                        <button key={item.id} type="button" className={`command-palette__item ${itemIndex === boundedActiveIndex ? 'is-active' : ''}`} onClick={() => handleNavigate(item.path)} onFocus={() => onItemFocus(itemIndex)} ref={(node) => setItemRef(itemIndex, node)}>
+                                            <span className="command-palette__icon">
+                                                {item.type === 'event' && <Sparkles size={16} />}
+                                                {item.type === 'client' && <Users size={16} />}
+                                                {item.type === 'template' && <Palette size={16} />}
+                                                {item.type === 'guest' && <Mail size={16} />}
+                                                {item.type === 'project' && <Link2 size={16} />}
+                                            </span>
+                                            <span>
+                                                <strong>{item.title}</strong>
+                                                <small>{item.subtitle || localize(i18n, 'Open detail', 'Open detail')}</small>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         ))}
                     </div>

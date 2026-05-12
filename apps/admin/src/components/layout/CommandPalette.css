@@ -89,6 +89,11 @@
     background: rgba(255, 160, 140, 0.12);
 }
 
+.command-palette__item.is-active {
+    background: rgba(255, 160, 140, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 137, 108, 0.32);
+}
+
 .command-palette__item strong,
 .command-palette__item small {
     display: block;
